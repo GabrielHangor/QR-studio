@@ -6,6 +6,8 @@ import {
   QR_VERSION_MAX,
   QR_VERSION_MIN,
 } from "./constants.js";
+import { QrEncodingError } from "./errors.js";
+import { createQrFinderPatterns, createQrFunctionModules } from "./layout.js";
 import type { EncodeQrOptions, ErrorCorrectionLevel, QrMatrix } from "./types.js";
 
 /** Used when a caller does not choose an error-correction level. */
@@ -27,14 +29,20 @@ const ERROR_CORRECTION = {
 
 /** Encode text verbatim, without URL normalization, a border, or any rendering. */
 export function encodeQr(payload: string, options: EncodeQrOptions = {}): QrMatrix {
-  if (typeof payload !== "string" || payload.length === 0) {
-    throw new TypeError("QR payload must be a non-empty string.");
+  if (typeof payload !== "string") {
+    throw new QrEncodingError("INVALID_PAYLOAD", "QR payload must be a string.");
+  }
+  if (payload.length === 0) {
+    throw new QrEncodingError("EMPTY_PAYLOAD", "QR payload must not be empty.");
   }
 
   const errorCorrectionLevel: ErrorCorrectionLevel =
     options.errorCorrectionLevel ?? DEFAULT_ERROR_CORRECTION_LEVEL;
   if (!Object.hasOwn(ERROR_CORRECTION, errorCorrectionLevel)) {
-    throw new RangeError("Error correction level must be L, M, Q, or H.");
+    throw new QrEncodingError(
+      "INVALID_ERROR_CORRECTION_LEVEL",
+      "Error correction level must be L, M, Q, or H.",
+    );
   }
 
   if (
@@ -43,25 +51,41 @@ export function encodeQr(payload: string, options: EncodeQrOptions = {}): QrMatr
       options.version < QR_VERSION_MIN ||
       options.version > QR_VERSION_MAX)
   ) {
-    throw new RangeError(
+    throw new QrEncodingError(
+      "INVALID_VERSION",
       `QR version must be an integer between ${QR_VERSION_MIN} and ${QR_VERSION_MAX}.`,
     );
   }
 
-  const paddedModules = encode(payload, "raw", {
-    ecc: ERROR_CORRECTION[errorCorrectionLevel],
-    ...(options.version === undefined ? {} : { version: options.version }),
-    border: ENCODER_BORDER_MODULES,
-    scale: ENCODER_SCALE,
-  });
+  let paddedModules: boolean[][];
+  try {
+    paddedModules = encode(payload, "raw", {
+      ecc: ERROR_CORRECTION[errorCorrectionLevel],
+      ...(options.version === undefined ? {} : { version: options.version }),
+      border: ENCODER_BORDER_MODULES,
+      scale: ENCODER_SCALE,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Capacity overflow")) {
+      throw new QrEncodingError(
+        "CAPACITY_EXCEEDED",
+        "QR payload does not fit the selected version and error-correction level.",
+        error,
+      );
+    }
+    throw new QrEncodingError("ENCODER_FAILURE", "QR payload could not be encoded.", error);
+  }
   const modules = paddedModules
     .slice(ENCODER_BORDER_MODULES, -ENCODER_BORDER_MODULES)
     .map((row) => row.slice(ENCODER_BORDER_MODULES, -ENCODER_BORDER_MODULES));
+  const version = (modules.length - QR_VERSION_DIMENSION_BASE) / QR_VERSION_DIMENSION_STEP;
 
   return {
     size: modules.length,
-    version: (modules.length - QR_VERSION_DIMENSION_BASE) / QR_VERSION_DIMENSION_STEP,
+    version,
     errorCorrectionLevel,
     modules,
+    functionModules: createQrFunctionModules(version),
+    finderPatterns: createQrFinderPatterns(modules.length),
   };
 }
