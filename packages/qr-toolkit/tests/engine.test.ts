@@ -1,7 +1,45 @@
+import decodeQR from "qr/decode.js";
 import { describe, expect, it } from "vitest";
 
 import { encodeQr, renderQrSvg } from "../src/engine/index.js";
+import { QR_QUIET_ZONE_DEFAULT_MODULES } from "../src/engine/constants.js";
 import type { ErrorCorrectionLevel, QrMatrix } from "../src/engine/index.js";
+
+/** Keep module edges crisp for the decoder smoke test. */
+const TEST_PIXELS_PER_MODULE = 4;
+
+function matrixToImageData(matrix: QrMatrix) {
+  const quietZone = QR_QUIET_ZONE_DEFAULT_MODULES;
+  const width = (matrix.size + quietZone * 2) * TEST_PIXELS_PER_MODULE;
+  const data = new Uint8Array(width * width * 4);
+
+  for (let pixel = 0; pixel < data.length; pixel += 4) {
+    data[pixel] = 255;
+    data[pixel + 1] = 255;
+    data[pixel + 2] = 255;
+    data[pixel + 3] = 255;
+  }
+
+  for (let y = 0; y < matrix.size; y++) {
+    const row = matrix.modules[y]!;
+    for (let x = 0; x < matrix.size; x++) {
+      if (!row[x]) continue;
+
+      const pixelX = (x + quietZone) * TEST_PIXELS_PER_MODULE;
+      const pixelY = (y + quietZone) * TEST_PIXELS_PER_MODULE;
+      for (let offsetY = 0; offsetY < TEST_PIXELS_PER_MODULE; offsetY++) {
+        for (let offsetX = 0; offsetX < TEST_PIXELS_PER_MODULE; offsetX++) {
+          const offset = ((pixelY + offsetY) * width + pixelX + offsetX) * 4;
+          data[offset] = 0;
+          data[offset + 1] = 0;
+          data[offset + 2] = 0;
+        }
+      }
+    }
+  }
+
+  return { width, height: width, data };
+}
 
 describe("matrix contract", () => {
   it.each(["L", "M", "Q", "H"] as const)(
@@ -29,6 +67,15 @@ describe("matrix contract", () => {
     const before = JSON.stringify(matrix);
     expect(encodeQr("Another payload", { version: 10 }).modules).not.toEqual(matrix.modules);
     expect(JSON.stringify(matrix)).toBe(before);
+  });
+
+  it.each([1, 7, 40])("round-trips through the QR decoder at version %i", (version) => {
+    const payload = "QR";
+
+    for (const errorCorrectionLevel of ["L", "M", "Q", "H"] as const) {
+      const matrix = encodeQr(payload, { version, errorCorrectionLevel });
+      expect(decodeQR(matrixToImageData(matrix))).toBe(payload);
+    }
   });
 });
 
