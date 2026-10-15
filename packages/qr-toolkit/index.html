@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Studio — Engine Playground</title>
+    <link rel="stylesheet" href="/playground/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">QR STUDIO / TOOLKIT</p>
+        <h1>Engine playground</h1>
+        <p>Введите ссылку или текст, чтобы проверить генерацию и SVG-экспорт.</p>
+      </header>
+      <div class="workspace">
+        <section class="panel">
+          <label for="payload">Содержимое QR</label>
+          <textarea id="payload" rows="8" spellcheck="false" aria-describedby="hint error">
+https://example.com</textarea>
+          <p id="hint">Содержимое обрабатывается только в браузере и никуда не отправляется.</p>
+          <p id="error" role="alert" hidden></p>
+          <button id="download" type="button" disabled>Скачать SVG</button>
+        </section>
+        <section class="panel preview-panel" aria-label="Предпросмотр QR">
+          <div class="preview">
+            <img id="qr-preview" alt="Предпросмотр QR-кода" width="512" height="512" hidden />
+            <p id="placeholder">Введите содержимое для предпросмотра</p>
+          </div>
+          <p id="status" role="status"></p>
+        </section>
+      </div>
+      <footer>
+        Технический прототип · квадратные модули · ECC M · SVG 512 × 512<br />Автоматическая
+        проверка считывания пока не подключена.
+      </footer>
+    </main>
+    <script type="module" src="/playground/main.ts"></script>
+  </body>
+</html>

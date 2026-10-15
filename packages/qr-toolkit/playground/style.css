@@ -1,0 +1,134 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #202833;
+  background: #f3f5f7;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 56px 24px;
+}
+header {
+  margin-bottom: 32px;
+}
+h1 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.15;
+  margin: 8px 0 16px;
+}
+p {
+  margin: 0;
+}
+.eyebrow {
+  color: #59677a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.panel {
+  padding: 28px;
+  border: 1px solid #dce1e8;
+  border-radius: 16px;
+  background: white;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 180px;
+  padding: 14px;
+  border: 1px solid #aab4c2;
+  border-radius: 8px;
+  font: inherit;
+}
+textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid #879df0;
+  outline-offset: 3px;
+}
+textarea[aria-invalid="true"] {
+  border-color: #b42318;
+}
+#hint,
+#status,
+footer {
+  color: #59677a;
+  font-size: 0.85rem;
+}
+#hint {
+  margin: 12px 0 24px;
+}
+#error {
+  color: #b42318;
+  margin-bottom: 16px;
+}
+button {
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: #273e86;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover:enabled {
+  background: #1d306b;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+}
+.preview {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  flex: 1;
+}
+.preview img {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+}
+[hidden],
+.preview img[hidden] {
+  display: none;
+}
+footer {
+  margin-top: 28px;
+}
+@media (max-width: 680px) {
+  main {
+    padding: 28px 16px;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    padding: 20px;
+  }
+}

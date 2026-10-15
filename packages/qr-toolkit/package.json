@@ -1,0 +1,41 @@
+{
+  "name": "@qr-studio/toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headless QR encoding and SVG rendering for QR Studio",
+  "license": "ISC",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./engine": {
+      "types": "./dist/engine/index.d.ts",
+      "import": "./dist/engine/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "playground": "vite --host 127.0.0.1",
+    "build:playground": "vite build",
+    "check": "pnpm lint && pnpm typecheck && pnpm format:check",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p playground/tsconfig.json",
+    "test": "vitest run",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "qr": "0.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  }
+}
