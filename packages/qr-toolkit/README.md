@@ -16,19 +16,22 @@ pnpm --filter @qr-studio/toolkit playground
 Node закреплён в `.nvmrc`, pnpm — в корневом `packageManager`.
 Инструменты локальны пакету: TypeScript, Vite, Vitest, Oxlint и Oxfmt. Vite+ не используется.
 
-| Команда после `pnpm --filter @qr-studio/toolkit` | Результат |
-|---|---|
-| `build` / `dev` | ESM + декларации в `dist` / пересборка при изменении |
-| `check` | Линтер, типы библиотеки/playground, проверка форматирования |
-| `test` | Vitest, один прогон |
-| `format` | Oxfmt |
-| `playground` / `build:playground` | Vite dev server / страница в `dist-playground` |
+| Команда после `pnpm --filter @qr-studio/toolkit` | Результат                                                      |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| `build` / `dev`                                  | ESM + декларации в `dist` / пересборка при изменении           |
+| `check`                                          | Линтер, типы библиотеки/playground/scan-тестов, форматирование |
+| `test`                                           | Быстрые Node-тесты Vitest                                      |
+| `format`                                         | Oxfmt                                                          |
+| `playground` / `build:playground`                | Vite dev server / страница в `dist-playground`                 |
 
 ## API engine
 
 ```ts
 import {
-  encodeQr, renderQrSvg, analyzeQrDesign, type RenderQrSvgOptions,
+  encodeQr,
+  renderQrSvg,
+  analyzeQrDesign,
+  type RenderQrSvgOptions,
 } from "@qr-studio/toolkit/engine";
 
 const matrix = encodeQr("https://example.com", { errorCorrectionLevel: "M" });
@@ -50,17 +53,17 @@ ECC, `functionModules` и координаты трёх finder patterns. Мас�
 `renderQrSvg` синхронно возвращает детерминированную SVG-строку. Повторное оформление
 матрицы не требует кодирования. Полный тип опций — [types.ts](./src/engine/types.ts).
 
-| Опция | Контракт |
-|---|---|
-| `size`, `quietZone` | Ширина композиции в px (512 по умолчанию); поле в модулях (минимум и default 4) |
-| `foreground`, `background` | Непрозрачные `#RGB`/`#RRGGBB`; foreground также принимает `{ type: "linear", direction, startColor, endColor }`, direction: horizontal/vertical/diagonal |
-| `moduleShape` | square/rounded/circle; timing/alignment и прочие служебные зоны остаются квадратными, кроме отдельно оформленных finder patterns |
-| `finder` | Цельные кольцо/центр: outerShape/innerShape и независимые outerColor/innerColor. Без своих цветов наследуют foreground |
-| `finderShape` | Прежняя стилизация клеток маркеров; `finder` имеет приоритет |
-| `shape`, `artworkBackground` | Внешняя square/circle форма и её фон; полная квадратная QR-подложка с quiet zone сохраняет `background` |
-| `frame` | none/outline или `{ style?, color?, widthPx? }`; у объекта default 2 px, толщина меньше четверти ширины. Прежний строковый outline сохраняет толщину в модулях |
-| `logo` | Центрированный base64 PNG/JPEG/WebP: dataUri, widthModules, paddingModules. SVG-ассет и перекрытие служебных зон запрещены |
-| `caption` | Одна подпись или две, по одной top/bottom. style: plain/banner/arc; дуга только у circle. Цвет, фон полосы, fontSize (max px, default 18), fontWeight 400/500/600/700, letterSpacing 0–10 px |
+| Опция                        | Контракт                                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `size`, `quietZone`          | Ширина композиции в px (512 по умолчанию); поле в модулях (минимум и default 4)                                                                                                              |
+| `foreground`, `background`   | Непрозрачные `#RGB`/`#RRGGBB`; foreground также принимает `{ type: "linear", direction, startColor, endColor }`, direction: horizontal/vertical/diagonal                                     |
+| `moduleShape`                | square/rounded/circle; timing/alignment и прочие служебные зоны остаются квадратными, кроме отдельно оформленных finder patterns                                                             |
+| `finder`                     | Цельные кольцо/центр: outerShape/innerShape и независимые outerColor/innerColor. Без своих цветов наследуют foreground                                                                       |
+| `finderShape`                | Прежняя стилизация клеток маркеров; `finder` имеет приоритет                                                                                                                                 |
+| `shape`, `artworkBackground` | Внешняя square/circle форма и её фон; полная квадратная QR-подложка с quiet zone сохраняет `background`                                                                                      |
+| `frame`                      | none/outline или `{ style?, color?, widthPx? }`; у объекта default 2 px, толщина меньше четверти ширины. Прежний строковый outline сохраняет толщину в модулях                               |
+| `logo`                       | Центрированный base64 PNG/JPEG/WebP: dataUri, widthModules, paddingModules. SVG-ассет и перекрытие служебных зон запрещены                                                                   |
+| `caption`                    | Одна подпись или две, по одной top/bottom. style: plain/banner/arc; дуга только у circle. Цвет, фон полосы, fontSize (max px, default 18), fontWeight 400/500/600/700, letterSpacing 0–10 px |
 
 Градиент един для всей матрицы и наследующих его маркеров (`userSpaceOnUse`). Круг
 вмещает квадрат вместе с quiet zone, оставляет прозрачные углы и при той же ширине
@@ -115,12 +118,51 @@ Playground — HTML/CSS/TypeScript без UI-зависимостей: прим�
 Ошибка генерации скрывает старый preview и отключает экспорт. Логотип и payload обрабатываются локально.
 `BarcodeDetector` проверяет изображение только при наличии API; его отсутствие — не результат проверки QR.
 
-## Проверки и ограничения
+## Функциональные тесты экспорта
 
-Тесты покрывают матрицы/служебные зоны версий 1–40, Unicode round-trip, SVG-геометрию,
-стили, диагностику, ошибки и RU/EN. Decoder из того же `qr` не является независимой проверкой.
-Результат ручного PNG-прогона и оставшиеся испытания — в [статусе проекта](../../docs/README.md).
-Телефоны, печать, пороги читаемости и мобильная производительность пока требуют проверки.
+Быстрые `test` проверяют матрицы/служебные зоны версий 1–40, геометрию, ограничения,
+диагностику и RU/EN. Отдельный `test:scan` запускает [Vitest Browser Mode](https://vitest.dev/guide/browser/)
+с Chromium: настоящий SVG → браузерная растеризация → PNG → независимый [ZXing WASM](https://github.com/Sec-ant/zxing-wasm).
+Это функциональные интеграционные тесты pipeline экспорта, без моков; клики по UI они не проверяют.
+
+Из корня, для первого запуска или после смены версии Playwright:
+
+```sh
+nvm use
+pnpm install --frozen-lockfile
+pnpm --filter @qr-studio/toolkit test:scan:install
+pnpm --filter @qr-studio/toolkit test:scan
+```
+
+На Linux CI системные зависимости браузера ставятся через
+`pnpm --filter @qr-studio/toolkit exec playwright install --with-deps chromium`.
+Для полной проверки запускайте `check`, `test` и `test:scan`; обычный `test` браузер не запускает.
+Один сценарий: `pnpm --filter @qr-studio/toolkit test:scan -t atelier-url-256`.
+
+Набор в `tests/scan/cases.ts` фиксирован: все шесть пресетов × четыре payload × два размера;
+уменьшение до 60%, blur 0.6 px и JPEG quality 0.72 для пресетов при 512 px; версии
+1/7/10/27/40 × ECC L/M/Q/H; комбинации форм маркеров; длинный Unicode; растровый логотип.
+Отдельный отрицательный контроль проверяет отсутствие QR на пустом изображении.
+Проверяются точный payload, ширина SVG и прозрачные углы круглой композиции.
+Эти размеры и искажения — условия теста, не универсальные безопасные пределы.
+
+Для воспроизводимости зависимости и Chromium закреплены lockfile/Playwright;
+WASM локальный, без CDN; locale, timezone, viewport и device scale заданы явно.
+QR декодируется целиком на белой подложке, без обрезки декора или подмены матрицей.
+ОС/системные шрифты могут менять растеризацию подписей: это не пиксельные snapshot-тесты;
+для сравнения байтов нужен одинаковый образ ОС. Измерения времени справочные, без нестабильных порогов.
+
+В `packages/qr-toolkit/test-results/scan/` создаются `vitest.json`, `summary.json`
+(результаты, декодированные строки, размеры, диагностика, время/объём SVG) и `environment.json`
+(Node/ОС/архитектура/версии пакетов). При сбое в `failures/` сохраняются параметры,
+исходный SVG, экспортированный PNG и изображение после искажения, если они были созданы.
+Каталог исключён из Git и очищается перед каждым прогоном; в CI сохраняйте его как artifact даже при ошибке.
+
+## Ограничения
+
+Прохождение тестов подтверждает только выбранные сочетания и синтетические искажения,
+не универсальное считывание или физическую печать. Телефоны, пороги читаемости и мобильная
+производительность пока требуют проверки; текущий статус — в [документации](../../docs/README.md).
 Обычные квадратные модули объединяются в path; сложная стилизация создаёт больше элементов.
 Encoder использует один сегмент: смешанное содержимое может кодироваться менее плотно,
 чем при оптимизированной сегментации. Сохранение проектов и Vue editor не реализованы.

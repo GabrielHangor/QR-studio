@@ -8,6 +8,7 @@
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
+    "test:scan": "pnpm --filter @qr-studio/toolkit test:scan",
     "format": "pnpm -r run format",
     "format:check": "pnpm -r run format:check"
   },

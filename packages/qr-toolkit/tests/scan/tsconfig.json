@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node", "vite/client", "@vitest/browser-playwright"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": []
+}
