@@ -1,3 +1,4 @@
+import { QrError } from "../src/engine/index.js";
 import decodeQR from "qr/decode.js";
 import { describe, expect, it } from "vitest";
 
@@ -296,7 +297,7 @@ describe("SVG contract", () => {
           paddingModules: 0.5,
         },
       }),
-    ).toThrow("cannot cover QR function modules");
+    ).toThrow(expect.objectContaining({ code: "LOGO_OVERLAPS_FUNCTION_MODULES" }));
   });
 });
 
@@ -394,13 +395,13 @@ describe("input boundaries", () => {
   });
 
   it.each([0, -1, 1.5, Infinity])("rejects invalid SVG size %s", (size) => {
-    expect(() => renderQrSvg(encodeQr("test"), { size })).toThrow(RangeError);
+    expect(() => renderQrSvg(encodeQr("test"), { size })).toThrow(QrError);
   });
 
   it.each([0, 3, 4.5, Infinity, Number.MAX_SAFE_INTEGER])(
     "rejects unsafe quiet zone %s",
     (quietZone) => {
-      expect(() => renderQrSvg(encodeQr("test"), { quietZone })).toThrow(RangeError);
+      expect(() => renderQrSvg(encodeQr("test"), { quietZone })).toThrow(QrError);
     },
   );
 
@@ -412,14 +413,14 @@ describe("input boundaries", () => {
     "url(https://example.com)",
   ])("rejects unsupported SVG paint %s", (color) => {
     const matrix = encodeQr("test");
-    expect(() => renderQrSvg(matrix, { foreground: color })).toThrow(TypeError);
-    expect(() => renderQrSvg(matrix, { background: color })).toThrow(TypeError);
+    expect(() => renderQrSvg(matrix, { foreground: color })).toThrow(QrError);
+    expect(() => renderQrSvg(matrix, { background: color })).toThrow(QrError);
   });
 
   it("rejects inconsistent matrix dimensions", () => {
     const matrix = encodeQr("test");
-    expect(() => renderQrSvg({ ...matrix, size: matrix.size + 1 })).toThrow(TypeError);
-    expect(() => renderQrSvg({ ...matrix, modules: matrix.modules.slice(1) })).toThrow(TypeError);
+    expect(() => renderQrSvg({ ...matrix, size: matrix.size + 1 })).toThrow(QrError);
+    expect(() => renderQrSvg({ ...matrix, modules: matrix.modules.slice(1) })).toThrow(QrError);
   });
 
   it("rejects malformed matrix metadata and rows", () => {
@@ -429,11 +430,11 @@ describe("input boundaries", () => {
 
     expect(() =>
       renderQrSvg({ ...matrix, errorCorrectionLevel: "X" as ErrorCorrectionLevel }),
-    ).toThrow(TypeError);
-    expect(() => renderQrSvg({ ...matrix, modules: malformedRows })).toThrow(TypeError);
+    ).toThrow(QrError);
+    expect(() => renderQrSvg({ ...matrix, modules: malformedRows })).toThrow(QrError);
     expect(() => renderQrSvg({ ...matrix, functionModules: missingFunctionModules })).toThrow(
-      TypeError,
+      QrError,
     );
-    expect(() => renderQrSvg(null as unknown as QrMatrix)).toThrow(TypeError);
+    expect(() => renderQrSvg(null as unknown as QrMatrix)).toThrow(QrError);
   });
 });

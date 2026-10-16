@@ -1,7 +1,7 @@
+import { QrError } from "./errors.js";
 import {
   ERROR_CORRECTION_LEVELS,
   QR_FINDER_PATTERN_SIZE,
-  QR_FRAME_PADDING_MODULES,
   QR_QUIET_ZONE_DEFAULT_MODULES,
   QR_QUIET_ZONE_MIN_MODULES,
   QR_SVG_DEFAULT_SIZE_PX,
@@ -11,8 +11,9 @@ import {
   QR_VERSION_MIN,
 } from "./constants.js";
 import { createQrFinderPatterns, createQrFunctionModules } from "./layout.js";
+import { getQrArtworkLayout, type QrCaptionLayout } from "./artwork.js";
+import { normalizeQrFinder, renderQrFinders } from "./finders.js";
 import type {
-  QrCaptionOptions,
   QrLinearGradient,
   QrLogoOptions,
   QrMatrix,
@@ -41,14 +42,8 @@ const DEFAULT_LOGO_PADDING_MODULES = 0.5;
 /** SVG data images are limited to passive raster formats; active SVG is excluded. */
 const LOGO_DATA_URI = /^data:image\/(?:png|jpeg|webp);base64,([a-z\d+/]+={0,2})$/i;
 
-/** Caption sizing is expressed in output pixels, then converted to viewBox units. */
-const CAPTION_FONT_SIZE_PX = 18;
-
-/** Keep a little vertical breathing room around the caption text. */
-const CAPTION_LINE_HEIGHT = 1.8;
-
-/** Pixel inset keeps an optional SVG frame stroke inside its viewBox. */
-const FRAME_STROKE_INSET = 0.5;
+/** Conservative glyph advance avoids DOM/font measurements and fits wide Unicode text. */
+const CAPTION_GLYPH_ADVANCE = 1.2;
 
 /** Restrict output geometry values to finite, positive module-unit numbers. */
 const POSITIVE_MODULE_VALUE = (value: number) => Number.isFinite(value) && value > 0;
@@ -57,13 +52,6 @@ interface NormalizedLogo {
   readonly dataUri: string;
   readonly widthModules: number;
   readonly paddingModules: number;
-}
-
-interface NormalizedCaption {
-  readonly text: string;
-  readonly color: string;
-  readonly background: string;
-  readonly style: "plain" | "banner";
 }
 
 interface NormalizedForeground {
@@ -131,7 +119,7 @@ export function isValidQrMatrix(matrix: QrMatrix): boolean {
  * for preview and SVG download; this function does not access the DOM or canvas.
  */
 export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}): string {
-  if (!isValidQrMatrix(matrix)) throw new TypeError("Invalid QR matrix.");
+  if (!isValidQrMatrix(matrix)) throw new QrError("INVALID_MATRIX", {});
 
   const {
     size = QR_SVG_DEFAULT_SIZE_PX,
@@ -141,52 +129,77 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
     moduleShape = "square",
     finderShape = "square",
     logo,
-    caption,
-    frame = "none",
   } = options;
 
-  validateRenderOptions(size, quietZone, background, moduleShape, finderShape, frame);
-  const normalizedForeground = normalizeForeground(foreground);
+  validateRenderOptions(size, quietZone, background, moduleShape, finderShape);
+  const layout = getQrArtworkLayout(matrix.size, options);
+  const artworkBackground = options.artworkBackground ?? background;
+  if (!isOpaqueHexColor(artworkBackground))
+    throw new QrError("INVALID_COLOR", { target: "artworkBackground" });
+  const normalizedForeground = normalizeForeground(foreground, layout.qrOrigin, matrix.size);
   const normalizedLogo = logo === undefined ? undefined : normalizeLogo(logo, matrix.size);
-  const normalizedCaption =
-    caption === undefined ? undefined : normalizeCaption(caption, background, normalizedForeground);
+  const normalizedFinder = normalizeQrFinder(options.finder);
 
   if (
     normalizedLogo &&
     getNormalizedLogoOverlayDetails(matrix, normalizedLogo).overlapsFunctionModules
   ) {
-    throw new RangeError("Logo knockout cannot cover QR function modules.");
+    throw new QrError("LOGO_OVERLAPS_FUNCTION_MODULES", {});
   }
 
-  const quietExtent = matrix.size + quietZone * 2;
-  const framePadding = frame === "outline" ? QR_FRAME_PADDING_MODULES : 0;
-  const viewBoxExtent = quietExtent + framePadding * 2;
-  if (!Number.isSafeInteger(viewBoxExtent)) {
-    throw new RangeError("SVG viewBox exceeds safe integer dimensions.");
-  }
-
-  const qrOrigin = framePadding + quietZone;
-  const captionFontSize = normalizedCaption ? (CAPTION_FONT_SIZE_PX * viewBoxExtent) / size : 0;
-  const captionHeight = captionFontSize * CAPTION_LINE_HEIGHT;
-  const viewBoxHeight = viewBoxExtent + captionHeight;
-  const outputHeight = size + captionHeight * (size / viewBoxExtent);
-  const moduleMarkup = renderModules(matrix, qrOrigin, moduleShape, finderShape);
-  const logoMarkup = normalizedLogo ? renderLogo(matrix, normalizedLogo, qrOrigin, background) : "";
-  const captionMarkup = normalizedCaption
-    ? renderCaption(normalizedCaption, framePadding, viewBoxExtent, viewBoxHeight, captionHeight)
+  const { extent, height, qrOrigin, topHeight } = layout;
+  const outputHeight = height * layout.modulePitchPx;
+  const moduleMarkup = renderModules(
+    matrix,
+    qrOrigin,
+    moduleShape,
+    finderShape,
+    !!normalizedFinder,
+  );
+  const finderMarkup = normalizedFinder
+    ? renderQrFinders(matrix, qrOrigin, normalizedFinder, normalizedForeground.fill)
     : "";
+  const logoMarkup = normalizedLogo ? renderLogo(matrix, normalizedLogo, qrOrigin, background) : "";
+  const captionMarkup = layout.captions
+    .map((caption) => renderCaption(caption, layout, background, normalizedForeground))
+    .join("");
+  const circleGeometry = `cx="${formatNumber(extent / 2)}" cy="${formatNumber(topHeight + extent / 2)}"`;
+  const strokeInset = layout.frameStrokeWidth / 2;
+  const frameColor =
+    layout.frame.color ??
+    (typeof options.frame === "object"
+      ? (normalizedForeground.solidColor ?? "#000000")
+      : normalizedForeground.fill);
+  const strokeAttributes = `fill="none" stroke="${frameColor}" stroke-width="${formatNumber(layout.frameStrokeWidth)}"`;
   const frameMarkup =
-    frame === "outline"
-      ? `<rect x="${FRAME_STROKE_INSET}" y="${FRAME_STROKE_INSET}" width="${viewBoxExtent - FRAME_STROKE_INSET * 2}" height="${viewBoxHeight - FRAME_STROKE_INSET * 2}" rx="1" fill="none" stroke="${normalizedForeground.fill}"/>`
+    layout.frame.style === "outline"
+      ? layout.shape === "circle"
+        ? `<circle ${circleGeometry} r="${formatNumber(extent / 2 - strokeInset)}" ${strokeAttributes}/>`
+        : `<rect x="${formatNumber(strokeInset)}" y="${formatNumber(strokeInset)}" width="${formatNumber(extent - strokeInset * 2)}" height="${formatNumber(height - strokeInset * 2)}" rx="1" ${strokeAttributes}/>`
       : "";
+  const backgroundMarkup =
+    layout.shape === "circle"
+      ? `<circle ${circleGeometry} r="${formatNumber(extent / 2)}" fill="${artworkBackground}"/>`
+      : `<rect width="${formatNumber(extent)}" height="${formatNumber(height)}" fill="${artworkBackground}"/>`;
+  const quietExtent = matrix.size + quietZone * 2;
+  const quietBackgroundMarkup =
+    artworkBackground !== background
+      ? `<rect x="${formatNumber(qrOrigin - quietZone)}" y="${formatNumber(topHeight + qrOrigin - quietZone)}" width="${quietExtent}" height="${quietExtent}" fill="${background}"/>`
+      : "";
+  const artworkMarkup =
+    moduleMarkup.replaceAll("__QR_FOREGROUND__", normalizedForeground.fill) +
+    finderMarkup +
+    logoMarkup;
   const gradientDefinition = normalizedForeground.definition;
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${formatNumber(outputHeight)}" viewBox="0 0 ${viewBoxExtent} ${formatNumber(viewBoxHeight)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${formatNumber(outputHeight)}" viewBox="0 0 ${formatNumber(extent)} ${formatNumber(height)}">` +
     (gradientDefinition ? `<defs>${gradientDefinition}</defs>` : "") +
-    `<rect width="${viewBoxExtent}" height="${formatNumber(viewBoxHeight)}" fill="${background}"/>` +
-    moduleMarkup.replaceAll("__QR_FOREGROUND__", normalizedForeground.fill) +
-    logoMarkup +
+    backgroundMarkup +
+    quietBackgroundMarkup +
+    (topHeight
+      ? `<g transform="translate(0 ${formatNumber(topHeight)})">${artworkMarkup}</g>`
+      : artworkMarkup) +
     captionMarkup +
     frameMarkup +
     "</svg>"
@@ -199,35 +212,33 @@ function validateRenderOptions(
   background: string,
   moduleShape: QrModuleShape,
   finderShape: QrModuleShape,
-  frame: "none" | "outline",
 ): void {
   if (!Number.isSafeInteger(size) || size < 1) {
-    throw new RangeError("SVG size must be a positive safe integer.");
+    throw new QrError("INVALID_OUTPUT_SIZE", { minimum: 1 });
   }
 
   if (!Number.isSafeInteger(quietZone) || quietZone < QR_QUIET_ZONE_MIN_MODULES) {
-    throw new RangeError(
-      `Quiet zone must be an integer of at least ${QR_QUIET_ZONE_MIN_MODULES} modules.`,
-    );
+    throw new QrError("INVALID_QUIET_ZONE", { minimum: QR_QUIET_ZONE_MIN_MODULES });
   }
 
   if (!isOpaqueHexColor(background)) {
-    throw new TypeError("SVG background must use opaque #RGB or #RRGGBB notation.");
+    throw new QrError("INVALID_COLOR", { target: "background" });
   }
 
-  if (!isQrModuleShape(moduleShape) || !isQrModuleShape(finderShape)) {
-    throw new TypeError("QR module shape must be square, rounded, or circle.");
-  }
-
-  if (frame !== "none" && frame !== "outline") {
-    throw new TypeError("QR frame must be none or outline.");
-  }
+  if (!isQrModuleShape(moduleShape))
+    throw new QrError("INVALID_MODULE_SHAPE", { target: "modules" });
+  if (!isQrModuleShape(finderShape))
+    throw new QrError("INVALID_MODULE_SHAPE", { target: "finderCells" });
 }
 
-function normalizeForeground(foreground: string | QrLinearGradient): NormalizedForeground {
+function normalizeForeground(
+  foreground: string | QrLinearGradient,
+  origin: number,
+  matrixSize: number,
+): NormalizedForeground {
   if (typeof foreground === "string") {
     if (!isOpaqueHexColor(foreground)) {
-      throw new TypeError("SVG foreground must use opaque #RGB or #RRGGBB notation.");
+      throw new QrError("INVALID_COLOR", { target: "foreground" });
     }
     return { fill: foreground, definition: "", solidColor: foreground };
   }
@@ -240,16 +251,18 @@ function normalizeForeground(foreground: string | QrLinearGradient): NormalizedF
     !isOpaqueHexColor(foreground.startColor) ||
     !isOpaqueHexColor(foreground.endColor)
   ) {
-    throw new TypeError("Linear gradient requires a supported direction and opaque hex colors.");
+    throw new QrError("INVALID_GRADIENT", {});
   }
 
+  const start = formatNumber(origin);
+  const end = formatNumber(origin + matrixSize);
   const directions = {
-    horizontal: `x1="0%" y1="0%" x2="100%" y2="0%"`,
-    vertical: `x1="0%" y1="0%" x2="0%" y2="100%"`,
-    diagonal: `x1="0%" y1="0%" x2="100%" y2="100%"`,
+    horizontal: `x1="${start}" y1="${start}" x2="${end}" y2="${start}"`,
+    vertical: `x1="${start}" y1="${start}" x2="${start}" y2="${end}"`,
+    diagonal: `x1="${start}" y1="${start}" x2="${end}" y2="${end}"`,
   } as const;
   const definition =
-    `<linearGradient id="qr-foreground-gradient" ${directions[foreground.direction]}>` +
+    `<linearGradient id="qr-foreground-gradient" gradientUnits="userSpaceOnUse" ${directions[foreground.direction]}>` +
     `<stop offset="0%" stop-color="${foreground.startColor}"/>` +
     `<stop offset="100%" stop-color="${foreground.endColor}"/>` +
     "</linearGradient>";
@@ -263,7 +276,7 @@ function normalizeForeground(foreground: string | QrLinearGradient): NormalizedF
 
 function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo {
   if (!logo || typeof logo !== "object") {
-    throw new TypeError("Logo options must be an object.");
+    throw new QrError("INVALID_LOGO_OPTIONS", {});
   }
 
   const paddingModules = logo.paddingModules ?? DEFAULT_LOGO_PADDING_MODULES;
@@ -274,7 +287,7 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
     logo.dataUri.length > MAX_LOGO_DATA_URI_LENGTH ||
     !LOGO_DATA_URI.test(logo.dataUri)
   ) {
-    throw new TypeError("Logo must be a bounded base64 PNG, JPEG, or WebP data URI.");
+    throw new QrError("INVALID_LOGO_DATA", {});
   }
 
   if (
@@ -283,7 +296,7 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
     paddingModules < 0 ||
     logoExtent > matrixSize
   ) {
-    throw new RangeError("Logo size and padding must fit inside the QR symbol.");
+    throw new QrError("INVALID_LOGO_SIZE", { matrixSize });
   }
 
   return {
@@ -293,39 +306,12 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
   };
 }
 
-function normalizeCaption(
-  caption: QrCaptionOptions,
-  background: string,
-  foreground: NormalizedForeground,
-): NormalizedCaption {
-  if (
-    !caption ||
-    typeof caption !== "object" ||
-    typeof caption.text !== "string" ||
-    caption.text.trim().length === 0
-  ) {
-    throw new TypeError("Caption text must be a non-empty string.");
-  }
-
-  const color = caption.color ?? foreground.solidColor ?? "#000000";
-  const captionBackground = caption.background ?? background;
-  const style = caption.style ?? "plain";
-
-  if (!isOpaqueHexColor(color) || !isOpaqueHexColor(captionBackground)) {
-    throw new TypeError("Caption colors must use opaque #RGB or #RRGGBB notation.");
-  }
-  if (style !== "plain" && style !== "banner") {
-    throw new TypeError("Caption style must be plain or banner.");
-  }
-
-  return { text: caption.text, color, background: captionBackground, style };
-}
-
 function renderModules(
   matrix: QrMatrix,
   origin: number,
   moduleShape: QrModuleShape,
   finderShape: QrModuleShape,
+  wholeFinders: boolean,
 ): string {
   const squarePaths: string[] = [];
   const roundedRects: string[] = [];
@@ -336,7 +322,7 @@ function renderModules(
     let x = 0;
 
     while (x < matrix.size) {
-      if (!row[x]) {
+      if (!row[x] || (wholeFinders && isFinderModule(x, y, matrix.finderPatterns))) {
         x++;
         continue;
       }
@@ -347,12 +333,15 @@ function renderModules(
         while (
           x < matrix.size &&
           row[x] &&
+          !(wholeFinders && isFinderModule(x, y, matrix.finderPatterns)) &&
           shapeAt(matrix, x, y, moduleShape, finderShape) === "square"
         ) {
           x++;
         }
         const width = x - start;
-        squarePaths.push(`M${start + origin} ${y + origin}h${width}v${QR_MODULE_UNIT}h-${width}z`);
+        squarePaths.push(
+          `M${formatNumber(start + origin)} ${formatNumber(y + origin)}h${width}v${QR_MODULE_UNIT}h-${width}z`,
+        );
         continue;
       }
 
@@ -360,11 +349,11 @@ function renderModules(
       const moduleY = y + origin;
       if (shape === "rounded") {
         roundedRects.push(
-          `<rect x="${moduleX}" y="${moduleY}" width="1" height="1" rx="${ROUNDED_MODULE_RADIUS}"/>`,
+          `<rect x="${formatNumber(moduleX)}" y="${formatNumber(moduleY)}" width="1" height="1" rx="${ROUNDED_MODULE_RADIUS}"/>`,
         );
       } else {
         circles.push(
-          `<circle cx="${moduleX + 0.5}" cy="${moduleY + 0.5}" r="${CIRCLE_MODULE_RADIUS}"/>`,
+          `<circle cx="${formatNumber(moduleX + 0.5)}" cy="${formatNumber(moduleY + 0.5)}" r="${CIRCLE_MODULE_RADIUS}"/>`,
         );
       }
       x++;
@@ -423,22 +412,53 @@ function renderLogo(
 }
 
 function renderCaption(
-  caption: NormalizedCaption,
-  framePadding: number,
-  viewBoxExtent: number,
-  viewBoxHeight: number,
-  captionHeight: number,
+  caption: QrCaptionLayout,
+  layout: ReturnType<typeof getQrArtworkLayout>,
+  background: string,
+  foreground: NormalizedForeground,
 ): string {
-  const captionTop = viewBoxHeight - captionHeight;
+  const color = caption.options.color ?? foreground.solidColor ?? "#000000";
+  const captionBackground = caption.options.background ?? background;
+  if (!isOpaqueHexColor(color)) throw new QrError("INVALID_COLOR", { target: "caption" });
+  if (!isOpaqueHexColor(captionBackground))
+    throw new QrError("INVALID_COLOR", { target: "captionBackground" });
+  const text = caption.options.text.trim().replace(/\s+/g, " ");
+  const { extent, framePadding, topHeight } = layout;
+  const availableWidth = extent - framePadding * 2;
+  const fontSize = caption.arc
+    ? caption.fontSize
+    : Math.min(
+        caption.fontSize,
+        availableWidth /
+          (Array.from(text).length * CAPTION_GLYPH_ADVANCE +
+            (Math.max(0, Array.from(text).length - 1) * caption.letterSpacing) / caption.fontSize),
+      );
+  const letterSpacing = (caption.letterSpacing * fontSize) / caption.fontSize;
+  const attributes = `text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${formatNumber(fontSize)}" font-weight="${caption.fontWeight}" letter-spacing="${formatNumber(letterSpacing)}" fill="${color}"`;
+
+  if (caption.arc) {
+    const { radius, textLength } = caption.arc;
+    const id = `qr-caption-${caption.position}`;
+    const center = extent / 2;
+    const centerY = topHeight + center;
+    // Opposite sweep directions keep both the upper and lower lines upright.
+    const sweep = caption.position === "top" ? 1 : 0;
+    const path = `M${formatNumber(center - radius)} ${formatNumber(centerY)} A${formatNumber(radius)} ${formatNumber(radius)} 0 0 ${sweep} ${formatNumber(center + radius)} ${formatNumber(centerY)}`;
+    return (
+      `<defs><path id="${id}" d="${path}"/></defs>` +
+      `<text ${attributes} textLength="${formatNumber(textLength)}" lengthAdjust="spacingAndGlyphs"><textPath href="#${id}" startOffset="50%">${escapeXml(text)}</textPath></text>`
+    );
+  }
+
+  const captionTop = caption.position === "top" ? layout.captionInset : topHeight + extent;
   const band =
     caption.style === "banner"
-      ? `<rect x="${framePadding}" y="${formatNumber(captionTop)}" width="${viewBoxExtent - framePadding * 2}" height="${formatNumber(captionHeight)}" fill="${caption.background}"/>`
+      ? `<rect x="${framePadding}" y="${formatNumber(captionTop)}" width="${formatNumber(availableWidth)}" height="${formatNumber(caption.height)}" fill="${captionBackground}"/>`
       : "";
-  const text =
-    `<text x="${viewBoxExtent / 2}" y="${formatNumber(captionTop + captionHeight / 2)}" text-anchor="middle" dominant-baseline="central" font-family="Arial, Helvetica, sans-serif" font-size="${formatNumber(captionHeight / CAPTION_LINE_HEIGHT)}" fill="${caption.color}">` +
-    `${escapeXml(caption.text)}</text>`;
-
-  return band + text;
+  return (
+    band +
+    `<text x="${formatNumber(extent / 2)}" y="${formatNumber(captionTop + caption.height / 2)}" dominant-baseline="central" ${attributes}>${escapeXml(text)}</text>`
+  );
 }
 
 export function inspectQrLogoOverlay(matrix: QrMatrix, logo: QrLogoOptions): QrLogoOverlayDetails {

@@ -1,3 +1,4 @@
+import { QrError } from "./errors.js";
 import {
   QR_FINDER_PATTERN_SIZE,
   QR_VERSION_DIMENSION_BASE,
@@ -50,9 +51,7 @@ export function createQrFinderPatterns(size: number): readonly QrFinderPattern[]
  */
 export function createQrFunctionModules(version: number): boolean[][] {
   if (!Number.isInteger(version) || version < QR_VERSION_MIN || version > QR_VERSION_MAX) {
-    throw new RangeError(
-      `QR version must be an integer between ${QR_VERSION_MIN} and ${QR_VERSION_MAX}.`,
-    );
+    throw new QrError("INVALID_VERSION", { minimum: QR_VERSION_MIN, maximum: QR_VERSION_MAX });
   }
 
   const size = version * QR_VERSION_DIMENSION_STEP + QR_VERSION_DIMENSION_BASE;

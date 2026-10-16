@@ -1,4 +1,5 @@
 import { ERROR_CORRECTION_LEVELS } from "./constants.js";
+import type { QrDiagnosticParams } from "./issues.js";
 
 /** Error correction levels; percentages are not safe logo-area allowances. */
 export type ErrorCorrectionLevel = (typeof ERROR_CORRECTION_LEVELS)[number];
@@ -28,6 +29,19 @@ export interface QrFinderPattern {
 
 export type QrModuleShape = "square" | "rounded" | "circle";
 
+/** Outer artwork silhouette; the encoded QR matrix always remains square. */
+export type QrArtworkShape = "square" | "circle";
+
+export interface QrFinderOptions {
+  /** Whole 7-module outer ring, with a 5-module clear center. Defaults to square. */
+  readonly outerShape?: QrModuleShape;
+  /** Whole 3-module pupil. Defaults to the outer shape. */
+  readonly innerShape?: QrModuleShape;
+  /** Opaque hex overrides; omitted colors inherit the QR foreground. */
+  readonly outerColor?: string;
+  readonly innerColor?: string;
+}
+
 export interface QrLinearGradient {
   readonly type: "linear";
   readonly direction: "horizontal" | "vertical" | "diagonal";
@@ -46,14 +60,29 @@ export interface QrLogoOptions {
 
 export interface QrCaptionOptions {
   readonly text: string;
+  /** Place text outside the QR quiet zone. Defaults to bottom. */
+  readonly position?: "top" | "bottom";
+  /** Maximum output-pixel size, reduced to fit the available caption space. Defaults to 18. */
+  readonly fontSize?: number;
+  readonly fontWeight?: 400 | 500 | 600 | 700;
+  /** Output pixels between characters, from 0 to 10; scales down with fitted text. */
+  readonly letterSpacing?: number;
   readonly color?: string;
   readonly background?: string;
-  /** A banner places a solid band behind the text. */
-  readonly style?: "plain" | "banner";
+  /** Arc follows the circular artwork; banner places a solid band behind straight text. */
+  readonly style?: "plain" | "banner" | "arc";
+}
+
+export interface QrFrameOptions {
+  readonly style?: "none" | "outline";
+  /** Opaque RGB hex stroke. Defaults to the solid foreground or black. */
+  readonly color?: string;
+  /** Output-pixel stroke width, less than a quarter of artwork width. Defaults to 2. */
+  readonly widthPx?: number;
 }
 
 export interface RenderQrSvgOptions {
-  /** QR artwork width in pixels. Defaults to 512; a caption extends output height. */
+  /** Full artwork width in pixels. Defaults to 512; straight captions extend output height. */
   size?: number;
   /** Clear border in modules, at least 4. Defaults to 4. */
   quietZone?: number;
@@ -61,34 +90,33 @@ export interface RenderQrSvgOptions {
   foreground?: string | QrLinearGradient;
   /** Opaque #RGB or #RRGGBB color. Defaults to #ffffff. */
   background?: string;
+  /** Outer artwork color; the full QR quiet-zone square keeps background. */
+  artworkBackground?: string;
+  /** Outer background and frame shape. Defaults to square; circle has transparent corners. */
+  shape?: QrArtworkShape;
   /** Shape used for data modules. Function modules remain square for safety. */
   moduleShape?: QrModuleShape;
   /** Shape used for modules inside the three finder patterns. Defaults to square. */
   finderShape?: QrModuleShape;
+  /** Style the three finder markers as whole rings and pupils. Overrides finderShape. */
+  finder?: QrFinderOptions;
   /** Optional centered image overlay with a solid knockout behind it. */
   logo?: QrLogoOptions;
-  /** Optional label below the symbol. */
-  caption?: QrCaptionOptions;
+  /** One label, or up to two labels: one above and one below the symbol. */
+  caption?: QrCaptionOptions | readonly QrCaptionOptions[];
   /** Draw a simple outline outside the required quiet zone. */
-  frame?: "none" | "outline";
+  frame?: "none" | "outline" | QrFrameOptions;
 }
 
-export type QrDesignDiagnosticCode =
-  | "QUIET_ZONE_TOO_SMALL"
-  | "CONTRAST_BELOW_THRESHOLD"
-  | "MODULE_PITCH_BELOW_THRESHOLD"
-  | "FOREGROUND_NOT_DARKER"
-  | "GRADIENT_REQUIRES_DEVICE_TEST"
-  | "MODULE_SHAPE_REQUIRES_DEVICE_TEST"
-  | "FINDER_SHAPE_REQUIRES_DEVICE_TEST"
-  | "LOGO_REDUCES_ERROR_CORRECTION"
-  | "LOGO_OVERLAPS_FUNCTION_MODULES";
+export type QrDesignDiagnosticCode = keyof QrDiagnosticParams;
 
-export interface QrDesignDiagnostic {
-  readonly code: QrDesignDiagnosticCode;
-  readonly severity: "warning" | "error";
-  readonly message: string;
-}
+export type QrDesignDiagnostic = {
+  [C in QrDesignDiagnosticCode]: {
+    readonly code: C;
+    readonly severity: "warning" | "error";
+    readonly params: Readonly<QrDiagnosticParams[C]>;
+  };
+}[QrDesignDiagnosticCode];
 
 export interface AnalyzeQrDesignOptions {
   /** Optional measured threshold; the engine does not assume an unverified ratio. */

@@ -30,19 +30,16 @@ const ERROR_CORRECTION = {
 /** Encode text verbatim, without URL normalization, a border, or any rendering. */
 export function encodeQr(payload: string, options: EncodeQrOptions = {}): QrMatrix {
   if (typeof payload !== "string") {
-    throw new QrEncodingError("INVALID_PAYLOAD", "QR payload must be a string.");
+    throw new QrEncodingError("INVALID_PAYLOAD", {});
   }
   if (payload.length === 0) {
-    throw new QrEncodingError("EMPTY_PAYLOAD", "QR payload must not be empty.");
+    throw new QrEncodingError("EMPTY_PAYLOAD", {});
   }
 
   const errorCorrectionLevel: ErrorCorrectionLevel =
     options.errorCorrectionLevel ?? DEFAULT_ERROR_CORRECTION_LEVEL;
   if (!Object.hasOwn(ERROR_CORRECTION, errorCorrectionLevel)) {
-    throw new QrEncodingError(
-      "INVALID_ERROR_CORRECTION_LEVEL",
-      "Error correction level must be L, M, Q, or H.",
-    );
+    throw new QrEncodingError("INVALID_ERROR_CORRECTION_LEVEL", {});
   }
 
   if (
@@ -51,10 +48,10 @@ export function encodeQr(payload: string, options: EncodeQrOptions = {}): QrMatr
       options.version < QR_VERSION_MIN ||
       options.version > QR_VERSION_MAX)
   ) {
-    throw new QrEncodingError(
-      "INVALID_VERSION",
-      `QR version must be an integer between ${QR_VERSION_MIN} and ${QR_VERSION_MAX}.`,
-    );
+    throw new QrEncodingError("INVALID_VERSION", {
+      minimum: QR_VERSION_MIN,
+      maximum: QR_VERSION_MAX,
+    });
   }
 
   let paddedModules: boolean[][];
@@ -69,11 +66,11 @@ export function encodeQr(payload: string, options: EncodeQrOptions = {}): QrMatr
     if (error instanceof Error && error.message.includes("Capacity overflow")) {
       throw new QrEncodingError(
         "CAPACITY_EXCEEDED",
-        "QR payload does not fit the selected version and error-correction level.",
+        { version: options.version, errorCorrectionLevel },
         error,
       );
     }
-    throw new QrEncodingError("ENCODER_FAILURE", "QR payload could not be encoded.", error);
+    throw new QrEncodingError("ENCODER_FAILURE", {}, error);
   }
   const modules = paddedModules
     .slice(ENCODER_BORDER_MODULES, -ENCODER_BORDER_MODULES)

@@ -1,9 +1,11 @@
+import { QrError } from "./errors.js";
 import {
-  QR_FRAME_PADDING_MODULES,
   QR_QUIET_ZONE_DEFAULT_MODULES,
   QR_QUIET_ZONE_MIN_MODULES,
   QR_SVG_DEFAULT_SIZE_PX,
 } from "./constants.js";
+import { getQrArtworkLayout } from "./artwork.js";
+import { normalizeQrFinder } from "./finders.js";
 import { inspectQrLogoOverlay, isValidQrMatrix } from "./renderer.js";
 import type {
   AnalyzeQrDesignOptions,
@@ -50,7 +52,7 @@ export function analyzeQrDesign(
   renderOptions: RenderQrSvgOptions = {},
   options: AnalyzeQrDesignOptions = {},
 ): QrDesignAnalysis {
-  if (!isValidQrMatrix(matrix)) throw new TypeError("Invalid QR matrix.");
+  if (!isValidQrMatrix(matrix)) throw new QrError("INVALID_MATRIX", {});
 
   const diagnostics: QrDesignDiagnostic[] = [];
   const quietZone = renderOptions.quietZone ?? QR_QUIET_ZONE_DEFAULT_MODULES;
@@ -63,68 +65,60 @@ export function analyzeQrDesign(
     minimumContrastRatio !== undefined &&
     (!Number.isFinite(minimumContrastRatio) || minimumContrastRatio < 1)
   ) {
-    throw new RangeError("Minimum contrast ratio must be a finite number of at least 1.");
+    throw new QrError("INVALID_CONTRAST_THRESHOLD", { minimum: 1 });
   }
   if (
     minimumModulePitchPx !== undefined &&
     (!Number.isFinite(minimumModulePitchPx) || minimumModulePitchPx <= 0)
   ) {
-    throw new RangeError("Minimum module pitch must be a finite positive number of pixels.");
+    throw new QrError("INVALID_MODULE_PITCH_THRESHOLD", {});
   }
 
   if (!Number.isSafeInteger(quietZone) || quietZone < 0) {
-    throw new RangeError("Quiet zone must be a non-negative safe integer.");
+    throw new QrError("INVALID_QUIET_ZONE", { minimum: 0 });
   }
 
   if (quietZone < QR_QUIET_ZONE_MIN_MODULES) {
     diagnostics.push({
       code: "QUIET_ZONE_TOO_SMALL",
       severity: "error",
-      message: `Quiet zone must be at least ${QR_QUIET_ZONE_MIN_MODULES} modules.`,
+      params: { minimum: QR_QUIET_ZONE_MIN_MODULES },
     });
   }
 
   if (!isOpaqueHexColor(background)) {
-    throw new TypeError("SVG background must use opaque #RGB or #RRGGBB notation.");
+    throw new QrError("INVALID_COLOR", { target: "background" });
+  }
+  if (
+    renderOptions.artworkBackground !== undefined &&
+    !isOpaqueHexColor(renderOptions.artworkBackground)
+  ) {
+    throw new QrError("INVALID_COLOR", { target: "artworkBackground" });
   }
 
   const outputSize = renderOptions.size ?? QR_SVG_DEFAULT_SIZE_PX;
   if (!Number.isSafeInteger(outputSize) || outputSize < 1) {
-    throw new RangeError("SVG size must be a positive safe integer.");
+    throw new QrError("INVALID_OUTPUT_SIZE", { minimum: 1 });
   }
-  const quietExtent = matrix.size + quietZone * 2;
-  const framePadding = renderOptions.frame === "outline" ? QR_FRAME_PADDING_MODULES : 0;
-  const viewBoxExtent = quietExtent + framePadding * 2;
-  if (!Number.isSafeInteger(viewBoxExtent)) {
-    throw new RangeError("SVG viewBox exceeds safe integer dimensions.");
-  }
-  const modulePitchPx = outputSize / viewBoxExtent;
-
-  if (
-    renderOptions.frame !== undefined &&
-    renderOptions.frame !== "none" &&
-    renderOptions.frame !== "outline"
-  ) {
-    throw new TypeError("QR frame must be none or outline.");
-  }
+  const { modulePitchPx } = getQrArtworkLayout(matrix.size, renderOptions);
   if (
     renderOptions.moduleShape !== undefined &&
     !["square", "rounded", "circle"].includes(renderOptions.moduleShape)
   ) {
-    throw new TypeError("QR module shape must be square, rounded, or circle.");
+    throw new QrError("INVALID_MODULE_SHAPE", { target: "modules" });
   }
   if (
     renderOptions.finderShape !== undefined &&
     !["square", "rounded", "circle"].includes(renderOptions.finderShape)
   ) {
-    throw new TypeError("QR module shape must be square, rounded, or circle.");
+    throw new QrError("INVALID_MODULE_SHAPE", { target: "finderCells" });
   }
 
   if (minimumModulePitchPx !== undefined && modulePitchPx < minimumModulePitchPx) {
     diagnostics.push({
       code: "MODULE_PITCH_BELOW_THRESHOLD",
       severity: "warning",
-      message: `Each module is ${modulePitchPx.toFixed(2)} px wide, below the supplied ${minimumModulePitchPx.toFixed(2)} px threshold.`,
+      params: { actual: modulePitchPx, minimum: minimumModulePitchPx },
     });
   }
 
@@ -132,24 +126,57 @@ export function analyzeQrDesign(
     diagnostics.push({
       code: "MODULE_SHAPE_REQUIRES_DEVICE_TEST",
       severity: "warning",
-      message:
-        "Non-square data modules can change scanner tolerance; test the rendered QR on target devices.",
+      params: {},
     });
   }
 
-  if (renderOptions.finderShape !== undefined && renderOptions.finderShape !== "square") {
+  const finder = normalizeQrFinder(renderOptions.finder);
+  if (
+    finder
+      ? finder.outerShape !== "square" || finder.innerShape !== "square"
+      : renderOptions.finderShape !== undefined && renderOptions.finderShape !== "square"
+  ) {
     diagnostics.push({
       code: "FINDER_SHAPE_REQUIRES_DEVICE_TEST",
       severity: "warning",
-      message:
-        "Custom finder shapes can affect QR detection; test the rendered QR on target devices.",
+      params: {},
     });
+  }
+
+  for (const [part, color] of [
+    ["finderRing", finder?.outerColor],
+    ["finderPupil", finder?.innerColor],
+  ] as const) {
+    if (color === undefined) continue;
+    const luminance = relativeLuminance(color);
+    const backgroundLuminance = relativeLuminance(background);
+    if (luminance >= backgroundLuminance) {
+      diagnostics.push({
+        code: "FOREGROUND_NOT_DARKER",
+        severity: "warning",
+        params: { target: part },
+      });
+    }
+    if (
+      minimumContrastRatio !== undefined &&
+      getContrastRatio(luminance, backgroundLuminance) < minimumContrastRatio
+    ) {
+      diagnostics.push({
+        code: "CONTRAST_BELOW_THRESHOLD",
+        severity: "warning",
+        params: {
+          target: part,
+          actual: getContrastRatio(luminance, backgroundLuminance),
+          minimum: minimumContrastRatio,
+        },
+      });
+    }
   }
 
   let contrastRatio: number | null = null;
   if (typeof foreground === "string") {
     if (!isOpaqueHexColor(foreground)) {
-      throw new TypeError("SVG foreground must use opaque #RGB or #RRGGBB notation.");
+      throw new QrError("INVALID_COLOR", { target: "foreground" });
     }
 
     const foregroundLuminance = relativeLuminance(foreground);
@@ -160,8 +187,7 @@ export function analyzeQrDesign(
       diagnostics.push({
         code: "FOREGROUND_NOT_DARKER",
         severity: "warning",
-        message:
-          "Foreground is not darker than the background; scanner support for inverted QR varies.",
+        params: { target: "foreground" },
       });
     }
 
@@ -169,7 +195,7 @@ export function analyzeQrDesign(
       diagnostics.push({
         code: "CONTRAST_BELOW_THRESHOLD",
         severity: "warning",
-        message: `Contrast is ${contrastRatio.toFixed(2)}:1, below the supplied ${minimumContrastRatio.toFixed(2)}:1 threshold.`,
+        params: { target: "foreground", actual: contrastRatio, minimum: minimumContrastRatio },
       });
     }
   } else {
@@ -177,8 +203,7 @@ export function analyzeQrDesign(
     diagnostics.push({
       code: "GRADIENT_REQUIRES_DEVICE_TEST",
       severity: "warning",
-      message:
-        "A gradient can vary in contrast across the symbol; test the rendered QR with target devices.",
+      params: {},
     });
   }
 
@@ -189,14 +214,14 @@ export function analyzeQrDesign(
     diagnostics.push({
       code: "LOGO_REDUCES_ERROR_CORRECTION",
       severity: "warning",
-      message: `Logo and its clear backing cover about ${logoCoveragePercent.toFixed(1)}% of the symbol. Error correction does not guarantee this area is safe; test the result on target devices.`,
+      params: { coveragePercent: logoCoveragePercent },
     });
 
     if (logo.overlapsFunctionModules) {
       diagnostics.push({
         code: "LOGO_OVERLAPS_FUNCTION_MODULES",
         severity: "error",
-        message: "Logo backing overlaps finder, timing, alignment, or other QR function modules.",
+        params: {},
       });
     }
   }
@@ -213,7 +238,7 @@ function validateGradient(gradient: QrLinearGradient): void {
     !isOpaqueHexColor(gradient.startColor) ||
     !isOpaqueHexColor(gradient.endColor)
   ) {
-    throw new TypeError("Linear gradient requires a supported direction and opaque hex colors.");
+    throw new QrError("INVALID_GRADIENT", {});
   }
 }
 

@@ -10,6 +10,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    },
+    "./i18n/ru": {
+      "types": "./dist/i18n/ru.d.ts",
+      "import": "./dist/i18n/ru.js"
+    },
+    "./i18n/en": {
+      "types": "./dist/i18n/en.d.ts",
+      "import": "./dist/i18n/en.js"
+    },
     "./engine": {
       "types": "./dist/engine/index.d.ts",
       "import": "./dist/engine/index.js"
