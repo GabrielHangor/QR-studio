@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vue-tsc --noEmit && vite build",
-    "typecheck": "vue-tsc --noEmit",
+    "dev": "pnpm --filter @qr-studio/toolkit prepare:ui && vite --host 127.0.0.1",
+    "build": "vite build && vue-tsc --noEmit",
+    "typecheck": "pnpm prepare:ui && vue-tsc --noEmit",
     "lint": "oxlint",
     "format": "oxfmt",
-    "format:check": "oxfmt --check"
+    "format:check": "oxfmt --check",
+    "prepare:ui": "node scripts/prepare-ui.mjs"
   },
   "dependencies": {
     "@nuxt/ui": "4.12.0",

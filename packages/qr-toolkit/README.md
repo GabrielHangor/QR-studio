@@ -178,3 +178,9 @@ Vue и Nuxt UI — optional peer dependencies для headless-потребите
 Host подключает Nuxt UI plugin, `UApp` и глобальную тему один раз, настраивает
 `scanPackages`, Tailwind `@source` и dedupe Vue/Nuxt UI. Пример — `apps/frontend`.
 Playground остаётся на HTML/CSS/TypeScript и не использует Vue UI.
+
+Для IDE рядом с UI находится `src/ui/tsconfig.json` с aliases `#build/ui/*`.
+`pnpm prepare:ui` создаёт локальную тему Nuxt UI для проверки UI-типов; команда уже
+включена в `typecheck` и запуск frontend. Тема — только dev dependency toolkit,
+а сгенерированные файлы остаются в `node_modules/.nuxt-ui`. Настройка playground
+и сборка engine от Nuxt UI не зависят.

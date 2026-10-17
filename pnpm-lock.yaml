@@ -218,6 +218,9 @@ importers:
       '@nuxt/ui':
         specifier: 4.12.0
         version: 4.12.0(f0b9e2b71cfa67fbe8675a85525f2f12)
+      '@qr-studio/theme':
+        specifier: workspace:*
+        version: link:../theme
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2

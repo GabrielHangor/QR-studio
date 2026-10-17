@@ -20,3 +20,10 @@ Manrope поставляется с приложением без Google Fonts.
 и Nuxt UI из приложения и пакета. Глобальные стили импортируются только в `main.ts`.
 Tailwind явно сканирует UI toolkit; Nuxt UI `scanPackages` обнаруживает используемые компоненты.
 Router, хранилище и API появятся вместе с соответствующими сценариями.
+
+Для IntelliSense оба TypeScript aliases (`#build/ui` и `#build/ui/*`) направлены
+в локальный `node_modules/.nuxt-ui/ui`. `prepare:ui` генерирует тему через config hooks
+Vite без запуска сервера. `typecheck` вызывает подготовку сам, `build` проверяет типы
+после Vite. `dev` также подготавливает контекст типов toolkit. Генерируемые файлы
+находятся в игнорируемом `node_modules`, вручную их создавать не нужно.
+Компоненты и composables импортируются явно: auto-import и его `.d.ts` отключены намеренно.

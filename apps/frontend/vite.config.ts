@@ -12,6 +12,7 @@ export default defineConfig({
       colorMode: false,
       autoImport: false,
       components: false,
+      experimental: { componentDetection: true },
       dts: false,
       scanPackages: ["@qr-studio/toolkit"],
     }),
