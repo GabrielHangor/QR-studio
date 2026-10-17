@@ -1,0 +1,31 @@
+{
+  "name": "@qr-studio/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@nuxt/ui": "4.12.0",
+    "@qr-studio/theme": "workspace:*",
+    "@qr-studio/toolkit": "workspace:*",
+    "tailwindcss": "4.3.3",
+    "vue": "3.5.44"
+  },
+  "devDependencies": {
+    "@iconify-json/ri": "1.2.10",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "6.0.10",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vue-tsc": "3.3.13"
+  }
+}

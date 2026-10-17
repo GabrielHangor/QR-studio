@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "@qr-studio/theme/nuxt-ui.css";
+
+/* Tailwind must also see classes in source-first workspace packages. */
+@source '../../../packages/qr-toolkit/src/ui';
+@source '../../../packages/theme';

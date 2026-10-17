@@ -1,0 +1,27 @@
+@import "./tokens.css";
+
+@theme {
+  --font-sans: var(--studio-font-sans);
+}
+
+@layer base {
+  body {
+    letter-spacing: var(--studio-letter-spacing);
+  }
+}
+
+:root {
+  --ui-primary: var(--studio-primary);
+  --ui-secondary: var(--studio-secondary);
+  --ui-text: var(--studio-text);
+  --ui-radius: var(--studio-radius);
+  --ui-bg: var(--studio-bg);
+  --ui-bg-muted: var(--studio-bg-muted);
+  --ui-text-inverted: var(--studio-text-inverted);
+}
+
+.dark {
+  --ui-text-highlighted: var(--studio-text-highlighted);
+  --ui-bg-inverted: var(--studio-text-highlighted);
+  --ui-border-inverted: var(--studio-text-highlighted);
+}

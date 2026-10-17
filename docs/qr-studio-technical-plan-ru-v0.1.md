@@ -1,6 +1,6 @@
 # QR Studio — технический план
 
-Основа: v0.1 от 14.10.2026. Актуальная редакция: 16.10.2026.
+Основа: v0.1 от 14.10.2026. Актуальная редакция: 17.10.2026.
 Границы продукта — в [брифе](./qr-studio-final-product-brief-ru-v1.4.md), требования редактора — в [PRD](./qr-editor-prd-release-0-ru-v0.1.md).
 
 ## Принятые решения
@@ -13,7 +13,7 @@
 | PNG | Растеризация того же SVG в браузерном слое | Есть в playground |
 | Toolkit tooling | TypeScript, Vite, Vitest, Oxlint, Oxfmt | Настроено; Vite+ не используется |
 | Публичные страницы | Astro + Vue island, `/qr-generator` | План |
-| Кабинет | Vue SPA с тем же editor | План |
+| Кабинет | Vue SPA на Vite + Nuxt UI, тема Iris | Каркас без бизнес-логики |
 | Backend | AdonisJS + PostgreSQL | План для Release 1 |
 | Инфраструктура | Docker Compose для локальных сервисов | Только пустая заготовка |
 
@@ -26,15 +26,23 @@ Redis, очереди, микросервисы и Turborepo/Nx добавляю
 
 ```text
 apps/landing        Astro: лендинг и публичный редактор          [план]
-apps/frontend       Vue SPA: кабинет и общий редактор             [план]
+apps/frontend       Vue SPA: каркас и оболочка редактора
 apps/backend        AdonisJS: API, маршруты, аналитика             [план]
-packages/qr-toolkit  headless engine + i18n + технический playground
+packages/qr-toolkit  headless engine + i18n + /ui + playground
+packages/theme       переносимые CSS-токены Iris + адаптер Nuxt UI
 packages/shared     общие API-типы/схемы                          [резерв]
 ```
 
 Существующие entrypoint `@qr-studio/toolkit`: `/engine`, `/i18n`, `/i18n/ru`, `/i18n/en`.
-`/editor` и `/ui` предусмотрены для общей логики и Vue-компонентов, но пока не реализованы.
-Корневого entrypoint нет. Сборка — ESM и `.d.ts`; единственная runtime-зависимость — `qr`.
+`/ui` экспортирует исходники Vue-компонента (пока оболочку); `/editor` ещё не реализован.
+Корневого entrypoint нет. Engine/i18n собираются в ESM и `.d.ts`; runtime-зависимость engine — `qr`.
+Vue и Nuxt UI — optional peers: обязательны только для UI-потребителя.
+
+Frontend владеет Nuxt UI plugin, `UApp` и единственным импортом глобального CSS.
+Iris (Violet/Fuchsia/Mauve, Manrope, Remix Icons) задаётся пакетом `theme`; plain CSS-токены
+доступны будущему лендингу без Vue. Vite компилирует `/ui` прямо из исходников с HMR,
+`resolve.dedupe` объединяет Vue/Nuxt UI; `scanPackages` и Tailwind `@source` охватывают пакет.
+TypeScript 6.0.3 закреплён в frontend/toolkit из-за несовместимости vue-tsc 3.3.13 с TypeScript 7.
 Подробный API и команды — в [README пакета](../packages/qr-toolkit/README.md).
 
 ## Pipeline QR

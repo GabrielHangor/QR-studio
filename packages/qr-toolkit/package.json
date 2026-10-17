@@ -5,7 +5,8 @@
   "description": "Headless QR encoding and SVG rendering for QR Studio",
   "license": "ISC",
   "files": [
-    "dist"
+    "dist",
+    "src/ui"
   ],
   "type": "module",
   "sideEffects": false,
@@ -25,6 +26,10 @@
     "./engine": {
       "types": "./dist/engine/index.d.ts",
       "import": "./dist/engine/index.js"
+    },
+    "./ui": {
+      "types": "./src/ui/index.ts",
+      "import": "./src/ui/index.ts"
     }
   },
   "scripts": {
@@ -34,7 +39,7 @@
     "build:playground": "vite build",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check",
     "lint": "oxlint",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p playground/tsconfig.json && tsc --noEmit -p tests/scan/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p playground/tsconfig.json && tsc --noEmit -p tests/scan/tsconfig.json && vue-tsc --noEmit -p tsconfig.ui.json",
     "test": "vitest run",
     "test:scan": "vitest run --config vitest.scan.config.ts",
     "test:scan:install": "playwright install chromium",
@@ -45,14 +50,29 @@
     "qr": "0.7.2"
   },
   "devDependencies": {
+    "@nuxt/ui": "4.12.0",
     "@types/node": "^24.0.0",
     "@vitest/browser-playwright": "5.0.4",
     "oxfmt": "0.73.0",
     "oxlint": "1.88.0",
     "playwright": "1.64.1",
-    "typescript": "7.0.2",
+    "typescript": "6.0.3",
     "vite": "8.3.4",
     "vitest": "5.0.4",
+    "vue": "3.5.44",
+    "vue-tsc": "3.3.13",
     "zxing-wasm": "3.1.5"
+  },
+  "peerDependencies": {
+    "@nuxt/ui": "^4.12.0",
+    "vue": "^3.5.44"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    },
+    "@nuxt/ui": {
+      "optional": true
+    }
   }
 }

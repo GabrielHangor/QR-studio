@@ -1,0 +1,26 @@
+{
+  "name": "@qr-studio/theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./nuxt-ui.css": "./nuxt-ui.css",
+    "./nuxt-ui": "./nuxt-ui.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0"
+  },
+  "devDependencies": {
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0"
+  }
+}

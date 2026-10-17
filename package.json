@@ -4,6 +4,7 @@
   "description": "QR Studio monorepo",
   "private": true,
   "scripts": {
+    "dev": "pnpm --filter @qr-studio/frontend dev",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
