@@ -13,20 +13,30 @@
 | PNG | Растеризация того же SVG в браузерном слое | Есть в playground |
 | Toolkit tooling | TypeScript, Vite, Vitest, Oxlint, Oxfmt | Настроено; Vite+ не используется |
 | Публичные страницы | Astro + Vue island, `/qr-generator` | План |
-| Кабинет | Vue SPA на Vite + Nuxt UI, тема Iris | Каркас без бизнес-логики |
+| Кабинет | Vue SPA на Vite + Nuxt UI, тема Iris | Базовый editor URL/Text |
 | Backend | AdonisJS + PostgreSQL | План для Release 1 |
 | Инфраструктура | Docker Compose для локальных сервисов | Только пустая заготовка |
 
 Корень не содержит зависимостей: только общие скрипты, workspace/lockfile и версии Node/pnpm.
 Каждое приложение владеет своими TypeScript, линтером, форматтером и зависимостями;
 AdonisJS не обязан разделять инструменты toolkit. Локальные пакеты подключаются через `workspace:*`.
+В frontend/toolkit/theme есть локальные `.oxlintrc.json`: correctness, suspicious,
+TypeScript, Vue для UI-пакетов и Vitest для тестов toolkit. Окружения браузера/Node
+разделены через overrides; сборки, отчёты и зависимости исключены.
+`pnpm lint` отклоняет предупреждения, `pnpm lint:fix` применяет обычные безопасные
+автоисправления. Форматированием занимается Oxfmt, проверкой типов и Vue-шаблонов — vue-tsc.
+Правила читаемости: скобки в многострочных ветках (короткие guard clauses разрешены),
+без лишних `else`/`return` и повторных импортов, shorthand свойств и явные type imports.
+Разрешены `value == null`, локальные функции, оба стиля type imports и явные типы
+параметров/свойств. Лимиты длины, сложности, именование и принудительный выбор
+`interface`/`type` не вводятся; категории style/pedantic целиком не включаются.
 Redis, очереди, микросервисы и Turborepo/Nx добавляются только по измеренной необходимости.
 
 ## Границы пакетов
 
 ```text
 apps/landing        Astro: лендинг и публичный редактор          [план]
-apps/frontend       Vue SPA: каркас и оболочка редактора
+apps/frontend       Vue SPA: подключён общий Vue editor
 apps/backend        AdonisJS: API, маршруты, аналитика             [план]
 packages/qr-toolkit  headless engine + i18n + /ui + playground
 packages/theme       переносимые CSS-токены Iris + адаптер Nuxt UI
@@ -34,7 +44,9 @@ packages/shared     общие API-типы/схемы                          
 ```
 
 Существующие entrypoint `@qr-studio/toolkit`: `/engine`, `/i18n`, `/i18n/ru`, `/i18n/en`.
-`/ui` экспортирует исходники Vue-компонента (пока оболочку); `/editor` ещё не реализован.
+`/ui` экспортирует Vue editor и composable: URL/Text, live preview, базовые формы/цвета,
+диагностика и локализация. `/editor` содержит типы состояния, фабрику и подготовку payload
+без Vue/DOM. Экспорт файлов, пресеты и остальные контролы ещё предстоят.
 Корневого entrypoint нет. Engine/i18n собираются в ESM и `.d.ts`; runtime-зависимость engine — `qr`.
 Vue и Nuxt UI — optional peers: обязательны только для UI-потребителя.
 

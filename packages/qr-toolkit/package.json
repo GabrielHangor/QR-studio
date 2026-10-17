@@ -6,7 +6,7 @@
   "license": "ISC",
   "files": [
     "dist",
-    "src/ui"
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
@@ -31,7 +31,11 @@
       "types": "./src/ui/index.ts",
       "import": "./src/ui/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "import": "./dist/editor/index.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -39,14 +43,15 @@
     "playground": "vite --host 127.0.0.1",
     "build:playground": "vite build",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings",
     "typecheck": "tsc --noEmit && tsc --noEmit -p playground/tsconfig.json && tsc --noEmit -p tests/scan/tsconfig.json && pnpm prepare:ui && vue-tsc --noEmit -p src/ui/tsconfig.json",
     "test": "vitest run",
     "test:scan": "vitest run --config vitest.scan.config.ts",
     "test:scan:install": "playwright install chromium",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "prepare:ui": "node scripts/prepare-ui.mjs"
+    "prepare:ui": "node scripts/prepare-ui.mjs",
+    "lint:fix": "oxlint --fix --deny-warnings"
   },
   "dependencies": {
     "qr": "0.7.2"

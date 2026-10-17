@@ -338,14 +338,14 @@ for (const control of [
   artworkShape,
   logoWidth,
   logoPadding,
-  ...captionControls.flatMap((control) => [
-    control.text,
-    control.style,
-    control.fontSize,
-    control.fontWeight,
-    control.letterSpacing,
-    control.color,
-    control.background,
+  ...captionControls.flatMap((captionControl) => [
+    captionControl.text,
+    captionControl.style,
+    captionControl.fontSize,
+    captionControl.fontWeight,
+    captionControl.letterSpacing,
+    captionControl.color,
+    captionControl.background,
   ]),
 ]) {
   control.addEventListener("input", () => {

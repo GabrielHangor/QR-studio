@@ -97,12 +97,13 @@ describe("real SVG/PNG exports decoded independently by ZXing", () => {
       const path = `${directory}/failures/${scenario.id}`;
       if (svg) await server.commands.writeFile(`${path}.svg`, svg);
       if (png) await server.commands.writeFile(`${path}.png`, await base64(png), "base64");
-      if (image)
+      if (image) {
         await server.commands.writeFile(
           `${path}.scan.${scenario.effect === "jpeg" ? "jpg" : "png"}`,
           await base64(image),
           "base64",
         );
+      }
       await server.commands.writeFile(`${path}.json`, JSON.stringify(result, null, 2));
       throw error;
     } finally {

@@ -134,8 +134,9 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
   validateRenderOptions(size, quietZone, background, moduleShape, finderShape);
   const layout = getQrArtworkLayout(matrix.size, options);
   const artworkBackground = options.artworkBackground ?? background;
-  if (!isOpaqueHexColor(artworkBackground))
+  if (!isOpaqueHexColor(artworkBackground)) {
     throw new QrError("INVALID_COLOR", { target: "artworkBackground" });
+  }
   const normalizedForeground = normalizeForeground(foreground, layout.qrOrigin, matrix.size);
   const normalizedLogo = logo === undefined ? undefined : normalizeLogo(logo, matrix.size);
   const normalizedFinder = normalizeQrFinder(options.finder);
@@ -225,10 +226,12 @@ function validateRenderOptions(
     throw new QrError("INVALID_COLOR", { target: "background" });
   }
 
-  if (!isQrModuleShape(moduleShape))
+  if (!isQrModuleShape(moduleShape)) {
     throw new QrError("INVALID_MODULE_SHAPE", { target: "modules" });
-  if (!isQrModuleShape(finderShape))
+  }
+  if (!isQrModuleShape(finderShape)) {
     throw new QrError("INVALID_MODULE_SHAPE", { target: "finderCells" });
+  }
 }
 
 function normalizeForeground(
@@ -333,6 +336,7 @@ function renderModules(
         while (
           x < matrix.size &&
           row[x] &&
+          // oxlint-disable-next-line no-unmodified-loop-condition -- wholeFinders is fixed; the finder check depends on x, which advances below.
           !(wholeFinders && isFinderModule(x, y, matrix.finderPatterns)) &&
           shapeAt(matrix, x, y, moduleShape, finderShape) === "square"
         ) {
@@ -420,8 +424,9 @@ function renderCaption(
   const color = caption.options.color ?? foreground.solidColor ?? "#000000";
   const captionBackground = caption.options.background ?? background;
   if (!isOpaqueHexColor(color)) throw new QrError("INVALID_COLOR", { target: "caption" });
-  if (!isOpaqueHexColor(captionBackground))
+  if (!isOpaqueHexColor(captionBackground)) {
     throw new QrError("INVALID_COLOR", { target: "captionBackground" });
+  }
   const text = caption.options.text.trim().replace(/\s+/g, " ");
   const { extent, framePadding, topHeight } = layout;
   const availableWidth = extent - framePadding * 2;

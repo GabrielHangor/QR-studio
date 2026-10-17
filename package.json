@@ -11,7 +11,9 @@
     "test": "pnpm -r run test",
     "test:scan": "pnpm --filter @qr-studio/toolkit test:scan",
     "format": "pnpm -r run format",
-    "format:check": "pnpm -r run format:check"
+    "format:check": "pnpm -r run format:check",
+    "test:ui": "pnpm --filter @qr-studio/frontend test:ui",
+    "lint:fix": "pnpm -r run lint:fix"
   },
   "license": "ISC",
   "packageManager": "pnpm@12.11.2",

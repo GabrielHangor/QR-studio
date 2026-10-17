@@ -1,0 +1,83 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "vue", "oxc", "unicorn", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "no-debugger": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "curly": ["error", "multi-line"],
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": true
+      }
+    ],
+    "no-lonely-if": "error",
+    "no-useless-return": "error",
+    "no-useless-rename": "error",
+    "no-duplicate-imports": [
+      "error",
+      {
+        "allowSeparateTypeImports": true
+      }
+    ],
+    "object-shorthand": ["error", "properties"],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "separate-type-imports",
+        "disallowTypeAnnotations": false
+      }
+    ],
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-inferrable-types": [
+      "error",
+      {
+        "ignoreParameters": true,
+        "ignoreProperties": true
+      }
+    ],
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/consistent-function-scoping": "off",
+    "no-shadow": [
+      "warn",
+      {
+        "allow": ["_"],
+        "ignoreOnInitialization": true
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "dist-playground/**",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**"
+  ],
+  "env": {
+    "browser": true
+  },
+  "overrides": [
+    {
+      "files": ["*.config.ts", "scripts/**/*.mjs", "tests/**/*.mjs"],
+      "env": {
+        "browser": false,
+        "node": true
+      }
+    }
+  ]
+}

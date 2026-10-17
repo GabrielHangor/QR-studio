@@ -68,17 +68,22 @@ export function renderQrFinders(
 }
 
 function contour(x: number, y: number, size: number, shape: QrModuleShape): string {
-  const n = (value: number) => Number(value.toFixed(4)).toString();
-  if (shape === "square") return `M${n(x)} ${n(y)}h${size}v${size}h-${size}z`;
+  if (shape === "square") {
+    return `M${formatCoordinate(x)} ${formatCoordinate(y)}h${size}v${size}h-${size}z`;
+  }
   if (shape === "circle") {
     const radius = size / 2;
-    return `M${n(x)} ${n(y + radius)}a${radius} ${radius} 0 1 0 ${size} 0a${radius} ${radius} 0 1 0 -${size} 0z`;
+    return `M${formatCoordinate(x)} ${formatCoordinate(y + radius)}a${radius} ${radius} 0 1 0 ${size} 0a${radius} ${radius} 0 1 0 -${size} 0z`;
   }
   const radius = size * FINDER_CORNER_RADIUS_RATIO;
   return (
-    `M${n(x + radius)} ${n(y)}H${n(x + size - radius)}Q${n(x + size)} ${n(y)} ${n(x + size)} ${n(y + radius)}` +
-    `V${n(y + size - radius)}Q${n(x + size)} ${n(y + size)} ${n(x + size - radius)} ${n(y + size)}` +
-    `H${n(x + radius)}Q${n(x)} ${n(y + size)} ${n(x)} ${n(y + size - radius)}` +
-    `V${n(y + radius)}Q${n(x)} ${n(y)} ${n(x + radius)} ${n(y)}z`
+    `M${formatCoordinate(x + radius)} ${formatCoordinate(y)}H${formatCoordinate(x + size - radius)}Q${formatCoordinate(x + size)} ${formatCoordinate(y)} ${formatCoordinate(x + size)} ${formatCoordinate(y + radius)}` +
+    `V${formatCoordinate(y + size - radius)}Q${formatCoordinate(x + size)} ${formatCoordinate(y + size)} ${formatCoordinate(x + size - radius)} ${formatCoordinate(y + size)}` +
+    `H${formatCoordinate(x + radius)}Q${formatCoordinate(x)} ${formatCoordinate(y + size)} ${formatCoordinate(x)} ${formatCoordinate(y + size - radius)}` +
+    `V${formatCoordinate(y + radius)}Q${formatCoordinate(x)} ${formatCoordinate(y)} ${formatCoordinate(x + radius)} ${formatCoordinate(y)}z`
   );
+}
+
+function formatCoordinate(value: number): string {
+  return Number(value.toFixed(4)).toString();
 }

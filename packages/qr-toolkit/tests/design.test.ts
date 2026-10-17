@@ -1,6 +1,6 @@
-import { QrError } from "../src/engine/index.js";
 import { describe, expect, it } from "vitest";
 import {
+  QrError,
   analyzeQrDesign,
   encodeQr,
   renderQrSvg,

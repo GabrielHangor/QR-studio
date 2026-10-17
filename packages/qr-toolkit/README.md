@@ -167,20 +167,47 @@ QR декодируется целиком на белой подложке, б�
 Encoder использует один сегмент: смешанное содержимое может кодироваться менее плотно,
 чем при оптимизированной сегментации. Сохранение проектов и Vue editor не реализованы.
 
-## Vue UI: каркас
+## Vue editor — первая версия
 
-`@qr-studio/toolkit/ui` экспортирует `QrEditor` — пока только оболочку без логики.
-Это source-first entrypoint (`src/ui`), который компилирует Vite приложения.
-Vue и Nuxt UI — optional peer dependencies для headless-потребителя;
-приложение с UI обязано установить их явно. Они также установлены как devDependencies
-для проверки типов внутри пакета. `/engine` и `/i18n` продолжают собираться отдельно в `dist`.
+`@qr-studio/toolkit/ui` экспортирует `QrEditor`, `useQrEditor`, фабрику
+`createQrEditorState` и словари `qrEditorMessagesRu` / `qrEditorMessagesEn`.
 
-Host подключает Nuxt UI plugin, `UApp` и глобальную тему один раз, настраивает
-`scanPackages`, Tailwind `@source` и dedupe Vue/Nuxt UI. Пример — `apps/frontend`.
-Playground остаётся на HTML/CSS/TypeScript и не использует Vue UI.
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { QrEditor, createQrEditorState } from "@qr-studio/toolkit/ui";
+const state = ref(createQrEditorState());
+</script>
 
-Для IDE рядом с UI находится `src/ui/tsconfig.json` с aliases `#build/ui/*`.
-`pnpm prepare:ui` создаёт локальную тему Nuxt UI для проверки UI-типов; команда уже
-включена в `typecheck` и запуск frontend. Тема — только dev dependency toolkit,
-а сгенерированные файлы остаются в `node_modules/.nuxt-ui`. Настройка playground
-и сборка engine от Nuxt UI не зависят.
+<template>
+  <QrEditor v-model="state" locale="ru" />
+</template>
+```
+
+`v-model` необязателен; без него состояние локально компоненту. URL и текст хранятся
+отдельными черновиками. URL требует HTTP(S) и полного адреса; обрезаются только крайние
+пробелы. Текст кодируется дословно, включая пробелы и переносы. Изменение оформления
+переиспользует матрицу. Неверный ввод, переполнение и ошибки renderer убирают старый preview.
+Preview — SVG renderer в изолированном `img` с data URI: без вставки пользовательского HTML
+и без lifecycle object URL.
+
+Сейчас доступны формы модулей, цвет QR/фона и диагностика engine. Экспорт, пресеты,
+остальные визуальные контролы и сохранение ещё не подключены. Каталог пресетов будет внешним.
+`messages` принимает полный `QrEditorMessages` для своего языка, включая словарь engine.
+`locale="en"` выбирает встроенный английский; локаль внутренних Nuxt UI-компонентов
+задаёт host через `UApp`.
+
+`/editor` — отдельный ESM + `.d.ts` entrypoint с типами состояния, фабрикой и подготовкой
+содержимого, без Vue/DOM. `/ui` — source-first entrypoint: host компилирует `src` через Vite.
+Vue/Nuxt UI остаются optional peers для headless-потребителей; UI-host устанавливает их явно.
+Host владеет Nuxt UI plugin, одним `UApp` и глобальным CSS; пример — `apps/frontend`.
+Playground остаётся независимым от Vue.
+
+Для IDE используется `src/ui/tsconfig.json` и локальный контекст `#build/ui/*`.
+`prepare:ui` генерирует его в `node_modules/.nuxt-ui`; команда включена в `typecheck`
+и запуск frontend. `/engine` продолжает собираться отдельно.
+
+Проверки из корня: `pnpm test` — unit, `pnpm test:ui` — реальные действия в Chromium
+(1280 и 390 px), `pnpm test:scan` — независимое декодирование SVG/PNG engine.
+Для UI-тестов используется установленный Playwright Chromium; команда установки —
+`pnpm --filter @qr-studio/toolkit test:scan:install`.

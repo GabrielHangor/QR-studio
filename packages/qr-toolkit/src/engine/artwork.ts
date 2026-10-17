@@ -132,10 +132,12 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
     if (!Number.isFinite(fontSize) || fontSize <= 0) {
       throw new QrError("INVALID_CAPTION_FONT_SIZE", {});
     }
-    if (![400, 500, 600, 700].includes(fontWeight))
+    if (![400, 500, 600, 700].includes(fontWeight)) {
       throw new QrError("INVALID_CAPTION_FONT_WEIGHT", {});
-    if (!Number.isFinite(letterSpacing) || letterSpacing < 0 || letterSpacing > 10)
+    }
+    if (!Number.isFinite(letterSpacing) || letterSpacing < 0 || letterSpacing > 10) {
       throw new QrError("INVALID_CAPTION_LETTER_SPACING", { minimum: 0, maximum: 10 });
+    }
     return {
       options: caption,
       position,

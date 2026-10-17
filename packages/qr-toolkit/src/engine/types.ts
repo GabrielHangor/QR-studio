@@ -1,4 +1,4 @@
-import { ERROR_CORRECTION_LEVELS } from "./constants.js";
+import type { ERROR_CORRECTION_LEVELS } from "./constants.js";
 import type { QrDiagnosticParams } from "./issues.js";
 
 /** Error correction levels; percentages are not safe logo-area allowances. */

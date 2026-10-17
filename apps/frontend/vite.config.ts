@@ -8,6 +8,7 @@ export default defineConfig({
     vue(),
     ui({
       ui: irisTheme,
+      icon: { clientBundle: { icons: Object.values(irisTheme.icons) } },
       router: false,
       colorMode: false,
       autoImport: false,

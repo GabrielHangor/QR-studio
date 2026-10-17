@@ -1,8 +1,13 @@
-import { QrError } from "../src/engine/index.js";
 import decodeQR from "qr/decode.js";
 import { describe, expect, it } from "vitest";
 
-import { analyzeQrDesign, encodeQr, QrEncodingError, renderQrSvg } from "../src/engine/index.js";
+import {
+  analyzeQrDesign,
+  encodeQr,
+  QrError,
+  QrEncodingError,
+  renderQrSvg,
+} from "../src/engine/index.js";
 import { QR_QUIET_ZONE_DEFAULT_MODULES } from "../src/engine/constants.js";
 import type {
   ErrorCorrectionLevel,
@@ -219,8 +224,8 @@ describe("matrix contract", () => {
 
 describe("SVG contract", () => {
   it("places modules by row and column, with a clear border", () => {
-    const modules = Array.from({ length: 21 }, (_, y) =>
-      Array.from({ length: 21 }, (_, x) => (y === 0 && x < 2) || (y === 1 && x === 3)),
+    const modules = Array.from({ length: 21 }, (_row, y) =>
+      Array.from({ length: 21 }, (_column, x) => (y === 0 && x < 2) || (y === 1 && x === 3)),
     );
     const matrix = { ...encodeQr("fixture", { version: 1 }), modules };
     const svg = renderQrSvg(matrix);
