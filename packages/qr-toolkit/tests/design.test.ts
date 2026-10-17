@@ -128,11 +128,11 @@ describe("independent typography and framing", () => {
       expect((strokeWidth * size) / extent).toBeCloseTo(16, 2);
       expect(svg).toContain('stroke="#abcdef"');
       const edgeToQuiet = Number(quietRect[1]);
-      if (shape === "square") expect(edgeToQuiet).toBeGreaterThan(strokeWidth);
-      else {
-        const quietCornerRadius = Math.hypot(33 / 2, 33 / 2);
-        expect(extent / 2 - strokeWidth).toBeGreaterThan(quietCornerRadius);
-      }
+      const clearance =
+        shape === "square"
+          ? edgeToQuiet - strokeWidth
+          : extent / 2 - strokeWidth - Math.hypot(33 / 2, 33 / 2);
+      expect(clearance).toBeGreaterThan(0);
     },
   );
 
@@ -165,8 +165,10 @@ describe("independent typography and framing", () => {
     { caption: { text: "Scan", letterSpacing: 11 } },
   ])("rejects unsupported style input %j", (options) => {
     const matrix = encodeQr("QR");
-    expect(() => renderQrSvg(matrix, options as unknown as RenderQrSvgOptions)).toThrow();
-    expect(() => analyzeQrDesign(matrix, options as unknown as RenderQrSvgOptions)).toThrow();
+    expect(() => renderQrSvg(matrix, options as unknown as RenderQrSvgOptions)).toThrow(QrError);
+    expect(() => analyzeQrDesign(matrix, options as unknown as RenderQrSvgOptions)).toThrow(
+      QrError,
+    );
   });
 });
 

@@ -207,8 +207,8 @@ describe("artwork geometry", () => {
   ])("rejects invalid geometry options %j", (options) => {
     const matrix = encodeQr("QR");
     const invalid = options as unknown as RenderQrSvgOptions;
-    expect(() => renderQrSvg(matrix, invalid)).toThrow();
-    expect(() => analyzeQrDesign(matrix, invalid)).toThrow();
+    expect(() => renderQrSvg(matrix, invalid)).toThrow(QrError);
+    expect(() => analyzeQrDesign(matrix, invalid)).toThrow(QrError);
   });
 
   it("rejects arbitrary caption paints before they reach SVG", () => {

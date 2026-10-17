@@ -76,9 +76,8 @@ describe("real SVG/PNG exports decoded independently by ZXing", () => {
       const rasterStart = performance.now();
       const source = await rasterizeSvg(svg);
       expect(source.width).toBe(design.size ?? 512);
-      if (design.shape === "circle") {
-        expect(source.getContext("2d")!.getImageData(0, 0, 1, 1).data[3]).toBe(0);
-      }
+      const expectedCornerAlpha = design.shape === "circle" ? 0 : 255;
+      expect(source.getContext("2d")!.getImageData(0, 0, 1, 1).data[3]).toBe(expectedCornerAlpha);
       png = await encodeImage(source);
       image = await scanImage(png, scenario.effect);
       result.rasterMs = performance.now() - rasterStart;

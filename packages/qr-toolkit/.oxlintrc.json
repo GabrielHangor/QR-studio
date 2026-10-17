@@ -85,7 +85,19 @@
       "files": ["tests/**/*.test.ts"],
       "plugins": ["typescript", "unicorn", "oxc", "vue", "vitest"],
       "rules": {
-        "vitest/no-focused-tests": "error"
+        "vitest/no-focused-tests": "error",
+        "vitest/expect-expect": [
+          "error",
+          {
+            "assertFunctionNames": [
+              "expect",
+              "expectTypeOf",
+              "assert",
+              "assertType",
+              "expectEncodingError"
+            ]
+          }
+        ]
       }
     }
   ]

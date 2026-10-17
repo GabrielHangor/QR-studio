@@ -58,6 +58,12 @@
         "allow": ["_"],
         "ignoreOnInitialization": true
       }
+    ],
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["**/*.css"]
+      }
     ]
   },
   "ignorePatterns": [

@@ -16,13 +16,14 @@ import { qrMessagesRu } from "../src/i18n/ru.js";
 import { qrMessagesEn } from "../src/i18n/en.js";
 
 function catchError(action: () => unknown): QrError {
+  let actualError: unknown;
   try {
     action();
   } catch (error) {
-    expect(error).toBeInstanceOf(QrError);
-    return error as QrError;
+    actualError = error;
   }
-  throw new Error("Expected a QrError.");
+  expect(actualError).toBeInstanceOf(QrError);
+  return actualError as QrError;
 }
 
 describe("structured errors", () => {
@@ -212,7 +213,10 @@ describe("language boundary", () => {
     }
   });
 
-  it.each([qrMessagesRu, qrMessagesEn])("formats every diagnostic code", (messages) => {
+  it.each([
+    ["Russian", qrMessagesRu, /[А-Яа-яЁё]/],
+    ["English", qrMessagesEn, /^[\x20-\x7E]+$/],
+  ] as const)("formats every diagnostic code in %s", (_, messages, language) => {
     const examples: {
       [C in keyof QrDiagnosticParams]: Extract<QrDesignDiagnostic, { code: C }>;
     } = {
@@ -266,7 +270,7 @@ describe("language boundary", () => {
       const message = formatQrDiagnostic(diagnostic, messages);
       expect(message.length).toBeGreaterThan(0);
       expect(message).not.toMatch(/undefined|NaN/);
-      if (messages === qrMessagesEn) expect(message).not.toMatch(/[А-Яа-яЁё]/);
+      expect(message).toMatch(language);
     }
   });
 

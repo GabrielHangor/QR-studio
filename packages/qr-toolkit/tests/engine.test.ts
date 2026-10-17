@@ -1,4 +1,4 @@
-import decodeQR from "qr/decode.js";
+import { decodeQR } from "qr/decode.js";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -176,23 +176,25 @@ describe("matrix contract", () => {
       { x: matrix.size - 7, y: 0 },
       { x: 0, y: matrix.size - 7 },
     ]);
-
-    if (version >= 2) {
-      expect(matrix.functionModules[matrix.size - 7]![matrix.size - 7]).toBe(true);
-    }
-    if (version >= 7) {
-      expect(matrix.functionModules[0]![matrix.size - 11]).toBe(true);
-    }
   });
 
   it("builds valid function masks for every supported version", () => {
     for (let version = 1; version <= 40; version++) {
       const matrix = encodeQr("QR", { version });
       expect(matrix.functionModules.flat()).toHaveLength(matrix.size ** 2);
-      if (version >= 2) {
-        expect(matrix.functionModules[matrix.size - 7]![matrix.size - 7]).toBe(true);
-      }
     }
+  });
+
+  it("marks bottom-right alignment modules for every version with alignment patterns", () => {
+    for (let version = 2; version <= 40; version++) {
+      const matrix = encodeQr("QR", { version });
+      expect(matrix.functionModules[matrix.size - 7]![matrix.size - 7]).toBe(true);
+    }
+  });
+
+  it.each([7, 20, 40])("marks version information modules for version %i", (version) => {
+    const matrix = encodeQr("QR", { version });
+    expect(matrix.functionModules[0]![matrix.size - 11]).toBe(true);
   });
 
   it("accepts Unicode and keeps matrices independent of subsequent encodes", () => {

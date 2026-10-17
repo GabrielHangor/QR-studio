@@ -168,7 +168,10 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
   const framePadding = baseFramePadding + frameWidthPx / modulePitchPx;
   const captionLayouts: QrCaptionLayout[] = captions.map((caption) => {
     const layout: QrCaptionLayout = {
-      ...caption,
+      options: caption.options,
+      position: caption.position,
+      style: caption.style,
+      fontWeight: caption.fontWeight,
       fontSize: caption.fontSize / modulePitchPx,
       height: caption.height / modulePitchPx,
       letterSpacing: caption.letterSpacing / modulePitchPx,
