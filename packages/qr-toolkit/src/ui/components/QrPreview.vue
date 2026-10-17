@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import UCard from "@nuxt/ui/components/Card.vue";
+import UAccordion from "@nuxt/ui/components/Accordion.vue";
+import UTextarea from "@nuxt/ui/components/Textarea.vue";
+import QrExportActions from "./QrExportActions.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
+import { QrBrowserError } from "../browser.js";
 import { formatQrError, formatQrDiagnostic } from "../../i18n/index.js";
 import type { QrEditorMessages } from "../messages.js";
 import type { QrEditorPreview } from "../useQrEditor.js";
@@ -9,7 +13,9 @@ import type { QrEditorPreview } from "../useQrEditor.js";
 const props = defineProps<{ preview: QrEditorPreview; messages: QrEditorMessages }>();
 const failure = computed(() =>
   props.preview.status === "error"
-    ? formatQrError(props.preview.error, props.messages.engine)
+    ? props.preview.error instanceof QrBrowserError
+      ? props.messages[props.preview.error.code]
+      : formatQrError(props.preview.error, props.messages.engine)
     : undefined,
 );
 const diagnostics = computed(() =>
@@ -48,10 +54,45 @@ const previewSource = computed(() =>
       <div v-else class="space-y-2 text-center" role="status">
         <p class="font-medium text-highlighted">{{ messages.emptyPreview }}</p>
         <p class="text-sm text-muted">
-          {{ preview.status === "invalid" ? messages.invalidUrl : messages.emptyHint }}
+          {{
+            preview.status === "loading"
+              ? messages.loadingLogo
+              : preview.status === "invalid"
+                ? messages.invalidUrl
+                : messages.emptyHint
+          }}
         </p>
       </div>
     </div>
+    <QrExportActions :preview="preview" :messages="messages" class="mt-5" />
+    <dl
+      v-if="preview.status === 'ready'"
+      class="mt-5 grid grid-cols-2 gap-3 text-sm"
+      :aria-label="messages.metrics"
+    >
+      <div>
+        <dt class="text-muted">{{ messages.version }}</dt>
+        <dd class="font-medium text-highlighted">
+          {{ preview.matrix.version }} / {{ preview.matrix.errorCorrectionLevel }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-muted">{{ messages.matrixSize }}</dt>
+        <dd>{{ preview.matrix.size }} × {{ preview.matrix.size }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">{{ messages.modulePitch }}</dt>
+        <dd>{{ preview.analysis.modulePitchPx.toFixed(2) }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">{{ messages.contrast }}</dt>
+        <dd>{{ preview.analysis.contrastRatio?.toFixed(2) ?? messages.notMeasured }}</dd>
+      </div>
+      <div v-if="preview.analysis.logoCoveragePercent !== null">
+        <dt class="text-muted">{{ messages.logoCoverage }}</dt>
+        <dd>{{ preview.analysis.logoCoveragePercent.toFixed(2) }}</dd>
+      </div>
+    </dl>
     <ul v-if="diagnostics.length" class="mt-4 space-y-3" aria-live="polite">
       <li v-for="diagnostic in diagnostics" :key="diagnostic.code">
         <UAlert
@@ -61,6 +102,21 @@ const previewSource = computed(() =>
         />
       </li>
     </ul>
+    <UAccordion
+      v-if="preview.status === 'ready'"
+      :items="[{ label: messages.svgSource, slot: 'source' }]"
+      class="mt-4"
+    >
+      <template #source
+        ><UTextarea
+          :aria-label="messages.svgSource"
+          :model-value="preview.svg"
+          readonly
+          :rows="6"
+          class="w-full"
+          :ui="{ base: 'font-mono text-xs' }"
+      /></template>
+    </UAccordion>
     <template #footer
       ><p class="text-sm text-muted">{{ messages.staticHint }}</p></template
     >

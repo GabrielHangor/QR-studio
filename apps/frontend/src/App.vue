@@ -2,6 +2,7 @@
 import UApp from "@nuxt/ui/components/App.vue";
 import UBadge from "@nuxt/ui/components/Badge.vue";
 import { ru } from "@nuxt/ui/locale";
+import { editorPresets, editorExamples } from "./presets.js";
 import { QrEditor } from "@qr-studio/toolkit/ui";
 </script>
 
@@ -12,7 +13,7 @@ import { QrEditor } from "@qr-studio/toolkit/ui";
         <h1 class="text-2xl font-bold text-highlighted">QR Studio</h1>
         <UBadge color="secondary">Iris</UBadge>
       </header>
-      <QrEditor />
+      <QrEditor :presets="editorPresets" :examples="editorExamples" />
     </main>
   </UApp>
 </template>

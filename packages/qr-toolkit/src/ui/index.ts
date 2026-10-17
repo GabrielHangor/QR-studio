@@ -5,3 +5,5 @@ export { qrEditorMessagesRu, qrEditorMessagesEn } from "./messages.js";
 export type { QrEditorMessages } from "./messages.js";
 export { createQrEditorState } from "../editor/index.js";
 export type { QrEditorState, QrContentType } from "../editor/index.js";
+
+export type { QrDesignPreset, QrEditorExample } from "../editor/index.js";

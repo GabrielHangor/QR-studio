@@ -30,6 +30,7 @@
     "playwright": "1.64.1",
     "typescript": "6.0.3",
     "vite": "8.3.4",
-    "vue-tsc": "3.3.13"
+    "vue-tsc": "3.3.13",
+    "zxing-wasm": "3.1.5"
   }
 }
