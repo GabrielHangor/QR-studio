@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
 import QrVisualPicker from "./QrVisualPicker.vue";
 import { qrShapeThumbnail } from "../visuals.js";
 import USelect from "@nuxt/ui/components/Select.vue";
@@ -37,42 +38,48 @@ const framed = computed(
 </script>
 
 <template>
-  <div class="space-y-4 pb-4">
-    <div class="space-y-3">
-      <h4 class="text-sm font-medium text-highlighted">{{ messages.artworkShape }}</h4>
+  <div class="grid gap-3 @min-[38rem]:grid-cols-2">
+    <div class="space-y-1.5">
+      <div class="flex items-center gap-2">
+        <h4 class="text-sm font-medium text-highlighted">{{ messages.artworkShape }}</h4>
+        <QrFieldHelp
+          :label="messages.artworkShape"
+          :text="messages.artworkHint"
+          :action-label="messages.help"
+        />
+      </div>
       <QrVisualPicker
         :label="messages.artworkShape"
         :items="shapes"
         :model-value="design.shape ?? 'square'"
         @update:model-value="emit('update:design', changeQrArtworkShape(design, $event))"
       />
-      <p class="text-sm text-muted">{{ messages.artworkHint }}</p>
     </div>
-    <UFormField :label="messages.frame"
-      ><USelect
-        :model-value="framed ? (frame.style ?? 'outline') : 'none'"
-        :items="[
-          { label: messages.noFrame, value: 'none' as const },
-          { label: messages.solidFrame, value: 'outline' as const },
-          { label: messages.dashedFrame, value: 'dashed' as const },
-        ]"
-        class="w-full"
-        @update:model-value="
-          patch({
-            frame:
-              $event === 'none'
-                ? 'none'
-                : {
-                    ...frame,
-                    style: $event,
-                    color: frame.color ?? '#202833',
-                    widthPx: frame.widthPx ?? 2,
-                  },
-          })
-        "
-    /></UFormField>
-    <div v-if="framed" class="grid grid-cols-2 gap-4">
-      <UFormField :label="messages.frameWidth"
+    <div class="grid grid-cols-2 content-start gap-3">
+      <UFormField :label="messages.frame" :class="framed ? undefined : 'col-span-2'"
+        ><USelect
+          :model-value="framed ? (frame.style ?? 'outline') : 'none'"
+          :items="[
+            { label: messages.noFrame, value: 'none' as const },
+            { label: messages.solidFrame, value: 'outline' as const },
+            { label: messages.dashedFrame, value: 'dashed' as const },
+          ]"
+          class="w-full"
+          @update:model-value="
+            patch({
+              frame:
+                $event === 'none'
+                  ? 'none'
+                  : {
+                      ...frame,
+                      style: $event,
+                      color: frame.color ?? '#202833',
+                      widthPx: frame.widthPx ?? 2,
+                    },
+            })
+          "
+      /></UFormField>
+      <UFormField v-if="framed" :label="messages.frameWidth"
         ><UInput
           :model-value="frame.widthPx ?? 2"
           type="number"

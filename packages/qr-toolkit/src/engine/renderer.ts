@@ -37,7 +37,7 @@ const CIRCLE_MODULE_RADIUS = 0.44;
 /** Logo data URIs are bounded so a caller cannot create an unbounded SVG string. */
 const MAX_LOGO_DATA_URI_LENGTH = 1_000_000;
 
-/** Leave a narrow backing pad around logos unless the caller chooses otherwise. */
+/** Leave a narrow clear gap around logos unless the caller chooses otherwise. */
 const DEFAULT_LOGO_PADDING_MODULES = 0.5;
 
 /** SVG data images are limited to passive raster formats; active SVG is excluded. */
@@ -54,6 +54,11 @@ interface NormalizedLogo {
   readonly widthModules: number;
   readonly paddingModules: number;
   readonly clearBackground: boolean;
+}
+
+interface LogoBounds {
+  readonly start: number;
+  readonly end: number;
 }
 
 interface NormalizedForeground {
@@ -158,11 +163,12 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
     moduleShape,
     finderShape,
     !!normalizedFinder,
+    normalizedLogo?.clearBackground ? getLogoBounds(matrix.size, normalizedLogo) : undefined,
   );
   const finderMarkup = normalizedFinder
     ? renderQrFinders(matrix, qrOrigin, normalizedFinder, normalizedForeground.fill)
     : "";
-  const logoMarkup = normalizedLogo ? renderLogo(matrix, normalizedLogo, qrOrigin, background) : "";
+  const logoMarkup = normalizedLogo ? renderLogo(matrix, normalizedLogo, qrOrigin) : "";
   const captionMarkup = layout.captions
     .map((caption) => renderCaption(caption, layout, background, normalizedForeground))
     .join("");
@@ -326,6 +332,7 @@ function renderModules(
   moduleShape: QrModuleShape,
   finderShape: QrModuleShape,
   wholeFinders: boolean,
+  clearedArea?: LogoBounds,
 ): string {
   const squarePaths: string[] = [];
   const roundedRects: string[] = [];
@@ -336,7 +343,11 @@ function renderModules(
     let x = 0;
 
     while (x < matrix.size) {
-      if (!row[x] || (wholeFinders && isFinderModule(x, y, matrix.finderPatterns))) {
+      if (
+        !row[x] ||
+        isClearedModule(x, y, clearedArea) ||
+        (wholeFinders && isFinderModule(x, y, matrix.finderPatterns))
+      ) {
         x++;
         continue;
       }
@@ -347,6 +358,7 @@ function renderModules(
         while (
           x < matrix.size &&
           row[x] &&
+          !isClearedModule(x, y, clearedArea) &&
           // oxlint-disable-next-line no-unmodified-loop-condition -- wholeFinders is fixed; the finder check depends on x, which advances below.
           !(wholeFinders && isFinderModule(x, y, matrix.finderPatterns)) &&
           shapeAt(matrix, x, y, moduleShape, finderShape) === "square"
@@ -412,22 +424,22 @@ function isFinderModule(x: number, y: number, finderPatterns: QrMatrix["finderPa
   );
 }
 
-function renderLogo(
-  matrix: QrMatrix,
-  logo: NormalizedLogo,
-  origin: number,
-  background: string,
-): string {
-  const clearExtent = logo.widthModules + logo.paddingModules * 2;
-  const clearStart = (matrix.size - clearExtent) / 2 + origin;
+function renderLogo(matrix: QrMatrix, logo: NormalizedLogo, origin: number): string {
   const logoStart = (matrix.size - logo.widthModules) / 2 + origin;
 
-  return (
-    (logo.clearBackground
-      ? `<rect data-qr-logo-backing="true" x="${formatNumber(clearStart)}" y="${formatNumber(clearStart)}" width="${formatNumber(clearExtent)}" height="${formatNumber(clearExtent)}" fill="${background}"/>`
-      : "") +
-    `<image x="${formatNumber(logoStart)}" y="${formatNumber(logoStart)}" width="${formatNumber(logo.widthModules)}" height="${formatNumber(logo.widthModules)}" href="${logo.dataUri}" preserveAspectRatio="xMidYMid meet"/>`
-  );
+  return `<image x="${formatNumber(logoStart)}" y="${formatNumber(logoStart)}" width="${formatNumber(logo.widthModules)}" height="${formatNumber(logo.widthModules)}" data-qr-logo-clear="${logo.clearBackground}" href="${logo.dataUri}" preserveAspectRatio="xMidYMid meet"/>`;
+}
+
+/** Clear whole cells, so fractional logo dimensions never leave sliced module edges. */
+function getLogoBounds(matrixSize: number, logo: NormalizedLogo): LogoBounds {
+  const extent = logo.widthModules + logo.paddingModules * 2;
+  const start = (matrixSize - extent) / 2;
+  const end = start + extent;
+  return logo.clearBackground ? { start: Math.floor(start), end: Math.ceil(end) } : { start, end };
+}
+
+function isClearedModule(x: number, y: number, area?: LogoBounds): boolean {
+  return area !== undefined && x >= area.start && x < area.end && y >= area.start && y < area.end;
 }
 
 function renderCaption(
@@ -489,9 +501,8 @@ function getNormalizedLogoOverlayDetails(
   matrix: QrMatrix,
   logo: NormalizedLogo,
 ): QrLogoOverlayDetails {
-  const clearExtent = logo.widthModules + logo.paddingModules * 2;
-  const left = (matrix.size - clearExtent) / 2;
-  const right = left + clearExtent;
+  const { start: left, end: right } = getLogoBounds(matrix.size, logo);
+  const clearExtent = right - left;
   const top = left;
   const bottom = top + clearExtent;
   let overlapsFunctionModules = false;

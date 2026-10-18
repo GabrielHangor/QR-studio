@@ -32,7 +32,6 @@ const fieldError = computed(() =>
     <UFormField
       v-if="props.contentType === 'url'"
       :label="messages.url"
-      :help="messages.urlHint"
       :error="fieldError"
       required
     >
@@ -48,7 +47,7 @@ const fieldError = computed(() =>
         @blur="urlBlurred = true"
       />
     </UFormField>
-    <UFormField v-else :label="messages.text" :help="messages.textHint" required>
+    <UFormField v-else :label="messages.text" required>
       <UTextarea
         :model-value="props.text"
         :placeholder="messages.textPlaceholder"

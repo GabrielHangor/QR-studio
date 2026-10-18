@@ -8,6 +8,11 @@
   body {
     letter-spacing: var(--studio-letter-spacing);
   }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 :root {

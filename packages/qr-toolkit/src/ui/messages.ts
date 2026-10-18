@@ -38,6 +38,19 @@ export interface QrEditorMessages {
   paint: string;
   shapes: string;
   recommendations: string;
+  stylingNotice: string;
+  advanced: string;
+  cornerColors: string;
+  moreColors: string;
+  logoSize: string;
+  smaller: string;
+  larger: string;
+  resolution: string;
+  resolutionHint: string;
+  smallerFile: string;
+  moreDetail: string;
+  vectorHint: string;
+  exportDimensions: string;
   sampleHint: string;
   noLogo: string;
   fill: string;
@@ -101,6 +114,8 @@ export interface QrEditorMessages {
   scan: string;
   scanUnavailable: string;
   scanMatched: string;
+  scanSuccess: string;
+  scanDeviceHint: string;
   scanMissing: string;
   scanMismatch: string;
   scanFailed: string;
@@ -167,12 +182,26 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   previewAlt: "Предпросмотр QR-кода",
   generationError: "Не удалось создать QR-код",
   privacy: "Содержимое обрабатывается в вашем браузере.",
-  staticHint: "Это статический QR-код. После печати его содержимое изменить нельзя.",
+  staticHint: "Содержимое скачанного QR-кода изменить нельзя.",
   presets: "Готовый дизайн",
   custom: "Своё оформление",
   paint: "Цвета",
   shapes: "Формы и рамка",
   recommendations: "Рекомендации",
+  stylingNotice: "Вы изменили оформление — проверьте QR камерой телефона перед печатью.",
+  advanced: "Дополнительно",
+  cornerColors: "Настроить цвета углов",
+  moreColors: "Другие цвета",
+  logoSize: "Размер логотипа",
+  smaller: "Меньше",
+  larger: "Больше",
+  resolution: "Разрешение PNG",
+  resolutionHint:
+    "Больше пикселей — чётче PNG при увеличении и больше размер файла. Масштаб предпросмотра остаётся прежним. Это не оценка считываемости QR.",
+  smallerFile: "Меньше файл",
+  moreDetail: "Больше деталей",
+  vectorHint: "SVG масштабируется без потери чёткости.",
+  exportDimensions: "Размер скачиваемого изображения",
   sampleHint: "Сейчас показан пример. Замените его своим содержимым перед скачиванием.",
   noLogo: "Без логотипа",
   fill: "Цвет или градиент",
@@ -220,7 +249,7 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   logoTooLarge: "Файл логотипа должен быть не больше 700 КБ.",
   logoFormat: "Выберите PNG, JPEG или WebP. SVG не поддерживается.",
   logoInvalid: "Не удалось прочитать изображение. Выберите другой файл.",
-  technical: "QR-код и файл",
+  technical: "Дополнительные настройки",
   ecc: "Устойчивость к повреждениям",
   version: "Плотность кода (версия)",
   autoVersion: "Авто",
@@ -236,6 +265,8 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   scan: "Проверить считывание",
   scanUnavailable: "Проверка браузером недоступна. Проверьте QR камерой телефона.",
   scanMatched: "Браузер распознал исходное содержимое. Проверьте также на целевых устройствах.",
+  scanSuccess: "QR-код распознан",
+  scanDeviceHint: "Проверьте также на целевых устройствах.",
   scanMissing: "QR не распознан. Попробуйте более простой дизайн или больший размер.",
   scanMismatch: "Распознанное содержимое не совпадает. Измените дизайн и проверьте снова.",
   scanFailed: "Проверка не удалась. Попробуйте ещё раз или используйте камеру телефона.",
@@ -307,12 +338,26 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   previewAlt: "QR code preview",
   generationError: "Could not create the QR code",
   privacy: "Content is processed in your browser.",
-  staticHint: "This is a static QR code. Its content cannot be changed after printing.",
+  staticHint: "The content of a downloaded QR code cannot be changed.",
   presets: "Design preset",
   custom: "Custom design",
   paint: "Colors",
   shapes: "Shapes and frame",
   recommendations: "Recommendations",
+  stylingNotice: "You changed the design — check the QR with a phone camera before printing.",
+  advanced: "Advanced",
+  cornerColors: "Customize corner colors",
+  moreColors: "More colors",
+  logoSize: "Logo size",
+  smaller: "Smaller",
+  larger: "Larger",
+  resolution: "PNG resolution",
+  resolutionHint:
+    "More pixels keep an enlarged PNG sharper and increase its file size. Preview scale stays the same. This is not a QR readability score.",
+  smallerFile: "Smaller file",
+  moreDetail: "More detail",
+  vectorHint: "Vector SVG stays sharp at any scale.",
+  exportDimensions: "Export image dimensions",
   sampleHint: "This is sample content. Replace it with your own before downloading.",
   noLogo: "No logo",
   fill: "Color or gradient",
@@ -360,7 +405,7 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   logoTooLarge: "The logo must not exceed 700 KB.",
   logoFormat: "Choose PNG, JPEG or WebP. SVG is not supported.",
   logoInvalid: "Could not read the image. Choose another file.",
-  technical: "QR code and file",
+  technical: "Advanced settings",
   ecc: "Damage recovery",
   version: "Code density (version)",
   autoVersion: "Auto",
@@ -376,6 +421,8 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   scan: "Check readability",
   scanUnavailable: "Browser scanning is unavailable. Check the QR with a phone camera.",
   scanMatched: "The browser decoded the original content. Also test on target devices.",
+  scanSuccess: "QR code recognized",
+  scanDeviceHint: "Also test on target devices.",
   scanMissing: "No matching QR was found. Try a simpler design or larger size.",
   scanMismatch: "The decoded content does not match. Adjust the design and test again.",
   scanFailed: "Scanning failed. Try again or use a phone camera.",

@@ -77,6 +77,26 @@ export const scanCases: readonly ScanCase[] = [
       design: { ...preset.design, size },
     })),
   ),
+  ...(["square", "rounded", "circle", "soft", "leaf", "leaf-reverse"] as const).flatMap(
+    (moduleShape) =>
+      [true, false].map((clearBackground) => ({
+        id: `logo-clear-${moduleShape}-${clearBackground}`,
+        payload: "https://example.com/logo",
+        encoding: { version: 3, errorCorrectionLevel: "H" as const },
+        design: {
+          size: 512,
+          moduleShape,
+          logo: {
+            // A transparent 1 × 1 PNG makes the cleared area observable to the decoder.
+            dataUri:
+              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+            widthModules: 3.5,
+            paddingModules: 0.25,
+            clearBackground,
+          },
+        },
+      })),
+  ),
   ...(["soft", "leaf", "leaf-reverse"] as const).flatMap((shape) =>
     ["modules", "outer", "inner"].map((part) => ({
       id: `new-${part}-${shape}`,

@@ -15,13 +15,14 @@ const logo: QrLogoOptions = {
 };
 
 describe("expanded editor rendering", () => {
-  it("preserves the default logo backing and can reveal transparent image areas", () => {
+  it("clears logo cells by default and can keep the QR under transparent image areas", () => {
     const original = renderQrSvg(matrix, { logo });
     const cleared = renderQrSvg(matrix, { logo: { ...logo, clearBackground: true } });
     const overlay = renderQrSvg(matrix, { logo: { ...logo, clearBackground: false } });
     expect(cleared).toBe(original);
-    expect(cleared).toContain('data-qr-logo-backing="true"');
-    expect(overlay).not.toContain('data-qr-logo-backing="true"');
+    expect(cleared).toContain('data-qr-logo-clear="true"');
+    expect(cleared).not.toContain("data-qr-logo-backing");
+    expect(overlay).toContain('data-qr-logo-clear="false"');
     expect(overlay).toContain("<image");
     expect(
       analyzeQrDesign(matrix, { logo: { ...logo, clearBackground: false } }).logoCoveragePercent,
@@ -32,6 +33,38 @@ describe("expanded editor rendering", () => {
     expect(() =>
       renderQrSvg(matrix, { logo: { ...logo, widthModules: 25, clearBackground: false } }),
     ).toThrow("LOGO_OVERLAPS_FUNCTION_MODULES");
+  });
+  it("omits whole SVG cells in the clearance area without moving or mutating other cells", () => {
+    const before = JSON.stringify(matrix);
+    const design = { logo: { ...logo, widthModules: 3.5, paddingModules: 0.25 } };
+    const cleared = renderQrSvg(matrix, design);
+    const overlay = renderQrSvg(matrix, { logo: { ...design.logo, clearBackground: false } });
+    const cells = (svg: string) => {
+      const result = new Set<string>();
+      for (const match of svg.matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+z/g)) {
+        const x = Number(match[1]) - 4;
+        const y = Number(match[2]) - 4;
+        for (let offset = 0; offset < Number(match[3]); offset++) result.add(`${x + offset},${y}`);
+      }
+      return result;
+    };
+    const clearedCells = cells(cleared);
+    const overlayCells = cells(overlay);
+    let removed = 0;
+    for (let y = 0; y < matrix.size; y++) {
+      for (let x = 0; x < matrix.size; x++) {
+        const key = `${x},${y}`;
+        expect(overlayCells.has(key)).toBe(matrix.modules[y]![x]);
+        // This fractional logo intersects the central 5 × 5 cells of version 3.
+        const inside = x >= 12 && x < 17 && y >= 12 && y < 17;
+        expect(clearedCells.has(key)).toBe(matrix.modules[y]![x] && !inside);
+        if (inside && matrix.modules[y]![x]) removed++;
+      }
+    }
+    expect(removed).toBeGreaterThan(0);
+    expect(clearedCells.size).toBe(overlayCells.size - removed);
+    expect(JSON.stringify(matrix)).toBe(before);
+    expect(analyzeQrDesign(matrix, design).logoCoveragePercent).toBeCloseTo((25 / 29 ** 2) * 100);
   });
   it("gives every new form distinct geometry without changing the encoded matrix", () => {
     const shapes: QrModuleShape[] = ["square", "rounded", "circle", "soft", "leaf", "leaf-reverse"];

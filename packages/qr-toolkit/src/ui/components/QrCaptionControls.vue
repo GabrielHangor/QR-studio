@@ -49,65 +49,77 @@ function change(value: Partial<QrCaptionOptions>) {
         class="w-full"
         @update:model-value="change({ text: String($event) })"
     /></UFormField>
-    <UFormField :label="messages.captionStyle"
-      ><USelect
-        :model-value="caption?.style ?? 'plain'"
-        :items="styles"
-        class="w-full"
-        @update:model-value="change({ style: $event })"
-    /></UFormField>
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField :label="messages.fontSize"
-        ><template #hint
-          ><QrFieldHelp
-            :label="messages.fontSize"
-            :text="messages.captionSizeHint"
-            :action-label="messages.help" /></template
-        ><UInput
-          :model-value="caption?.fontSize ?? 18"
-          type="number"
-          :min="8"
-          :max="48"
-          :step="1"
-          class="w-full"
-          @update:model-value="change({ fontSize: Number($event) })"
-      /></UFormField>
-      <UFormField :label="messages.fontWeight"
+    <template v-if="caption?.text.trim()">
+      <UFormField :label="messages.captionStyle"
         ><USelect
-          :model-value="caption?.fontWeight ?? 400"
-          :items="weights"
+          :model-value="caption?.style ?? 'plain'"
+          :items="styles"
           class="w-full"
-          @update:model-value="change({ fontWeight: $event })"
+          @update:model-value="change({ style: $event })"
       /></UFormField>
-      <UFormField :label="messages.letterSpacing"
-        ><UInput
-          :model-value="caption?.letterSpacing ?? 0"
-          type="number"
-          :min="0"
-          :max="10"
-          :step="0.25"
-          class="w-full"
-          @update:model-value="change({ letterSpacing: Number($event) })" /></UFormField
-      ><UFormField :label="messages.captionColor"
-        ><QrColorInput
-          :label="messages.captionColor"
-          :model-value="
-            caption?.color ??
-            (typeof design.foreground === 'string' ? design.foreground : '#000000')
-          "
-          class="w-full"
-          @update:model-value="change({ color: String($event) })"
-      /></UFormField>
-    </div>
-    <div v-if="caption?.style === 'banner'">
-      <UFormField :label="messages.captionBackground"
-        ><QrColorInput
-          :label="messages.captionBackground"
-          light
-          :model-value="caption?.background ?? design.background ?? '#ffffff'"
-          class="w-full"
-          @update:model-value="change({ background: String($event) })"
-      /></UFormField>
-    </div>
+      <div class="grid grid-cols-2 gap-4">
+        <UFormField :label="messages.fontSize"
+          ><template #hint
+            ><QrFieldHelp
+              :label="messages.fontSize"
+              :text="messages.captionSizeHint"
+              :action-label="messages.help" /></template
+          ><UInput
+            :model-value="caption?.fontSize ?? 18"
+            type="number"
+            :min="8"
+            :max="48"
+            :step="1"
+            class="w-full"
+            @update:model-value="change({ fontSize: Number($event) })"
+        /></UFormField>
+        <UFormField :label="messages.captionColor" class="col-span-2"
+          ><QrColorInput
+            :label="messages.captionColor"
+            :model-value="
+              caption?.color ??
+              (typeof design.foreground === 'string' ? design.foreground : '#000000')
+            "
+            class="w-full"
+            @update:model-value="change({ color: String($event) })"
+        /></UFormField>
+      </div>
+      <div v-if="caption?.style === 'banner'">
+        <UFormField :label="messages.captionBackground"
+          ><QrColorInput
+            :label="messages.captionBackground"
+            light
+            :model-value="caption?.background ?? design.background ?? '#ffffff'"
+            class="w-full"
+            @update:model-value="change({ background: String($event) })"
+        /></UFormField>
+      </div>
+      <details>
+        <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
+          {{ messages.advanced }}
+        </summary>
+        <div class="mt-3 grid grid-cols-2 gap-4">
+          <UFormField :label="messages.fontWeight">
+            <USelect
+              :model-value="caption.fontWeight ?? 400"
+              :items="weights"
+              class="w-full"
+              @update:model-value="change({ fontWeight: $event })"
+            />
+          </UFormField>
+          <UFormField :label="messages.letterSpacing">
+            <UInput
+              :model-value="caption.letterSpacing ?? 0"
+              type="number"
+              :min="0"
+              :max="10"
+              :step="0.25"
+              class="w-full"
+              @update:model-value="change({ letterSpacing: Number($event) })"
+            />
+          </UFormField>
+        </div>
+      </details>
+    </template>
   </fieldset>
 </template>

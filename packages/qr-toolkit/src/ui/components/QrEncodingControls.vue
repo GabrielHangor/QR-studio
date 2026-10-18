@@ -26,7 +26,6 @@ const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => 
   { label: props.messages.eccQuartile, value: "Q" },
   { label: props.messages.eccHigh, value: "H" },
 ]);
-const sizes = [256, 512, 1024, 2048];
 </script>
 
 <template>
@@ -44,33 +43,6 @@ const sizes = [256, 512, 1024, 2048];
         @update:model-value="
           emit('update:encoding', { ...encoding, errorCorrectionLevel: $event })
         "
-    /></UFormField>
-    <UFormField :label="messages.version" :help="messages.versionHint"
-      ><UInput
-        :model-value="encoding.version === undefined ? '' : String(encoding.version)"
-        type="number"
-        :min="1"
-        :max="40"
-        :placeholder="messages.autoVersion"
-        class="w-full"
-        @update:model-value="
-          emit('update:encoding', {
-            ...encoding,
-            version: $event === '' ? undefined : Number($event),
-          })
-        "
-    /></UFormField>
-    <UFormField :label="messages.size"
-      ><template #hint
-        ><QrFieldHelp
-          :label="messages.size"
-          :text="messages.sizeHint"
-          :action-label="messages.help" /></template
-      ><USelect
-        :model-value="design.size ?? 512"
-        :items="sizes"
-        class="w-full"
-        @update:model-value="emit('update:design', { ...design, size: $event })"
     /></UFormField>
     <UFormField :label="messages.quietZone"
       ><template #hint

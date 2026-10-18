@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import QrVisualPicker from "./QrVisualPicker.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
 import { qrShapeThumbnail } from "../visuals.js";
 
 import type { RenderQrSvgOptions } from "../../engine/types.js";
@@ -48,9 +49,16 @@ function finder(value: Partial<NonNullable<RenderQrSvgOptions["finder"]>>) {
 </script>
 
 <template>
-  <div class="grid gap-4">
-    <div class="min-w-0 space-y-3">
-      <h4 class="text-sm font-medium text-highlighted">{{ messages.finderOuter }}</h4>
+  <div class="grid gap-3">
+    <div class="min-w-0 space-y-1.5">
+      <div class="flex items-center gap-2">
+        <h4 class="text-sm font-medium text-highlighted">{{ messages.finderOuter }}</h4>
+        <QrFieldHelp
+          :label="messages.finderOuter"
+          :text="messages.findersHint"
+          :action-label="messages.help"
+        />
+      </div>
       <QrVisualPicker
         :label="messages.finderOuter"
         :items="outerItems"
@@ -58,7 +66,7 @@ function finder(value: Partial<NonNullable<RenderQrSvgOptions["finder"]>>) {
         @update:model-value="finder({ outerShape: $event })"
       />
     </div>
-    <div class="min-w-0 space-y-3">
+    <div class="min-w-0 space-y-1.5">
       <h4 class="text-sm font-medium text-highlighted">{{ messages.finderInner }}</h4>
       <QrVisualPicker
         :label="messages.finderInner"

@@ -24,8 +24,8 @@ const modules = computed(() =>
 </script>
 
 <template>
-  <div class="@container space-y-5">
-    <div class="space-y-2">
+  <div class="@container space-y-3">
+    <div class="space-y-1.5">
       <h4 class="text-sm font-medium text-highlighted">{{ messages.moduleShape }}</h4>
       <QrVisualPicker
         :label="messages.moduleShape"

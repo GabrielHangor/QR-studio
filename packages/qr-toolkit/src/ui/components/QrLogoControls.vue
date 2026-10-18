@@ -4,6 +4,7 @@ import UInput from "@nuxt/ui/components/Input.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
+import USlider from "@nuxt/ui/components/Slider.vue";
 import QrFieldHelp from "./QrFieldHelp.vue";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
@@ -43,33 +44,55 @@ function upload(event: Event) {
       :label="messages.clearLogo"
       @update:model-value="patchLogo({ clearBackground: $event })"
     />
-    <div v-if="design.logo" class="grid grid-cols-2 gap-4">
-      <UFormField :label="messages.logoWidth"
-        ><template #hint
-          ><QrFieldHelp
-            :label="messages.logoWidth"
-            :text="messages.logoSizeHint"
-            :action-label="messages.help" /></template
-        ><UInput
-          type="number"
+    <template v-if="design.logo">
+      <UFormField :label="messages.logoSize">
+        <USlider
+          :model-value="design.logo.widthModules"
           :min="1"
           :max="20"
           :step="0.5"
-          :model-value="design.logo.widthModules"
-          class="w-full"
-          @update:model-value="patchLogo({ widthModules: Number($event) })"
-      /></UFormField>
-      <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding"
-        ><UInput
-          type="number"
-          :min="0"
-          :max="8"
-          :step="0.5"
-          :model-value="design.logo.paddingModules ?? 0.5"
-          class="w-full"
-          @update:model-value="patchLogo({ paddingModules: Number($event) })"
-      /></UFormField>
-    </div>
+          :aria-label="messages.logoSize"
+          class="my-3"
+          @update:model-value="patchLogo({ widthModules: $event })"
+        />
+        <div class="flex justify-between text-xs text-muted">
+          <span>{{ messages.smaller }}</span
+          ><span>{{ messages.larger }}</span>
+        </div>
+      </UFormField>
+      <details>
+        <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
+          {{ messages.advanced }}
+        </summary>
+        <div class="mt-3 grid grid-cols-2 gap-4">
+          <UFormField :label="messages.logoWidth"
+            ><template #hint
+              ><QrFieldHelp
+                :label="messages.logoWidth"
+                :text="messages.logoSizeHint"
+                :action-label="messages.help" /></template
+            ><UInput
+              type="number"
+              :min="1"
+              :max="20"
+              :step="0.5"
+              :model-value="design.logo.widthModules"
+              class="w-full"
+              @update:model-value="patchLogo({ widthModules: Number($event) })"
+          /></UFormField>
+          <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding"
+            ><UInput
+              type="number"
+              :min="0"
+              :max="8"
+              :step="0.5"
+              :model-value="design.logo.paddingModules ?? 0.5"
+              class="w-full"
+              @update:model-value="patchLogo({ paddingModules: Number($event) })"
+          /></UFormField>
+        </div>
+      </details>
+    </template>
     <UButton
       v-if="design.logo || busy || issue"
       color="neutral"

@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import UCard from "@nuxt/ui/components/Card.vue";
-import UAccordion from "@nuxt/ui/components/Accordion.vue";
-import UTextarea from "@nuxt/ui/components/Textarea.vue";
 import QrExportActions from "./QrExportActions.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
+import UAccordion from "@nuxt/ui/components/Accordion.vue";
 import { QrBrowserError } from "../browser.js";
 import { formatQrError, formatQrDiagnostic } from "../../i18n/index.js";
 import type { QrEditorMessages } from "../messages.js";
 import type { QrEditorPreview } from "../useQrEditor.js";
+import type { RenderQrSvgOptions } from "../../engine/types.js";
 
-const props = defineProps<{ preview: QrEditorPreview; messages: QrEditorMessages }>();
+const props = defineProps<{
+  preview: QrEditorPreview;
+  design: RenderQrSvgOptions;
+  messages: QrEditorMessages;
+}>();
+const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
+const recommendationsOpen = ref<string>();
 const failure = computed(() =>
   props.preview.status === "error"
     ? props.preview.error instanceof QrBrowserError
@@ -20,6 +26,16 @@ const failure = computed(() =>
 );
 const diagnostics = computed(() =>
   props.preview.status === "ready" ? props.preview.analysis.diagnostics : [],
+);
+// Styling notices describe the same action; retain concrete risks as separate recommendations.
+const stylingCodes = new Set([
+  "MODULE_SHAPE_REQUIRES_DEVICE_TEST",
+  "FINDER_SHAPE_REQUIRES_DEVICE_TEST",
+  "GRADIENT_REQUIRES_DEVICE_TEST",
+]);
+const stylingNotice = computed(() => diagnostics.value.some((item) => stylingCodes.has(item.code)));
+const recommendations = computed(() =>
+  diagnostics.value.filter((item) => !stylingCodes.has(item.code)),
 );
 // An image document isolates SVG fragment IDs when several editors share the page.
 // It needs neither DOM injection nor an object URL with a cleanup lifecycle.
@@ -31,18 +47,25 @@ const previewSource = computed(() =>
 </script>
 
 <template>
-  <UCard :aria-label="messages.preview">
+  <UCard
+    :aria-label="messages.preview"
+    :ui="{
+      root: 'lg:flex lg:h-[min(44rem,calc(100dvh-14rem))] lg:flex-col',
+      header: 'px-4 py-3 sm:px-4 lg:shrink-0',
+      body: 'p-4 sm:p-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto',
+    }"
+  >
     <template #header
       ><h3 class="font-semibold text-highlighted">{{ messages.preview }}</h3></template
     >
     <div
-      class="flex min-h-80 flex-col items-center justify-center gap-4 rounded-lg bg-elevated p-6 sm:p-8"
+      class="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg bg-elevated p-4 lg:min-h-32 lg:flex-1 lg:p-3"
     >
       <img
         v-if="previewSource"
         :src="previewSource"
         :alt="messages.previewAlt"
-        class="block h-auto w-full max-w-md"
+        class="block h-auto w-full max-w-md lg:h-full lg:max-w-none lg:object-contain"
       />
       <UAlert
         v-else-if="failure"
@@ -64,84 +87,39 @@ const previewSource = computed(() =>
         </p>
       </div>
     </div>
-    <QrExportActions :preview="preview" :messages="messages" class="mt-5" />
-    <section
-      v-if="diagnostics.length"
-      class="mt-5 space-y-2"
-      aria-live="polite"
+    <QrExportActions
+      :preview="preview"
+      :design="design"
+      :messages="messages"
+      class="mt-4 lg:mt-0 lg:shrink-0"
+      @update:design="emit('update:design', $event)"
+    />
+    <UAccordion
+      v-if="recommendations.length || stylingNotice"
+      v-model="recommendationsOpen"
+      :items="[
+        { label: messages.recommendations, value: 'recommendations', slot: 'recommendations' },
+      ]"
+      class="mt-3 lg:mt-0 lg:shrink-0"
+      :ui="{ trigger: 'py-2 text-xs font-semibold text-highlighted', body: 'pb-1' }"
       :aria-label="messages.recommendations"
     >
-      <h4 class="text-sm font-semibold text-highlighted">{{ messages.recommendations }}</h4>
-      <ul class="list-disc space-y-2 ps-5 text-sm text-muted">
-        <li
-          v-for="diagnostic in diagnostics"
-          :key="diagnostic.code"
-          :class="diagnostic.severity === 'error' ? 'text-error' : undefined"
+      <template #recommendations>
+        <ul
+          class="max-h-48 list-disc space-y-2 overflow-y-auto ps-5 text-xs text-muted"
+          tabindex="0"
+          :aria-label="messages.recommendations"
         >
-          {{ formatQrDiagnostic(diagnostic, messages.engine) }}
-        </li>
-      </ul>
-    </section>
-    <UAccordion
-      v-if="preview.status === 'ready'"
-      :items="[
-        {
-          label: messages.metrics,
-          slot: 'details',
-        },
-      ]"
-      class="mt-4 rounded-lg bg-elevated/50 px-3"
-      :ui="{ trigger: 'font-semibold text-highlighted' }"
-    >
-      <template #details>
-        <dl
-          v-if="preview.status === 'ready'"
-          class="mt-5 grid grid-cols-2 gap-3 text-sm"
-          :aria-label="messages.metrics"
-        >
-          <div>
-            <dt class="text-muted">{{ messages.version }}</dt>
-            <dd class="font-medium text-highlighted">
-              {{ preview.matrix.version }} / {{ preview.matrix.errorCorrectionLevel }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ messages.matrixSize }}</dt>
-            <dd>{{ preview.matrix.size }} × {{ preview.matrix.size }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ messages.modulePitch }}</dt>
-            <dd>{{ preview.analysis.modulePitchPx.toFixed(2) }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ messages.contrast }}</dt>
-            <dd>{{ preview.analysis.contrastRatio?.toFixed(2) ?? messages.notMeasured }}</dd>
-          </div>
-          <div v-if="preview.analysis.logoCoveragePercent !== null">
-            <dt class="text-muted">{{ messages.logoCoverage }}</dt>
-            <dd>{{ preview.analysis.logoCoveragePercent.toFixed(2) }}</dd>
-          </div>
-        </dl>
+          <li
+            v-for="(diagnostic, index) in recommendations"
+            :key="diagnostic.code + index"
+            :class="diagnostic.severity === 'error' ? 'text-error' : undefined"
+          >
+            {{ formatQrDiagnostic(diagnostic, messages.engine) }}
+          </li>
+          <li v-if="stylingNotice">{{ messages.stylingNotice }}</li>
+        </ul>
       </template>
     </UAccordion>
-    <UAccordion
-      v-if="preview.status === 'ready'"
-      :items="[{ label: messages.svgSource, slot: 'source' }]"
-      class="mt-4"
-      :ui="{ trigger: 'font-semibold text-highlighted' }"
-    >
-      <template #source
-        ><UTextarea
-          :aria-label="messages.svgSource"
-          :model-value="preview.svg"
-          readonly
-          :rows="6"
-          class="w-full"
-          :ui="{ base: 'font-mono text-xs' }"
-      /></template>
-    </UAccordion>
-    <template #footer
-      ><p class="text-sm text-muted">{{ messages.staticHint }}</p></template
-    >
   </UCard>
 </template>

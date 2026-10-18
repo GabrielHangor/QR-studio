@@ -18,16 +18,19 @@ const color = computed(() =>
 </script>
 
 <template>
-  <div class="space-y-2">
-    <UInput
-      :model-value="color"
-      :aria-label="label"
-      type="color"
-      :ui="{ base: 'h-9 cursor-pointer p-1' }"
-      class="w-full"
-      @update:model-value="emit('update:modelValue', String($event))"
-    />
-    <div class="grid grid-cols-8 gap-1.5" role="group" :aria-label="label + ' (HEX)'">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2">
+      <UInput
+        :model-value="color"
+        :aria-label="label"
+        type="color"
+        :ui="{ base: 'size-9 cursor-pointer p-1' }"
+        class="w-9 shrink-0"
+        @update:model-value="emit('update:modelValue', String($event))"
+      />
+      <span class="min-w-16 font-mono text-xs text-muted">{{ color.toUpperCase() }}</span>
+    </div>
+    <div class="flex flex-wrap gap-1" role="group" :aria-label="label + ' (HEX)'">
       <button
         v-for="value in palette"
         :key="value"
@@ -35,7 +38,7 @@ const color = computed(() =>
         :aria-label="label + ' ' + value"
         :aria-pressed="color.toLowerCase() === value"
         :style="{ backgroundColor: value }"
-        class="aspect-square min-h-7 rounded-md border border-accented outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+        class="size-8 shrink-0 rounded-md border border-accented outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
         :class="
           color.toLowerCase() === value
             ? 'ring-2 ring-primary ring-offset-1 ring-offset-default'

@@ -169,7 +169,13 @@ const contentType = computed({
         </UAccordion>
         <p class="text-xs text-muted">{{ messages.privacy }}</p>
       </div>
-      <QrPreview :preview="preview" :messages="messages" class="min-w-0 lg:sticky lg:top-5" />
+      <QrPreview
+        :preview="preview"
+        :design="model.design"
+        :messages="messages"
+        class="min-w-0 lg:sticky lg:top-5"
+        @update:design="update('design', $event)"
+      />
     </div>
   </section>
 </template>

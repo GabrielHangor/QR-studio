@@ -56,7 +56,7 @@ export interface QrLogoOptions {
   readonly widthModules: number;
   /** Clear background padding around the logo, measured in QR modules. */
   readonly paddingModules?: number;
-  /** Hide QR cells behind a solid backing. Defaults to true; false preserves transparent logo areas. */
+  /** Omit whole cells under the logo and padding. Defaults to true; false keeps the QR underneath. */
   readonly clearBackground?: boolean;
 }
 
@@ -102,7 +102,7 @@ export interface RenderQrSvgOptions {
   finderShape?: QrModuleShape;
   /** Style the three finder markers as whole rings and pupils. Overrides finderShape. */
   finder?: QrFinderOptions;
-  /** Optional centered image overlay with a solid knockout behind it. */
+  /** Optional centered image; clearBackground removes whole modules underneath. */
   logo?: QrLogoOptions;
   /** One label, or up to two labels: one above and one below the symbol. */
   caption?: QrCaptionOptions | readonly QrCaptionOptions[];

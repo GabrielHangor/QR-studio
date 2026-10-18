@@ -52,7 +52,7 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
 </script>
 
 <template>
-  <div class="grid gap-5 @min-[38rem]:grid-cols-2">
+  <div class="grid gap-3 @min-[38rem]:grid-cols-2">
     <UFormField :label="messages.fill" class="@min-[38rem]:col-span-2"
       ><USelect
         :model-value="gradient?.direction ?? 'solid'"
@@ -85,10 +85,11 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
           @update:model-value="patch({ foreground: { ...gradient, endColor: String($event) } })"
       /></UFormField>
     </div>
-    <div class="space-y-4 @min-[38rem]:col-span-2">
-      <h4 class="font-medium text-highlighted">{{ messages.finders }}</h4>
-      <p class="text-sm text-muted">{{ messages.findersHint }}</p>
-      <div class="grid gap-4 sm:grid-cols-2">
+    <details class="@min-[38rem]:col-span-2">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
+        {{ messages.cornerColors }}
+      </summary>
+      <div class="mt-3 grid gap-4 sm:grid-cols-2">
         <div class="space-y-3">
           <USwitch
             :model-value="design.finder?.outerColor !== undefined"
@@ -118,24 +119,36 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
           /></UFormField>
         </div>
       </div>
-      <USwitch
-        :model-value="design.artworkBackground !== undefined"
-        :label="messages.separateBackground"
-        @update:model-value="
-          patch({ artworkBackground: $event ? (design.background ?? '#ffffff') : undefined })
-        "
-      />
-      <UFormField v-if="design.artworkBackground !== undefined" :label="messages.artworkBackground"
-        ><QrColorInput
+    </details>
+    <details class="@min-[38rem]:col-span-2">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
+        {{ messages.moreColors }}
+      </summary>
+      <div class="mt-3 space-y-3">
+        <USwitch
+          :model-value="design.artworkBackground !== undefined"
+          :label="messages.separateBackground"
+          @update:model-value="
+            patch({ artworkBackground: $event ? (design.background ?? '#ffffff') : undefined })
+          "
+        />
+        <UFormField
+          v-if="design.artworkBackground !== undefined"
           :label="messages.artworkBackground"
-          light
-          :model-value="design.artworkBackground"
-          class="w-full"
-          @update:model-value="patch({ artworkBackground: String($event) })"
-      /></UFormField>
-      <UFormField
-        v-if="design.frame && design.frame !== 'none' && frame.style !== 'none'"
-        :label="messages.frameColor"
+          ><QrColorInput
+            :label="messages.artworkBackground"
+            light
+            :model-value="design.artworkBackground"
+            class="w-full"
+            @update:model-value="patch({ artworkBackground: String($event) })"
+        /></UFormField>
+      </div>
+    </details>
+    <div
+      v-if="design.frame && design.frame !== 'none' && frame.style !== 'none'"
+      class="@min-[38rem]:col-span-2"
+    >
+      <UFormField :label="messages.frameColor"
         ><QrColorInput
           :label="messages.frameColor"
           :model-value="frame.color ?? '#202833'"
