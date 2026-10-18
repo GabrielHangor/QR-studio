@@ -50,7 +50,7 @@ function changeForeground(value: string) {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="grid gap-5 @min-[38rem]:grid-cols-2">
     <UFormField :label="messages.moduleShape"
       ><USelect
         :model-value="design.moduleShape ?? 'square'"

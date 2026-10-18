@@ -3,6 +3,7 @@ import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
 import { qrCaptionDrafts, updateQrCaption } from "../../editor/index.js";
 import type { QrCaptionOptions, RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
@@ -24,7 +25,14 @@ const styles = computed(() => [
   { label: props.messages.banner, value: "banner" as const },
   { label: props.messages.arc, value: "arc" as const, disabled: props.design.shape !== "circle" },
 ]);
-const weights: NonNullable<QrCaptionOptions["fontWeight"]>[] = [400, 500, 600, 700];
+const weights = computed<{ label: string; value: NonNullable<QrCaptionOptions["fontWeight"]> }[]>(
+  () => [
+    { label: props.messages.weightNormal, value: 400 },
+    { label: props.messages.weightMedium, value: 500 },
+    { label: props.messages.weightSemibold, value: 600 },
+    { label: props.messages.weightBold, value: 700 },
+  ],
+);
 function change(value: Partial<QrCaptionOptions>) {
   emit("update:design", updateQrCaption(props.design, props.position, value));
 }
@@ -49,6 +57,11 @@ function change(value: Partial<QrCaptionOptions>) {
     /></UFormField>
     <div class="grid grid-cols-2 gap-4">
       <UFormField :label="messages.fontSize"
+        ><template #hint
+          ><QrFieldHelp
+            :label="messages.fontSize"
+            :text="messages.captionSizeHint"
+            :action-label="messages.help" /></template
         ><UInput
           :model-value="caption?.fontSize ?? 18"
           type="number"

@@ -65,47 +65,62 @@ const previewSource = computed(() =>
       </div>
     </div>
     <QrExportActions :preview="preview" :messages="messages" class="mt-5" />
-    <dl
+    <UAccordion
       v-if="preview.status === 'ready'"
-      class="mt-5 grid grid-cols-2 gap-3 text-sm"
-      :aria-label="messages.metrics"
+      :items="[
+        {
+          label: messages.details + (diagnostics.length ? ' (' + diagnostics.length + ')' : ''),
+          slot: 'details',
+        },
+      ]"
+      class="mt-4 rounded-lg bg-elevated/50 px-3"
+      :ui="{ trigger: 'font-semibold text-highlighted' }"
     >
-      <div>
-        <dt class="text-muted">{{ messages.version }}</dt>
-        <dd class="font-medium text-highlighted">
-          {{ preview.matrix.version }} / {{ preview.matrix.errorCorrectionLevel }}
-        </dd>
-      </div>
-      <div>
-        <dt class="text-muted">{{ messages.matrixSize }}</dt>
-        <dd>{{ preview.matrix.size }} × {{ preview.matrix.size }}</dd>
-      </div>
-      <div>
-        <dt class="text-muted">{{ messages.modulePitch }}</dt>
-        <dd>{{ preview.analysis.modulePitchPx.toFixed(2) }}</dd>
-      </div>
-      <div>
-        <dt class="text-muted">{{ messages.contrast }}</dt>
-        <dd>{{ preview.analysis.contrastRatio?.toFixed(2) ?? messages.notMeasured }}</dd>
-      </div>
-      <div v-if="preview.analysis.logoCoveragePercent !== null">
-        <dt class="text-muted">{{ messages.logoCoverage }}</dt>
-        <dd>{{ preview.analysis.logoCoveragePercent.toFixed(2) }}</dd>
-      </div>
-    </dl>
-    <ul v-if="diagnostics.length" class="mt-4 space-y-3" aria-live="polite">
-      <li v-for="diagnostic in diagnostics" :key="diagnostic.code">
-        <UAlert
-          :color="diagnostic.severity === 'error' ? 'error' : 'warning'"
-          :description="formatQrDiagnostic(diagnostic, messages.engine)"
-          variant="subtle"
-        />
-      </li>
-    </ul>
+      <template #details>
+        <dl
+          v-if="preview.status === 'ready'"
+          class="mt-5 grid grid-cols-2 gap-3 text-sm"
+          :aria-label="messages.metrics"
+        >
+          <div>
+            <dt class="text-muted">{{ messages.version }}</dt>
+            <dd class="font-medium text-highlighted">
+              {{ preview.matrix.version }} / {{ preview.matrix.errorCorrectionLevel }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ messages.matrixSize }}</dt>
+            <dd>{{ preview.matrix.size }} × {{ preview.matrix.size }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ messages.modulePitch }}</dt>
+            <dd>{{ preview.analysis.modulePitchPx.toFixed(2) }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ messages.contrast }}</dt>
+            <dd>{{ preview.analysis.contrastRatio?.toFixed(2) ?? messages.notMeasured }}</dd>
+          </div>
+          <div v-if="preview.analysis.logoCoveragePercent !== null">
+            <dt class="text-muted">{{ messages.logoCoverage }}</dt>
+            <dd>{{ preview.analysis.logoCoveragePercent.toFixed(2) }}</dd>
+          </div>
+        </dl>
+        <ul v-if="diagnostics.length" class="mt-4 space-y-3" aria-live="polite">
+          <li v-for="diagnostic in diagnostics" :key="diagnostic.code">
+            <UAlert
+              :color="diagnostic.severity === 'error' ? 'error' : 'warning'"
+              :description="formatQrDiagnostic(diagnostic, messages.engine)"
+              variant="subtle"
+            />
+          </li>
+        </ul>
+      </template>
+    </UAccordion>
     <UAccordion
       v-if="preview.status === 'ready'"
       :items="[{ label: messages.svgSource, slot: 'source' }]"
       class="mt-4"
+      :ui="{ trigger: 'font-semibold text-highlighted' }"
     >
       <template #source
         ><UTextarea

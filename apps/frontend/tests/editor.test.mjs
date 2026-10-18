@@ -80,7 +80,7 @@ for (const viewport of [
         await page.getByRole("tab", { name: /^Текст/ }).click();
         assert.equal(await text.inputValue(), payload);
         const beforeStyle = await preview.getAttribute("src");
-        await page.getByRole("combobox", { name: "Форма модулей", exact: true }).click();
+        await page.getByRole("combobox", { name: "Форма точек", exact: true }).click();
         await page.getByRole("option", { name: "Скруглённые", exact: true }).click();
         await page.waitForFunction(
           (previous) =>
@@ -112,6 +112,74 @@ for (const viewport of [
 async function select(page, label, option, optionRoot = page) {
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await optionRoot.getByRole("option", { name: option, exact: true }).click();
+}
+
+for (const width of [1920, 1440, 768, 390]) {
+  it(`keeps settings accessible and explains technical fields at ${width}px`, async () => {
+    const context = await browser.newContext({
+      viewport: { width, height: 1080 },
+      locale: "ru-RU",
+      hasTouch: width < 1024,
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto(baseUrl);
+      await page.getByRole("textbox", { name: /^Ссылка/ }).fill("https://example.com/qr-studio");
+      await page.getByRole("img", { name: "Предпросмотр QR-кода" }).waitFor();
+      const finders = page.getByRole("button", { name: "Квадраты по углам", exact: true });
+      assert.equal(await finders.getAttribute("aria-expanded"), "true");
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Форма и рамка", exact: true })
+          .getAttribute("aria-expanded"),
+        "true",
+      );
+      if (width >= 1440) {
+        const content = await page
+          .getByRole("heading", { name: "Что будет в QR-коде", exact: true })
+          .boundingBox();
+        const design = await page
+          .getByRole("heading", { name: "Оформление", exact: true })
+          .boundingBox();
+        const preview = await page
+          .getByRole("heading", { name: "Предпросмотр", exact: true })
+          .boundingBox();
+        assert.ok(content.x < design.x && design.x < preview.x);
+        assert.ok(Math.abs(content.y - design.y) < 2 && Math.abs(design.y - preview.y) < 2);
+        const main = await page.locator("main").boundingBox();
+        assert.ok(main.width > width * 0.9);
+        assert.ok((await finders.boundingBox()).y < 1080);
+      }
+      if (width === 1920 || width === 390) {
+        await select(page, "Готовый дизайн", "ATELIER — кофе");
+        await page
+          .getByRole("img", { name: "Предпросмотр QR-кода" })
+          .evaluate((image) => image.decode());
+        await page.keyboard.press("Control+Home");
+        await page.screenshot({ path: `test-results/editor-${width}.png`, fullPage: true });
+      }
+      const help = page.getByRole("button", {
+        name: "Пояснение: Поля вокруг QR, ячейки",
+        exact: true,
+      });
+      if (width < 1024) {
+        await help.tap();
+      } else {
+        await help.focus();
+      }
+      const tooltip = page.getByRole("tooltip");
+      await tooltip.waitFor();
+      assert.match(await tooltip.innerText(), /Минимум — 4 ячейки/);
+      await help.press("Escape");
+      await tooltip.waitFor({ state: "detached" });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+      );
+    } finally {
+      await context.close();
+    }
+  });
 }
 
 for (const width of [1280, 390]) {
@@ -159,17 +227,15 @@ for (const width of [1280, 390]) {
       await page.getByRole("tab", { name: "Текст", exact: true }).click();
       const payload = "  Привет 👋\nQR Studio  ";
       await page.getByRole("textbox", { name: /^Текст/ }).fill(payload);
-      await select(page, "Заливка модулей", "Слева направо");
-      await page.getByRole("button", { name: "Общая форма и рамка", exact: true }).click();
-      await select(page, "Общая форма", "Круги");
-      await page.getByRole("switch", { name: "Отдельный внешний фон", exact: true }).click();
-      await page.getByLabel("Цвет внешнего фона", { exact: true }).fill("#f1eadb");
+      await select(page, "Цвет или градиент", "Слева направо");
+      await select(page, "Форма композиции", "Круг");
+      await page.getByRole("switch", { name: "Другой фон вокруг кода", exact: true }).click();
+      await page.getByLabel("Фон вокруг кода", { exact: true }).fill("#f1eadb");
       await page.getByRole("spinbutton", { name: "Толщина рамки, px", exact: true }).fill("4");
-      await page.getByRole("button", { name: "Угловые маркеры", exact: true }).click();
-      await select(page, "Внешняя форма маркеров", "Скруглённые");
-      await select(page, "Форма центра маркеров", "Круги");
-      await page.getByRole("switch", { name: "Свой цвет кольца", exact: true }).click();
-      await page.getByLabel("Цвет кольца маркеров", { exact: true }).fill("#123456");
+      await select(page, "Форма контура", "Скруглённые");
+      await select(page, "Форма центра", "Круги");
+      await page.getByRole("switch", { name: "Свой цвет контура", exact: true }).click();
+      await page.getByLabel("Цвет контура", { exact: true }).fill("#123456");
       await page.getByRole("button", { name: "Надписи вокруг QR", exact: true }).click();
       const top = page.getByRole("group", { name: "Верхняя надпись", exact: true });
       const bottom = page.getByRole("group", { name: "Нижняя надпись", exact: true });
@@ -181,7 +247,7 @@ for (const width of [1280, 390]) {
         .fill("SCAN ME");
       await select(top, "Стиль надписи", "По дуге круга", page);
       await select(bottom, "Стиль надписи", "По дуге круга", page);
-      await select(top, "Насыщенность", "600", page);
+      await select(top, "Толщина шрифта", "Полужирная", page);
       await page.getByRole("button", { name: "Логотип", exact: true }).click();
       const png = await page.evaluate(() => {
         const canvas = document.createElement("canvas");
@@ -200,11 +266,12 @@ for (const width of [1280, 390]) {
       });
       await page.getByRole("button", { name: "Убрать логотип", exact: true }).waitFor();
       await preview.waitFor();
-      await page.getByRole("button", { name: "Параметры QR и экспорта", exact: true }).click();
-      await select(page, "Коррекция ошибок", "H");
-      await page.getByRole("spinbutton", { name: "Версия QR", exact: true }).fill("4");
-      await select(page, "Ширина экспорта", "1024");
-      await page.getByRole("spinbutton", { name: "Свободное поле, модули", exact: true }).fill("6");
+      await select(page, "Устойчивость к повреждениям", "H — высокая");
+      await page
+        .getByRole("spinbutton", { name: "Плотность кода (версия)", exact: true })
+        .fill("4");
+      await select(page, "Ширина файла, px", "1024");
+      await page.getByRole("spinbutton", { name: "Поля вокруг QR, ячейки", exact: true }).fill("6");
       await preview.evaluate((image) => image.decode());
       const svgDownload = page.waitForEvent("download");
       await page.getByRole("button", { name: "Скачать SVG", exact: true }).click();
@@ -226,7 +293,7 @@ for (const width of [1280, 390]) {
         textMode: "Plain",
       });
       assert.equal(decoded[0]?.text, payload);
-      await select(page, "Общая форма", "Квадраты");
+      await select(page, "Форма композиции", "Квадрат");
       await preview.evaluate((image) => image.decode());
       assert.equal(
         decodeURIComponent((await preview.getAttribute("src")).split(",")[1]).includes("<textPath"),

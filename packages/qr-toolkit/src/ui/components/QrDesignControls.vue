@@ -27,10 +27,15 @@ const emit = defineEmits<{
   removeLogo: [];
 }>();
 const groups = computed(() => [
-  { label: props.messages.finders, slot: "finders" },
-  { label: props.messages.artwork, slot: "artwork" },
-  { label: props.messages.captions, slot: "captions" },
-  { label: props.messages.logo, slot: "logo" },
+  { label: props.messages.finders, slot: "finders", value: "finders" },
+  { label: props.messages.artwork, slot: "artwork", value: "artwork" },
+  {
+    label: props.messages.captions,
+    slot: "captions",
+    value: "captions",
+    class: "@min-[38rem]:col-span-2",
+  },
+  { label: props.messages.logo, slot: "logo", value: "logo", class: "@min-[38rem]:col-span-2" },
 ]);
 
 const selected = computed(
@@ -53,7 +58,7 @@ function selectPreset(id: string) {
 </script>
 
 <template>
-  <UCard>
+  <UCard class="@container">
     <template #header
       ><h3 class="font-semibold text-highlighted">{{ messages.design }}</h3></template
     >
@@ -64,37 +69,55 @@ function selectPreset(id: string) {
         class="w-full"
         @update:model-value="selectPreset($event)"
     /></UFormField>
+    <h4 class="mb-4 font-semibold text-highlighted">{{ messages.paint }}</h4>
     <QrPaintControls
       :design="design"
       :messages="messages"
       @update:design="emit('update:design', $event)"
     />
-    <UAccordion :items="groups" type="multiple" class="mt-4">
+    <UAccordion
+      :items="groups"
+      type="multiple"
+      :default-value="['finders', 'artwork']"
+      class="mt-6 grid items-start gap-4 @min-[38rem]:grid-cols-2"
+      :ui="{
+        item: 'min-w-0 overflow-hidden rounded-xl border border-default last:border-b',
+        header: 'bg-elevated/70',
+        trigger:
+          'px-4 py-4 text-base font-semibold text-highlighted hover:bg-elevated transition-colors',
+        content: 'px-4 pt-4',
+        trailingIcon: 'text-primary',
+      }"
+    >
       <template #finders
-        ><QrFinderControls
+        ><p class="mb-4 text-sm text-muted">{{ messages.findersHint }}</p>
+        <QrFinderControls
           :design="design"
           :messages="messages"
           @update:design="emit('update:design', $event)"
       /></template>
       <template #artwork
-        ><QrArtworkControls
+        ><p class="mb-4 text-sm text-muted">{{ messages.artworkHint }}</p>
+        <QrArtworkControls
           :design="design"
           :messages="messages"
           @update:design="emit('update:design', $event)"
       /></template>
       <template #captions>
-        <QrCaptionControls
-          position="top"
-          :design="design"
-          :messages="messages"
-          @update:design="emit('update:design', $event)"
-        />
-        <QrCaptionControls
-          position="bottom"
-          :design="design"
-          :messages="messages"
-          @update:design="emit('update:design', $event)"
-        />
+        <div class="grid gap-6 @min-[38rem]:grid-cols-2">
+          <QrCaptionControls
+            position="top"
+            :design="design"
+            :messages="messages"
+            @update:design="emit('update:design', $event)"
+          />
+          <QrCaptionControls
+            position="bottom"
+            :design="design"
+            :messages="messages"
+            @update:design="emit('update:design', $event)"
+          />
+        </div>
       </template>
       <template #logo
         ><QrLogoControls

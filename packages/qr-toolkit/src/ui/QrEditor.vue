@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import UCard from "@nuxt/ui/components/Card.vue";
-import UAccordion from "@nuxt/ui/components/Accordion.vue";
 import { computed } from "vue";
 import {
   createQrEditorState,
@@ -65,7 +64,9 @@ function applyExample(example: QrEditorExample) {
       <p class="text-muted">{{ messages.introduction }}</p>
     </header>
 
-    <div class="grid items-start gap-6 md:grid-cols-2">
+    <div
+      class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)] min-[90rem]:grid-cols-[minmax(16rem,0.85fr)_minmax(0,1.7fr)_minmax(20rem,1fr)]"
+    >
       <QrContentForm
         :examples="props.examples"
         :content-type="model.contentType"
@@ -73,7 +74,7 @@ function applyExample(example: QrEditorExample) {
         :text="model.text"
         :invalid-url="preview.status === 'invalid'"
         :messages="messages"
-        class="min-w-0 md:col-start-1 md:row-start-1"
+        class="min-w-0 lg:col-start-1 lg:row-start-1"
         @update:content-type="update('contentType', $event)"
         @example="applyExample"
         @update:url="update('url', $event)"
@@ -82,7 +83,7 @@ function applyExample(example: QrEditorExample) {
       <QrPreview
         :preview="preview"
         :messages="messages"
-        class="min-w-0 md:col-start-2 md:row-start-1 md:row-span-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
+        class="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:sticky lg:top-6 min-[90rem]:col-start-3"
       />
       <QrDesignControls
         :logo-busy="logo.busy.value"
@@ -92,23 +93,25 @@ function applyExample(example: QrEditorExample) {
         :presets="props.presets"
         :design="model.design"
         :messages="messages"
-        class="min-w-0 md:col-start-1 md:row-start-2"
+        class="min-w-0 lg:col-start-1 lg:row-start-2 min-[90rem]:col-start-2 min-[90rem]:row-start-1 min-[90rem]:row-span-4"
         @preset="model = applyQrPreset(model, $event)"
         @update:design="update('design', $event)"
       />
-      <UCard class="min-w-0 md:col-start-1 md:row-start-3">
-        <UAccordion :items="[{ label: messages.technical, slot: 'technical' }]">
-          <template #technical
-            ><QrEncodingControls
-              :encoding="model.encoding"
-              :design="model.design"
-              :messages="messages"
-              @update:encoding="update('encoding', $event)"
-              @update:design="update('design', $event)"
-          /></template>
-        </UAccordion>
+      <UCard class="min-w-0 lg:col-start-1 lg:row-start-3 min-[90rem]:row-start-2">
+        <template #header>
+          <h3 class="font-semibold text-highlighted">{{ messages.technical }}</h3>
+        </template>
+        <QrEncodingControls
+          :encoding="model.encoding"
+          :design="model.design"
+          :messages="messages"
+          @update:encoding="update('encoding', $event)"
+          @update:design="update('design', $event)"
+        />
       </UCard>
-      <p class="text-sm text-muted md:col-start-1 md:row-start-4">{{ messages.privacy }}</p>
+      <p class="text-sm text-muted lg:col-start-1 lg:row-start-4 min-[90rem]:row-start-3">
+        {{ messages.privacy }}
+      </p>
     </div>
   </section>
 </template>

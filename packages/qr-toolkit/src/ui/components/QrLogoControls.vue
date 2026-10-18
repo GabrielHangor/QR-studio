@@ -3,6 +3,7 @@ import UInput from "@nuxt/ui/components/Input.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
 const props = defineProps<{
@@ -36,6 +37,11 @@ function upload(event: Event) {
     <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
     <div v-if="design.logo" class="grid grid-cols-2 gap-4">
       <UFormField :label="messages.logoWidth"
+        ><template #hint
+          ><QrFieldHelp
+            :label="messages.logoWidth"
+            :text="messages.logoSizeHint"
+            :action-label="messages.help" /></template
         ><UInput
           type="number"
           :min="1"

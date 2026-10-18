@@ -2,6 +2,8 @@
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
+import { computed } from "vue";
 import type {
   EncodeQrOptions,
   RenderQrSvgOptions,
@@ -9,7 +11,7 @@ import type {
 } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
 
-defineProps<{
+const props = defineProps<{
   encoding: EncodeQrOptions;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
@@ -18,13 +20,23 @@ const emit = defineEmits<{
   "update:encoding": [value: EncodeQrOptions];
   "update:design": [value: RenderQrSvgOptions];
 }>();
-const levels: ErrorCorrectionLevel[] = ["L", "M", "Q", "H"];
+const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => [
+  { label: props.messages.eccLow, value: "L" },
+  { label: props.messages.eccMedium, value: "M" },
+  { label: props.messages.eccQuartile, value: "Q" },
+  { label: props.messages.eccHigh, value: "H" },
+]);
 const sizes = [256, 512, 1024, 2048];
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-4 pb-4">
+  <div class="grid gap-5">
     <UFormField :label="messages.ecc"
+      ><template #hint
+        ><QrFieldHelp
+          :label="messages.ecc"
+          :text="messages.eccHint"
+          :action-label="messages.help" /></template
       ><USelect
         :model-value="encoding.errorCorrectionLevel ?? 'M'"
         :items="levels"
@@ -49,6 +61,11 @@ const sizes = [256, 512, 1024, 2048];
         "
     /></UFormField>
     <UFormField :label="messages.size"
+      ><template #hint
+        ><QrFieldHelp
+          :label="messages.size"
+          :text="messages.sizeHint"
+          :action-label="messages.help" /></template
       ><USelect
         :model-value="design.size ?? 512"
         :items="sizes"
@@ -56,6 +73,11 @@ const sizes = [256, 512, 1024, 2048];
         @update:model-value="emit('update:design', { ...design, size: $event })"
     /></UFormField>
     <UFormField :label="messages.quietZone"
+      ><template #hint
+        ><QrFieldHelp
+          :label="messages.quietZone"
+          :text="messages.quietZoneHint"
+          :action-label="messages.help" /></template
       ><UInput
         :model-value="design.quietZone ?? 4"
         type="number"

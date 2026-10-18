@@ -15,8 +15,8 @@ function patch(value: Partial<RenderQrSvgOptions>) {
 }
 
 const shapes = computed(() => [
-  { label: props.messages.square, value: "square" as const },
-  { label: props.messages.circle, value: "circle" as const },
+  { label: props.messages.artworkSquare, value: "square" as const },
+  { label: props.messages.artworkCircle, value: "circle" as const },
 ]);
 const frame = computed(() => (typeof props.design.frame === "object" ? props.design.frame : {}));
 const framed = computed(
