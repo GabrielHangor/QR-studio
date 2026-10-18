@@ -44,8 +44,8 @@ export const qrMessagesRu: QrMessageCatalog = {
       `Укажите ${colors[target]} в формате #RGB или #RRGGBB, без прозрачности.`,
     INVALID_MODULE_SHAPE: ({ target }) =>
       target === "modules"
-        ? "Выберите квадратную, скруглённую или круглую форму модулей."
-        : "Выберите квадратную, скруглённую или круглую форму клеток маркеров.",
+        ? "Выберите одну из доступных форм точек QR."
+        : "Выберите одну из доступных форм клеток маркеров.",
     INVALID_GRADIENT: () =>
       "Для градиента выберите два непрозрачных цвета и направление: горизонтальное, вертикальное или диагональное.",
     INVALID_LOGO_OPTIONS: () => "Не удалось прочитать настройки логотипа. Выберите логотип заново.",
@@ -68,13 +68,12 @@ export const qrMessagesRu: QrMessageCatalog = {
     INVALID_CAPTION_LETTER_SPACING: ({ minimum, maximum }) =>
       `Межбуквенный интервал должен быть от ${n(minimum)} до ${n(maximum)} px.`,
     INVALID_FRAME: () => "Не удалось прочитать настройки рамки. Выберите оформление рамки заново.",
-    INVALID_FRAME_STYLE: () => "Выберите обводку или оформление без рамки.",
+    INVALID_FRAME_STYLE: () => "Выберите сплошную, пунктирную рамку или оформление без рамки.",
     INVALID_FRAME_WIDTH: ({ maximumExclusive }) =>
       `Толщина рамки должна быть больше нуля и меньше ${n(maximumExclusive)} px.`,
     INVALID_FINDER_OPTIONS: () =>
       "Не удалось прочитать настройки угловых маркеров. Задайте их заново.",
-    INVALID_FINDER_SHAPE: () =>
-      "Выберите квадратную, скруглённую или круглую форму кольца и центра маркеров.",
+    INVALID_FINDER_SHAPE: () => "Выберите одну из доступных форм кольца и центра маркеров.",
     INVALID_CONTRAST_THRESHOLD: ({ minimum }) =>
       `Порог контраста должен быть числом не меньше ${n(minimum)}.`,
     INVALID_MODULE_PITCH_THRESHOLD: () =>

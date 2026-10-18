@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import QrColorInput from "./QrColorInput.vue";
 import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
@@ -88,23 +89,22 @@ function change(value: Partial<QrCaptionOptions>) {
           class="w-full"
           @update:model-value="change({ letterSpacing: Number($event) })" /></UFormField
       ><UFormField :label="messages.captionColor"
-        ><UInput
+        ><QrColorInput
+          :label="messages.captionColor"
           :model-value="
             caption?.color ??
             (typeof design.foreground === 'string' ? design.foreground : '#000000')
           "
-          type="color"
-          :ui="{ base: 'h-11 cursor-pointer p-1' }"
           class="w-full"
           @update:model-value="change({ color: String($event) })"
       /></UFormField>
     </div>
     <div v-if="caption?.style === 'banner'">
       <UFormField :label="messages.captionBackground"
-        ><UInput
+        ><QrColorInput
+          :label="messages.captionBackground"
+          light
           :model-value="caption?.background ?? design.background ?? '#ffffff'"
-          type="color"
-          :ui="{ base: 'h-11 cursor-pointer p-1' }"
           class="w-full"
           @update:model-value="change({ background: String($event) })"
       /></UFormField>

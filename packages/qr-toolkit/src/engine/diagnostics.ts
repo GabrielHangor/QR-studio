@@ -1,4 +1,5 @@
 import { QrError } from "./errors.js";
+import { isQrModuleShape } from "./shapes.js";
 import {
   QR_QUIET_ZONE_DEFAULT_MODULES,
   QR_QUIET_ZONE_MIN_MODULES,
@@ -101,16 +102,10 @@ export function analyzeQrDesign(
     throw new QrError("INVALID_OUTPUT_SIZE", { minimum: 1 });
   }
   const { modulePitchPx } = getQrArtworkLayout(matrix.size, renderOptions);
-  if (
-    renderOptions.moduleShape !== undefined &&
-    !["square", "rounded", "circle"].includes(renderOptions.moduleShape)
-  ) {
+  if (renderOptions.moduleShape !== undefined && !isQrModuleShape(renderOptions.moduleShape)) {
     throw new QrError("INVALID_MODULE_SHAPE", { target: "modules" });
   }
-  if (
-    renderOptions.finderShape !== undefined &&
-    !["square", "rounded", "circle"].includes(renderOptions.finderShape)
-  ) {
+  if (renderOptions.finderShape !== undefined && !isQrModuleShape(renderOptions.finderShape)) {
     throw new QrError("INVALID_MODULE_SHAPE", { target: "finderCells" });
   }
 

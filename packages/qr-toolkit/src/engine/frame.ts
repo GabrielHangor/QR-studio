@@ -17,7 +17,9 @@ export function normalizeQrFrame(frame: RenderQrSvgOptions["frame"], outputSize:
     throw new QrError("INVALID_FRAME", {});
   }
   const style = frame.style ?? "outline";
-  if (style !== "none" && style !== "outline") throw new QrError("INVALID_FRAME_STYLE", {});
+  if (style !== "none" && style !== "outline" && style !== "dashed") {
+    throw new QrError("INVALID_FRAME_STYLE", {});
+  }
   if (
     frame.color !== undefined &&
     (typeof frame.color !== "string" || !OPAQUE_HEX_COLOR.test(frame.color))

@@ -3,6 +3,13 @@ import { qrMessagesRu } from "../i18n/ru.js";
 import { qrMessagesEn } from "../i18n/en.js";
 
 export interface QrEditorMessages {
+  settings: string;
+  contentType: string;
+  shapeLabels: Record<import("../engine/types.js").QrModuleShape, string>;
+  clearLogo: string;
+  noFrame: string;
+  solidFrame: string;
+  dashedFrame: string;
   title: string;
   introduction: string;
   content: string;
@@ -28,8 +35,11 @@ export interface QrEditorMessages {
   staticHint: string;
   presets: string;
   custom: string;
-  examples: string;
   paint: string;
+  shapes: string;
+  recommendations: string;
+  sampleHint: string;
+  noLogo: string;
   fill: string;
   solid: string;
   horizontal: string;
@@ -121,6 +131,20 @@ export interface QrEditorMessages {
 }
 
 export const qrEditorMessagesRu: QrEditorMessages = {
+  settings: "Настройки QR",
+  contentType: "Тип содержимого",
+  shapeLabels: {
+    square: "Квадраты",
+    rounded: "Скруглённые",
+    circle: "Круги",
+    soft: "Мягкие",
+    leaf: "Лепестки",
+    "leaf-reverse": "Лепестки ↗",
+  },
+  clearLogo: "Убрать код под логотипом",
+  noFrame: "Без рамки",
+  solidFrame: "Сплошная",
+  dashedFrame: "Пунктирная",
   title: "Создайте свой QR-код",
   introduction: "Добавьте ссылку или текст — результат появится сразу.",
   content: "Что будет в QR-коде",
@@ -146,8 +170,11 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   staticHint: "Это статический QR-код. После печати его содержимое изменить нельзя.",
   presets: "Готовый дизайн",
   custom: "Своё оформление",
-  examples: "Пример содержимого",
-  paint: "Заливка и фон",
+  paint: "Цвета",
+  shapes: "Формы и рамка",
+  recommendations: "Рекомендации",
+  sampleHint: "Сейчас показан пример. Замените его своим содержимым перед скачиванием.",
+  noLogo: "Без логотипа",
   fill: "Цвет или градиент",
   solid: "Сплошной цвет",
   horizontal: "Слева направо",
@@ -167,7 +194,7 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   artworkCircle: "Круг",
   separateBackground: "Другой фон вокруг кода",
   artworkBackground: "Фон вокруг кода",
-  frame: "Добавить рамку",
+  frame: "Рамка",
   frameColor: "Цвет рамки",
   frameWidth: "Толщина рамки, px",
   captions: "Надписи вокруг QR",
@@ -244,6 +271,20 @@ export const qrEditorMessagesRu: QrEditorMessages = {
 };
 
 export const qrEditorMessagesEn: QrEditorMessages = {
+  settings: "QR settings",
+  contentType: "Content type",
+  shapeLabels: {
+    square: "Squares",
+    rounded: "Rounded",
+    circle: "Circles",
+    soft: "Soft",
+    leaf: "Leaves",
+    "leaf-reverse": "Leaves ↗",
+  },
+  clearLogo: "Clear QR behind the logo",
+  noFrame: "No frame",
+  solidFrame: "Solid",
+  dashedFrame: "Dashed",
   title: "Create your QR code",
   introduction: "Add a link or text to see the result instantly.",
   content: "QR content",
@@ -269,8 +310,11 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   staticHint: "This is a static QR code. Its content cannot be changed after printing.",
   presets: "Design preset",
   custom: "Custom design",
-  examples: "Content example",
-  paint: "Fill and background",
+  paint: "Colors",
+  shapes: "Shapes and frame",
+  recommendations: "Recommendations",
+  sampleHint: "This is sample content. Replace it with your own before downloading.",
+  noLogo: "No logo",
   fill: "Color or gradient",
   solid: "Solid color",
   horizontal: "Left to right",
@@ -290,7 +334,7 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   artworkCircle: "Circle",
   separateBackground: "Different background around the code",
   artworkBackground: "Background around the code",
-  frame: "Add a frame",
+  frame: "Frame",
   frameColor: "Frame color",
   frameWidth: "Frame width, px",
   captions: "Captions around the QR",

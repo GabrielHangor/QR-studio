@@ -37,10 +37,10 @@ describe("editor content boundary", () => {
     first.encoding.version = 1;
     expect(createQrEditorState()).toEqual({
       contentType: "url",
-      url: "",
-      text: "",
-      encoding: {},
-      design: {},
+      url: "https://example.com",
+      text: "QR Studio",
+      encoding: { errorCorrectionLevel: "M" },
+      design: { size: 512, quietZone: 4, foreground: "#202833", finder: { outerShape: "square" } },
     });
   });
 });
@@ -49,8 +49,6 @@ describe("reactive editor pipeline", () => {
   it("clears a ready preview on invalid input and recovers", () => {
     const state = ref(createQrEditorState());
     const { preview } = useQrEditor(state);
-    expect(preview.value.status).toBe("empty");
-    state.value.url = "https://example.com";
     expect(preview.value.status).toBe("ready");
     state.value.url = "https://";
     expect(preview.value).toEqual({ status: "invalid", code: "INVALID_URL" });

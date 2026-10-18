@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import UCard from "@nuxt/ui/components/Card.vue";
-import { computed } from "vue";
+import UAccordion from "@nuxt/ui/components/Accordion.vue";
+import UTabs from "@nuxt/ui/components/Tabs.vue";
+import { computed, ref } from "vue";
 import {
   createQrEditorState,
   applyQrPreset,
   type QrEditorState,
   type QrDesignPreset,
-  type QrEditorExample,
 } from "../editor/index.js";
 import { qrEditorMessagesRu, qrEditorMessagesEn, type QrEditorMessages } from "./messages.js";
 import { useQrLogo } from "./useQrLogo.js";
 import { QrBrowserError } from "./browser.js";
 import { useQrEditor, type QrEditorPreview } from "./useQrEditor.js";
 import QrContentForm from "./components/QrContentForm.vue";
-import QrDesignControls from "./components/QrDesignControls.vue";
+import QrShapeControls from "./components/QrShapeControls.vue";
+import QrPaintControls from "./components/QrPaintControls.vue";
+import QrLogoControls from "./components/QrLogoControls.vue";
+import QrCaptionControls from "./components/QrCaptionControls.vue";
+import QrPresetPicker from "./components/QrPresetPicker.vue";
 import QrEncodingControls from "./components/QrEncodingControls.vue";
 import QrPreview from "./components/QrPreview.vue";
 
@@ -22,12 +26,10 @@ const props = withDefaults(
     locale?: "ru" | "en";
     messages?: QrEditorMessages;
     presets?: readonly QrDesignPreset[];
-    examples?: readonly QrEditorExample[];
   }>(),
   {
     locale: "ru",
     presets: () => [],
-    examples: () => [],
   },
 );
 const model = defineModel<QrEditorState>({ default: createQrEditorState });
@@ -45,73 +47,129 @@ const preview = computed<QrEditorPreview>(() => {
 function update<K extends keyof QrEditorState>(key: K, value: QrEditorState[K]) {
   model.value = { ...model.value, [key]: value };
 }
-function applyExample(example: QrEditorExample) {
-  model.value = {
-    ...model.value,
-    contentType: example.contentType,
-    [example.contentType]: example.value,
-    encoding: { ...model.value.encoding, version: example.version },
-  };
-}
+const open = ref<string | undefined>("content");
+const sections = computed(() => [
+  { label: messages.value.content, slot: "content", value: "content" },
+  ...(props.presets.length
+    ? [{ label: messages.value.presets, slot: "presets", value: "presets" }]
+    : []),
+  { label: messages.value.paint, slot: "colors", value: "colors" },
+  { label: messages.value.shapes, slot: "shapes", value: "shapes" },
+  { label: messages.value.logo, slot: "logo", value: "logo" },
+  { label: messages.value.captions, slot: "captions", value: "captions" },
+  { label: messages.value.technical, slot: "technical", value: "technical" },
+]);
+const contentTypes = computed(() => [
+  { label: messages.value.url, value: "url" },
+  { label: messages.value.text, value: "text" },
+]);
+const contentType = computed({
+  get: () => model.value.contentType,
+  set: (value: string | number) => {
+    update("contentType", value === "text" ? "text" : "url");
+    open.value = "content";
+  },
+});
 </script>
 
 <template>
-  <section :aria-label="messages.title" class="flex flex-col gap-6">
-    <header class="space-y-2">
-      <h2 class="text-2xl font-semibold tracking-tight text-highlighted sm:text-3xl">
+  <section :aria-label="messages.title" class="flex flex-col gap-4">
+    <header class="space-y-1">
+      <h2 class="text-xl font-semibold tracking-tight text-highlighted sm:text-2xl">
         {{ messages.title }}
       </h2>
-      <p class="text-muted">{{ messages.introduction }}</p>
+      <p class="text-sm text-muted">{{ messages.introduction }}</p>
     </header>
-
-    <div
-      class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)] min-[90rem]:grid-cols-[minmax(16rem,0.85fr)_minmax(0,1.7fr)_minmax(20rem,1fr)]"
-    >
-      <QrContentForm
-        :examples="props.examples"
-        :content-type="model.contentType"
-        :url="model.url"
-        :text="model.text"
-        :invalid-url="preview.status === 'invalid'"
-        :messages="messages"
-        class="min-w-0 lg:col-start-1 lg:row-start-1"
-        @update:content-type="update('contentType', $event)"
-        @example="applyExample"
-        @update:url="update('url', $event)"
-        @update:text="update('text', $event)"
-      />
-      <QrPreview
-        :preview="preview"
-        :messages="messages"
-        class="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:sticky lg:top-6 min-[90rem]:col-start-3"
-      />
-      <QrDesignControls
-        :logo-busy="logo.busy.value"
-        :logo-issue="logo.issue.value"
-        @upload-logo="logo.upload"
-        @remove-logo="logo.remove"
-        :presets="props.presets"
-        :design="model.design"
-        :messages="messages"
-        class="min-w-0 lg:col-start-1 lg:row-start-2 min-[90rem]:col-start-2 min-[90rem]:row-start-1 min-[90rem]:row-span-4"
-        @preset="model = applyQrPreset(model, $event)"
-        @update:design="update('design', $event)"
-      />
-      <UCard class="min-w-0 lg:col-start-1 lg:row-start-3 min-[90rem]:row-start-2">
-        <template #header>
-          <h3 class="font-semibold text-highlighted">{{ messages.technical }}</h3>
-        </template>
-        <QrEncodingControls
-          :encoding="model.encoding"
-          :design="model.design"
-          :messages="messages"
-          @update:encoding="update('encoding', $event)"
-          @update:design="update('design', $event)"
-        />
-      </UCard>
-      <p class="text-sm text-muted lg:col-start-1 lg:row-start-4 min-[90rem]:row-start-3">
-        {{ messages.privacy }}
-      </p>
+    <UTabs
+      v-model="contentType"
+      :items="contentTypes"
+      :content="false"
+      :aria-label="messages.contentType"
+      class="w-full sm:w-80"
+    />
+    <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(22rem,1fr)]">
+      <div class="min-w-0 space-y-3">
+        <UAccordion
+          v-model="open"
+          :items="sections"
+          type="single"
+          :unmount-on-hide="false"
+          :aria-label="messages.settings"
+          class="@container space-y-2"
+          :ui="{
+            item: 'min-w-0 overflow-hidden rounded-xl border border-default last:border-b bg-default',
+            header: 'bg-elevated/50',
+            trigger:
+              'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-elevated transition-colors',
+            content: 'px-4 data-[state=open]:py-4',
+            trailingIcon: 'text-primary',
+          }"
+        >
+          <template #content
+            ><QrContentForm
+              :content-type="model.contentType"
+              :url="model.url"
+              :text="model.text"
+              :invalid-url="preview.status === 'invalid'"
+              :messages="messages"
+              @update:url="update('url', $event)"
+              @update:text="update('text', $event)"
+          /></template>
+          <template #presets
+            ><QrPresetPicker
+              :presets="props.presets"
+              :design="model.design"
+              :messages="messages"
+              @preset="model = applyQrPreset(model, $event)"
+          /></template>
+          <template #colors
+            ><QrPaintControls
+              :design="model.design"
+              :messages="messages"
+              @update:design="update('design', $event)"
+          /></template>
+          <template #shapes
+            ><QrShapeControls
+              :design="model.design"
+              :messages="messages"
+              @update:design="update('design', $event)"
+          /></template>
+          <template #logo
+            ><QrLogoControls
+              :busy="logo.busy.value"
+              :issue="logo.issue.value"
+              :design="model.design"
+              :messages="messages"
+              @upload="logo.upload"
+              @remove="logo.remove"
+              @update:design="update('design', $event)"
+          /></template>
+          <template #captions
+            ><div class="grid gap-5 sm:grid-cols-2">
+              <QrCaptionControls
+                position="top"
+                :design="model.design"
+                :messages="messages"
+                @update:design="update('design', $event)"
+              /><QrCaptionControls
+                position="bottom"
+                :design="model.design"
+                :messages="messages"
+                @update:design="update('design', $event)"
+              /></div
+          ></template>
+          <template #technical
+            ><QrEncodingControls
+              :encoding="model.encoding"
+              :design="model.design"
+              :messages="messages"
+              @update:encoding="update('encoding', $event)"
+              @update:design="update('design', $event)"
+          /></template>
+        </UAccordion>
+        <p class="text-xs text-muted">{{ messages.privacy }}</p>
+      </div>
+      <QrPreview :preview="preview" :messages="messages" class="min-w-0 lg:sticky lg:top-5" />
     </div>
   </section>
 </template>

@@ -27,7 +27,7 @@ export interface QrFinderPattern {
   readonly y: number;
 }
 
-export type QrModuleShape = "square" | "rounded" | "circle";
+export type QrModuleShape = "square" | "rounded" | "circle" | "soft" | "leaf" | "leaf-reverse";
 
 /** Outer artwork silhouette; the encoded QR matrix always remains square. */
 export type QrArtworkShape = "square" | "circle";
@@ -56,6 +56,8 @@ export interface QrLogoOptions {
   readonly widthModules: number;
   /** Clear background padding around the logo, measured in QR modules. */
   readonly paddingModules?: number;
+  /** Hide QR cells behind a solid backing. Defaults to true; false preserves transparent logo areas. */
+  readonly clearBackground?: boolean;
 }
 
 export interface QrCaptionOptions {
@@ -74,7 +76,7 @@ export interface QrCaptionOptions {
 }
 
 export interface QrFrameOptions {
-  readonly style?: "none" | "outline";
+  readonly style?: "none" | "outline" | "dashed";
   /** Opaque RGB hex stroke. Defaults to the solid foreground or black. */
   readonly color?: string;
   /** Output-pixel stroke width, less than a quarter of artwork width. Defaults to 2. */

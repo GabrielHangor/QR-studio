@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import QrColorInput from "./QrColorInput.vue";
 import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
-import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
+import USwitch from "@nuxt/ui/components/Switch.vue";
 
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
@@ -12,11 +13,6 @@ function patch(value: Partial<RenderQrSvgOptions>) {
   emit("update:design", { ...props.design, ...value });
 }
 
-const shapes = computed(() => [
-  { label: props.messages.square, value: "square" as const },
-  { label: props.messages.rounded, value: "rounded" as const },
-  { label: props.messages.circle, value: "circle" as const },
-]);
 const fills = computed(() => [
   { label: props.messages.solid, value: "solid" as const },
   { label: props.messages.horizontal, value: "horizontal" as const },
@@ -47,50 +43,104 @@ function changeFill(direction: "solid" | "horizontal" | "vertical" | "diagonal")
 function changeForeground(value: string) {
   patch({ foreground: gradient.value ? { ...gradient.value, startColor: value } : value });
 }
+function finder(value: Partial<NonNullable<RenderQrSvgOptions["finder"]>>) {
+  patch({
+    finder: { outerShape: props.design.finderShape ?? "square", ...props.design.finder, ...value },
+  });
+}
+const frame = computed(() => (typeof props.design.frame === "object" ? props.design.frame : {}));
 </script>
 
 <template>
   <div class="grid gap-5 @min-[38rem]:grid-cols-2">
-    <UFormField :label="messages.moduleShape"
-      ><USelect
-        :model-value="design.moduleShape ?? 'square'"
-        :items="shapes"
-        class="w-full"
-        size="lg"
-        @update:model-value="patch({ moduleShape: $event })"
-    /></UFormField>
-    <UFormField :label="messages.fill"
+    <UFormField :label="messages.fill" class="@min-[38rem]:col-span-2"
       ><USelect
         :model-value="gradient?.direction ?? 'solid'"
         :items="fills"
         class="w-full"
         @update:model-value="changeFill($event)"
     /></UFormField>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid gap-4 sm:grid-cols-2 @min-[38rem]:col-span-2">
       <UFormField :label="messages.foreground"
-        ><UInput
+        ><QrColorInput
+          :label="messages.foreground"
           :model-value="foreground"
-          type="color"
-          :ui="{ base: 'h-11 cursor-pointer p-1' }"
           class="w-full"
           @update:model-value="changeForeground(String($event))" /></UFormField
       ><UFormField :label="messages.background"
-        ><UInput
+        ><QrColorInput
+          :label="messages.background"
+          light
           :model-value="design.background ?? '#ffffff'"
-          type="color"
-          :ui="{ base: 'h-11 cursor-pointer p-1' }"
           class="w-full"
           @update:model-value="patch({ background: String($event) })"
       /></UFormField>
     </div>
     <div v-if="gradient">
       <UFormField :label="messages.gradientEnd"
-        ><UInput
+        ><QrColorInput
+          :label="messages.gradientEnd"
           :model-value="gradient.endColor"
-          type="color"
-          :ui="{ base: 'h-11 cursor-pointer p-1' }"
           class="w-full"
           @update:model-value="patch({ foreground: { ...gradient, endColor: String($event) } })"
+      /></UFormField>
+    </div>
+    <div class="space-y-4 @min-[38rem]:col-span-2">
+      <h4 class="font-medium text-highlighted">{{ messages.finders }}</h4>
+      <p class="text-sm text-muted">{{ messages.findersHint }}</p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-3">
+          <USwitch
+            :model-value="design.finder?.outerColor !== undefined"
+            :label="messages.customOuter"
+            @update:model-value="finder({ outerColor: $event ? '#202833' : undefined })"
+          />
+          <UFormField v-if="design.finder?.outerColor" :label="messages.outerColor"
+            ><QrColorInput
+              :label="messages.outerColor"
+              :model-value="design.finder.outerColor"
+              class="w-full"
+              @update:model-value="finder({ outerColor: String($event) })"
+          /></UFormField>
+        </div>
+        <div class="space-y-3">
+          <USwitch
+            :model-value="design.finder?.innerColor !== undefined"
+            :label="messages.customInner"
+            @update:model-value="finder({ innerColor: $event ? '#202833' : undefined })"
+          />
+          <UFormField v-if="design.finder?.innerColor" :label="messages.innerColor"
+            ><QrColorInput
+              :label="messages.innerColor"
+              :model-value="design.finder.innerColor"
+              class="w-full"
+              @update:model-value="finder({ innerColor: String($event) })"
+          /></UFormField>
+        </div>
+      </div>
+      <USwitch
+        :model-value="design.artworkBackground !== undefined"
+        :label="messages.separateBackground"
+        @update:model-value="
+          patch({ artworkBackground: $event ? (design.background ?? '#ffffff') : undefined })
+        "
+      />
+      <UFormField v-if="design.artworkBackground !== undefined" :label="messages.artworkBackground"
+        ><QrColorInput
+          :label="messages.artworkBackground"
+          light
+          :model-value="design.artworkBackground"
+          class="w-full"
+          @update:model-value="patch({ artworkBackground: String($event) })"
+      /></UFormField>
+      <UFormField
+        v-if="design.frame && design.frame !== 'none' && frame.style !== 'none'"
+        :label="messages.frameColor"
+        ><QrColorInput
+          :label="messages.frameColor"
+          :model-value="frame.color ?? '#202833'"
+          class="w-full"
+          @update:model-value="patch({ frame: { ...frame, color: String($event) } })"
       /></UFormField>
     </div>
   </div>

@@ -29,6 +29,7 @@ export function useQrLogo(state: Ref<QrEditorState>) {
           ...state.value.design,
           logo: {
             dataUri,
+            clearBackground: previous?.clearBackground ?? true,
             widthModules: previous?.widthModules ?? 5,
             paddingModules: previous?.paddingModules ?? 0.5,
           },

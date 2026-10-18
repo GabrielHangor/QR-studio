@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import USwitch from "@nuxt/ui/components/Switch.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
@@ -31,10 +32,17 @@ function upload(event: Event) {
 </script>
 <template>
   <div class="space-y-4 pb-4">
+    <p v-if="!design.logo && !busy && !issue" class="text-sm text-muted">{{ messages.noLogo }}</p>
     <UFormField :label="messages.logoFile" :help="messages.logoHelp"
       ><UInput type="file" accept="image/png,image/jpeg,image/webp" class="w-full" @change="upload"
     /></UFormField>
     <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
+    <USwitch
+      v-if="design.logo"
+      :model-value="design.logo.clearBackground ?? true"
+      :label="messages.clearLogo"
+      @update:model-value="patchLogo({ clearBackground: $event })"
+    />
     <div v-if="design.logo" class="grid grid-cols-2 gap-4">
       <UFormField :label="messages.logoWidth"
         ><template #hint
@@ -51,7 +59,7 @@ function upload(event: Event) {
           class="w-full"
           @update:model-value="patchLogo({ widthModules: Number($event) })"
       /></UFormField>
-      <UFormField :label="messages.logoPadding"
+      <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding"
         ><UInput
           type="number"
           :min="0"

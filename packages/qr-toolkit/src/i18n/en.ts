@@ -44,8 +44,8 @@ export const qrMessagesEn: QrMessageCatalog = {
       `Set the ${colors[target]} in #RGB or #RRGGBB format, without transparency.`,
     INVALID_MODULE_SHAPE: ({ target }) =>
       target === "modules"
-        ? "Choose square, rounded or circular modules."
-        : "Choose square, rounded or circular finder cells.",
+        ? "Choose one of the available QR dot shapes."
+        : "Choose one of the available finder cell shapes.",
     INVALID_GRADIENT: () =>
       "Choose two opaque colors and a horizontal, vertical or diagonal direction for the gradient.",
     INVALID_LOGO_OPTIONS: () => "The logo settings could not be read. Select the logo again.",
@@ -67,12 +67,12 @@ export const qrMessagesEn: QrMessageCatalog = {
     INVALID_CAPTION_LETTER_SPACING: ({ minimum, maximum }) =>
       `Letter spacing must be between ${n(minimum)} and ${n(maximum)} px.`,
     INVALID_FRAME: () => "The frame settings could not be read. Choose the frame settings again.",
-    INVALID_FRAME_STYLE: () => "Choose an outline or no frame.",
+    INVALID_FRAME_STYLE: () => "Choose a solid outline, dashed outline or no frame.",
     INVALID_FRAME_WIDTH: ({ maximumExclusive }) =>
       `Frame width must be greater than zero and less than ${n(maximumExclusive)} px.`,
     INVALID_FINDER_OPTIONS: () => "The finder settings could not be read. Set them again.",
     INVALID_FINDER_SHAPE: () =>
-      "Choose square, rounded or circular shapes for the finder rings and centers.",
+      "Choose one of the available shapes for the finder rings and centers.",
     INVALID_CONTRAST_THRESHOLD: ({ minimum }) =>
       `The contrast threshold must be a number of at least ${n(minimum)}.`,
     INVALID_MODULE_PITCH_THRESHOLD: () =>

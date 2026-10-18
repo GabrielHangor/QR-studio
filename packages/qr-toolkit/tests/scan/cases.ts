@@ -1,3 +1,4 @@
+import { editorPresets } from "../../../../apps/frontend/src/presets.js";
 import { playgroundPresets } from "../../playground/presets.js";
 import type { EncodeQrOptions, RenderQrSvgOptions } from "../../src/engine/index.js";
 
@@ -68,4 +69,30 @@ export const scanCases: readonly ScanCase[] = [
     design: { size: 512, shape, moduleShape: "rounded" as const },
     logo: true as const,
   })),
+  ...editorPresets.flatMap((preset) =>
+    [256, 512].map((size) => ({
+      id: `editor-${preset.id}-${size}`,
+      payload: "https://example.com/qr",
+      encoding: { errorCorrectionLevel: "M" as const },
+      design: { ...preset.design, size },
+    })),
+  ),
+  ...(["soft", "leaf", "leaf-reverse"] as const).flatMap((shape) =>
+    ["modules", "outer", "inner"].map((part) => ({
+      id: `new-${part}-${shape}`,
+      payload: "QR Studio — проверка 👋",
+      encoding: { errorCorrectionLevel: "M" as const },
+      design: {
+        size: 512,
+        ...(part === "modules"
+          ? { moduleShape: shape }
+          : {
+              finder:
+                part === "outer"
+                  ? { outerShape: shape, innerShape: "square" as const }
+                  : { outerShape: "square" as const, innerShape: shape },
+            }),
+      },
+    })),
+  ),
 ];

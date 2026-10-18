@@ -30,7 +30,7 @@ const sizes = [256, 512, 1024, 2048];
 </script>
 
 <template>
-  <div class="grid gap-5">
+  <div class="grid gap-5 sm:grid-cols-2">
     <UFormField :label="messages.ecc"
       ><template #hint
         ><QrFieldHelp

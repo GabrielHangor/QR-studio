@@ -1,4 +1,5 @@
 import { QrError } from "./errors.js";
+import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
 import { QR_FINDER_PATTERN_SIZE } from "./constants.js";
 import type { QrFinderOptions, QrMatrix, QrModuleShape } from "./types.js";
 
@@ -20,7 +21,7 @@ export function normalizeQrFinder(options: QrFinderOptions | undefined) {
   const outerShape = options.outerShape ?? "square";
   const innerShape = options.innerShape ?? outerShape;
   for (const shape of [outerShape, innerShape]) {
-    if (shape !== "square" && shape !== "rounded" && shape !== "circle") {
+    if (!isQrModuleShape(shape)) {
       throw new QrError("INVALID_FINDER_SHAPE", {});
     }
   }
@@ -68,6 +69,9 @@ export function renderQrFinders(
 }
 
 function contour(x: number, y: number, size: number, shape: QrModuleShape): string {
+  if (shape === "leaf" || shape === "leaf-reverse") {
+    return leafPath(x, y, size, shape === "leaf-reverse");
+  }
   if (shape === "square") {
     return `M${formatCoordinate(x)} ${formatCoordinate(y)}h${size}v${size}h-${size}z`;
   }
@@ -75,7 +79,7 @@ function contour(x: number, y: number, size: number, shape: QrModuleShape): stri
     const radius = size / 2;
     return `M${formatCoordinate(x)} ${formatCoordinate(y + radius)}a${radius} ${radius} 0 1 0 ${size} 0a${radius} ${radius} 0 1 0 -${size} 0z`;
   }
-  const radius = size * FINDER_CORNER_RADIUS_RATIO;
+  const radius = size * (shape === "soft" ? SOFT_CORNER_RADIUS_RATIO : FINDER_CORNER_RADIUS_RATIO);
   return (
     `M${formatCoordinate(x + radius)} ${formatCoordinate(y)}H${formatCoordinate(x + size - radius)}Q${formatCoordinate(x + size)} ${formatCoordinate(y)} ${formatCoordinate(x + size)} ${formatCoordinate(y + radius)}` +
     `V${formatCoordinate(y + size - radius)}Q${formatCoordinate(x + size)} ${formatCoordinate(y + size)} ${formatCoordinate(x + size - radius)} ${formatCoordinate(y + size)}` +

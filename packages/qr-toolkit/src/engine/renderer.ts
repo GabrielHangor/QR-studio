@@ -1,4 +1,5 @@
 import { QrError } from "./errors.js";
+import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
 import {
   ERROR_CORRECTION_LEVELS,
   QR_FINDER_PATTERN_SIZE,
@@ -52,6 +53,7 @@ interface NormalizedLogo {
   readonly dataUri: string;
   readonly widthModules: number;
   readonly paddingModules: number;
+  readonly clearBackground: boolean;
 }
 
 interface NormalizedForeground {
@@ -171,9 +173,13 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
     (typeof options.frame === "object"
       ? (normalizedForeground.solidColor ?? "#000000")
       : normalizedForeground.fill);
-  const strokeAttributes = `fill="none" stroke="${frameColor}" stroke-width="${formatNumber(layout.frameStrokeWidth)}"`;
+  const dash =
+    layout.frame.style === "dashed"
+      ? ` stroke-dasharray="${formatNumber(layout.frameStrokeWidth * 4)} ${formatNumber(layout.frameStrokeWidth * 3)}"`
+      : "";
+  const strokeAttributes = `fill="none" stroke="${frameColor}" stroke-width="${formatNumber(layout.frameStrokeWidth)}"${dash}`;
   const frameMarkup =
-    layout.frame.style === "outline"
+    layout.frame.style !== "none"
       ? layout.shape === "circle"
         ? `<circle ${circleGeometry} r="${formatNumber(extent / 2 - strokeInset)}" ${strokeAttributes}/>`
         : `<rect x="${formatNumber(strokeInset)}" y="${formatNumber(strokeInset)}" width="${formatNumber(extent - strokeInset * 2)}" height="${formatNumber(height - strokeInset * 2)}" rx="1" ${strokeAttributes}/>`
@@ -282,7 +288,11 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
     throw new QrError("INVALID_LOGO_OPTIONS", {});
   }
 
-  const paddingModules = logo.paddingModules ?? DEFAULT_LOGO_PADDING_MODULES;
+  if (logo.clearBackground !== undefined && typeof logo.clearBackground !== "boolean") {
+    throw new QrError("INVALID_LOGO_OPTIONS", {});
+  }
+  const paddingModules =
+    logo.clearBackground === false ? 0 : (logo.paddingModules ?? DEFAULT_LOGO_PADDING_MODULES);
   const logoExtent = logo.widthModules + paddingModules * 2;
 
   if (
@@ -306,6 +316,7 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
     dataUri: logo.dataUri,
     widthModules: logo.widthModules,
     paddingModules,
+    clearBackground: logo.clearBackground ?? true,
   };
 }
 
@@ -351,9 +362,11 @@ function renderModules(
 
       const moduleX = x + origin;
       const moduleY = y + origin;
-      if (shape === "rounded") {
+      if (shape === "leaf" || shape === "leaf-reverse") {
+        roundedRects.push(`<path d="${leafPath(moduleX, moduleY, 1, shape === "leaf-reverse")}"/>`);
+      } else if (shape === "rounded" || shape === "soft") {
         roundedRects.push(
-          `<rect x="${formatNumber(moduleX)}" y="${formatNumber(moduleY)}" width="1" height="1" rx="${ROUNDED_MODULE_RADIUS}"/>`,
+          `<rect x="${formatNumber(moduleX)}" y="${formatNumber(moduleY)}" width="1" height="1" rx="${shape === "soft" ? SOFT_CORNER_RADIUS_RATIO : ROUNDED_MODULE_RADIUS}"/>`,
         );
       } else {
         circles.push(
@@ -410,7 +423,9 @@ function renderLogo(
   const logoStart = (matrix.size - logo.widthModules) / 2 + origin;
 
   return (
-    `<rect x="${formatNumber(clearStart)}" y="${formatNumber(clearStart)}" width="${formatNumber(clearExtent)}" height="${formatNumber(clearExtent)}" fill="${background}"/>` +
+    (logo.clearBackground
+      ? `<rect data-qr-logo-backing="true" x="${formatNumber(clearStart)}" y="${formatNumber(clearStart)}" width="${formatNumber(clearExtent)}" height="${formatNumber(clearExtent)}" fill="${background}"/>`
+      : "") +
     `<image x="${formatNumber(logoStart)}" y="${formatNumber(logoStart)}" width="${formatNumber(logo.widthModules)}" height="${formatNumber(logo.widthModules)}" href="${logo.dataUri}" preserveAspectRatio="xMidYMid meet"/>`
   );
 }
@@ -497,10 +512,6 @@ function getNormalizedLogoOverlayDetails(
     coveragePercent: (clearExtent ** 2 / matrix.size ** 2) * 100,
     overlapsFunctionModules,
   };
-}
-
-function isQrModuleShape(shape: string): shape is QrModuleShape {
-  return shape === "square" || shape === "rounded" || shape === "circle";
 }
 
 function isOpaqueHexColor(color: unknown): color is string {

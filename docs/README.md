@@ -23,7 +23,7 @@
 - Работает `packages/qr-toolkit`: headless encoder-адаптер над `qr@0.7.2`, собственный SVG Renderer, диагностика, словари ошибок RU/EN.
 - Playground на HTML/CSS/TypeScript даёт ручную настройку, шесть демонстрационных дизайнов, SVG/PNG-экспорт и проверку через `BarcodeDetector`, если API доступен.
 - Пресеты передаются извне; engine не содержит каталога и не зависит от Vue, DOM или языка интерфейса.
-- Работает `apps/frontend`: Vue/Vite/Nuxt UI, общая тема Iris в `packages/theme`, source-first `/ui` toolkit с Vue editor URL/Text: независимые черновики, live preview, все настройки playground, внешний каталог пресетов/примеров, SVG/PNG-экспорт, диагностика и RU/EN. Запуск: `pnpm dev` из корня.
+- Работает `apps/frontend`: Vue/Vite/Nuxt UI, общая тема Iris в `packages/theme`, source-first `/ui` toolkit с Vue editor URL/Text: независимые черновики, live preview, все настройки playground, внешний каталог пресетов, SVG/PNG-экспорт, диагностика и RU/EN. Запуск: `pnpm dev` из корня.
 - Astro/AdonisJS, сохранение проектов, динамические маршруты и аналитика ещё не реализованы. `docker-compose.yml` пока пустая заготовка.
 
 ## Проверки и ближайшая работа

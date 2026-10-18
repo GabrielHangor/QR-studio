@@ -91,7 +91,7 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
   }
 
   const quietExtent = matrixSize + quietZone * 2;
-  const baseFramePadding = frame.style === "outline" ? QR_FRAME_PADDING_MODULES : 0;
+  const baseFramePadding = frame.style !== "none" ? QR_FRAME_PADDING_MODULES : 0;
   if (!Number.isSafeInteger(quietExtent + baseFramePadding * 2)) {
     throw new QrError("SVG_DIMENSIONS_TOO_LARGE", {});
   }
@@ -150,7 +150,7 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
   });
 
   // A circle must enclose the entire quiet-zone square, including all four corners.
-  const frameWidthPx = frame.style === "outline" ? (frame.widthPx ?? 0) : 0;
+  const frameWidthPx = frame.style !== "none" ? (frame.widthPx ?? 0) : 0;
   // A pixel stroke reserves its full thickness on each side, without touching the quiet zone.
   const extent =
     (quietExtent * (shape === "circle" ? Math.SQRT2 : 1) + baseFramePadding * 2) /
@@ -160,11 +160,7 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
   }
   const modulePitchPx = size / extent;
   const frameStrokeWidth =
-    frame.style === "outline"
-      ? frame.widthPx === undefined
-        ? 1
-        : frameWidthPx / modulePitchPx
-      : 0;
+    frame.style !== "none" ? (frame.widthPx === undefined ? 1 : frameWidthPx / modulePitchPx) : 0;
   const framePadding = baseFramePadding + frameWidthPx / modulePitchPx;
   const captionLayouts: QrCaptionLayout[] = captions.map((caption) => {
     const layout: QrCaptionLayout = {

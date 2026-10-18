@@ -17,7 +17,13 @@ export interface QrEditorState {
 }
 
 export function createQrEditorState(): QrEditorState {
-  return { contentType: "url", url: "", text: "", encoding: {}, design: {} };
+  return {
+    contentType: "url",
+    url: "https://example.com",
+    text: "QR Studio",
+    encoding: { errorCorrectionLevel: "M" },
+    design: { size: 512, quietZone: 4, foreground: "#202833", finder: { outerShape: "square" } },
+  };
 }
 
 export type QrEditorContent =
@@ -48,14 +54,6 @@ export interface QrDesignPreset {
   readonly description: string;
   readonly design: Omit<RenderQrSvgOptions, "size" | "quietZone" | "logo">;
 }
-export interface QrEditorExample {
-  readonly id: string;
-  readonly title: string;
-  readonly contentType: QrContentType;
-  readonly value: string;
-  readonly version?: number;
-}
-
 export function qrCaptionDrafts(design: RenderQrSvgOptions): readonly QrCaptionOptions[] {
   return design.caption === undefined
     ? []

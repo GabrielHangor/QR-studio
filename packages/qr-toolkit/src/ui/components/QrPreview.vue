@@ -42,7 +42,7 @@ const previewSource = computed(() =>
         v-if="previewSource"
         :src="previewSource"
         :alt="messages.previewAlt"
-        class="block h-auto w-full max-w-80"
+        class="block h-auto w-full max-w-md"
       />
       <UAlert
         v-else-if="failure"
@@ -65,11 +65,28 @@ const previewSource = computed(() =>
       </div>
     </div>
     <QrExportActions :preview="preview" :messages="messages" class="mt-5" />
+    <section
+      v-if="diagnostics.length"
+      class="mt-5 space-y-2"
+      aria-live="polite"
+      :aria-label="messages.recommendations"
+    >
+      <h4 class="text-sm font-semibold text-highlighted">{{ messages.recommendations }}</h4>
+      <ul class="list-disc space-y-2 ps-5 text-sm text-muted">
+        <li
+          v-for="diagnostic in diagnostics"
+          :key="diagnostic.code"
+          :class="diagnostic.severity === 'error' ? 'text-error' : undefined"
+        >
+          {{ formatQrDiagnostic(diagnostic, messages.engine) }}
+        </li>
+      </ul>
+    </section>
     <UAccordion
       v-if="preview.status === 'ready'"
       :items="[
         {
-          label: messages.details + (diagnostics.length ? ' (' + diagnostics.length + ')' : ''),
+          label: messages.metrics,
           slot: 'details',
         },
       ]"
@@ -105,15 +122,6 @@ const previewSource = computed(() =>
             <dd>{{ preview.analysis.logoCoveragePercent.toFixed(2) }}</dd>
           </div>
         </dl>
-        <ul v-if="diagnostics.length" class="mt-4 space-y-3" aria-live="polite">
-          <li v-for="diagnostic in diagnostics" :key="diagnostic.code">
-            <UAlert
-              :color="diagnostic.severity === 'error' ? 'error' : 'warning'"
-              :description="formatQrDiagnostic(diagnostic, messages.engine)"
-              variant="subtle"
-            />
-          </li>
-        </ul>
       </template>
     </UAccordion>
     <UAccordion
