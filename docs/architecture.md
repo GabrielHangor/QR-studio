@@ -6,7 +6,7 @@
 | --------------------- | ----------------------------------------------------------------------------------- |
 | `apps/frontend`       | Vue SPA на Vite + Nuxt UI; текущий стенд и будущий кабинет                          |
 | `packages/qr-toolkit` | Headless engine, сериализация содержимого/состояние редактора, локализация и Vue UI |
-| `packages/theme`      | Переносимые токены Iris и адаптер Nuxt UI                                           |
+| `packages/theme`      | Переносимые токены QR Studio и адаптер Nuxt UI                                      |
 | `apps/landing`        | План: Astro с общим Vue editor                                                      |
 | `apps/backend`        | План: AdonisJS + PostgreSQL для динамики и аналитики                                |
 | `packages/shared`     | Резерв для общих API-контрактов                                                     |
@@ -38,9 +38,11 @@ Vue и Nuxt UI — optional peers, обязательные для UI-потре
 ## Интеграция frontend
 
 Frontend владеет Nuxt UI Vite/runtime plugin, одним `UApp` и импортом глобального CSS в `main.ts`.
-Общая [тема Iris](../packages/theme/README.md) использует локальные Manrope и Remix Icons.
+Общая [тема QR Studio](../packages/theme/README.md) использует локальные Manrope и Remix Icons.
 Vite компилирует UI toolkit из исходников; `resolve.dedupe` объединяет Vue/Nuxt UI,
 `scanPackages` и Tailwind `@source` охватывают toolkit.
+Vite-конфигурация импортирует тему по относительному пути: так её TypeScript входит
+в bundle конфигурации и отслеживается при изменениях, а не кэшируется как внешний пакет.
 Обнаружение используемых Nuxt UI-компонентов включено только при сборке: в dev список
 не обновляется при HMR, из-за чего новый компонент может остаться без стилей.
 

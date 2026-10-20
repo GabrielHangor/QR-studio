@@ -28,6 +28,8 @@ export interface QrEditorMessages {
   noPassword: string;
   visibleNetwork: string;
   hiddenNetwork: string;
+  showPassword: string;
+  hidePassword: string;
   shapeLabels: Record<import("../engine/types.js").QrModuleShape, string>;
   clearLogo: string;
   noFrame: string;
@@ -231,6 +233,8 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   noPassword: "Без пароля",
   visibleNetwork: "Обычная сеть",
   hiddenNetwork: "Скрытая сеть",
+  showPassword: "Показать пароль",
+  hidePassword: "Скрыть пароль",
   shapeLabels: {
     "square": "Квадраты",
     "rounded": "Скруглённые",
@@ -450,6 +454,8 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   noPassword: "No password",
   visibleNetwork: "Visible network",
   hiddenNetwork: "Hidden network",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
   shapeLabels: {
     "square": "Squares",
     "rounded": "Rounded",

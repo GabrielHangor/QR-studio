@@ -1212,3 +1212,147 @@ for (const width of [1280, 390]) {
     }
   });
 }
+
+for (const width of [1280, 390]) {
+  it(`keeps themed surfaces distinct and text readable at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    const contrast = (first, second) => {
+      const luminance = (color) => {
+        const channels = color
+          .match(/[\d.]+/g)
+          .slice(0, 3)
+          .map(Number)
+          .map((value) => {
+            const channel = value / 255;
+            return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+      };
+      const values = [luminance(first), luminance(second)].toSorted((a, b) => a - b);
+      return (values[1] + 0.05) / (values[0] + 0.05);
+    };
+    const colors = (locator) =>
+      locator.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { text: style.color, background: style.backgroundColor };
+      });
+    try {
+      await page.goto(baseUrl);
+      const originalSvg = await svgOf(page);
+      const url = page.getByRole("textbox", { name: /^Ссылка/ });
+      const png = page.getByRole("button", { name: "Скачать PNG", exact: true });
+      const card = page.getByLabel("Предпросмотр", { exact: true });
+      const body = page.locator("body");
+      const lightInput = await colors(url);
+      assert.ok(contrast(lightInput.text, lightInput.background) >= 4.5);
+      assert.equal(lightInput.background, (await colors(card)).background);
+      await page.getByRole("tab", { name: "Контакт", exact: true }).click();
+      const contactFields = page.getByRole("textbox");
+      assert.equal(await contactFields.count(), 4);
+      /* oxlint-disable no-await-in-loop -- Verify each independently labelled contact field. */
+      for (const field of await contactFields.all()) {
+        const appearance = await colors(field);
+        assert.equal(appearance.background, (await colors(card)).background);
+        assert.ok(contrast(appearance.text, appearance.background) >= 7);
+      }
+      /* oxlint-enable no-await-in-loop */
+      await settleLayout(page);
+      await page.screenshot({
+        path: `test-results/editor-blue-contact-${width}.png`,
+        fullPage: true,
+      });
+      await page.getByRole("tab", { name: "Ссылка", exact: true }).click();
+      const action = await colors(png);
+      assert.ok(contrast(action.text, action.background) >= 4.5);
+      assert.notEqual((await colors(body)).background, (await colors(card)).background);
+      await open(page, "Цвета");
+      await settleLayout(page);
+      await page.screenshot({ path: `test-results/editor-blue-${width}.png`, fullPage: true });
+      await page.evaluate(() => document.documentElement.classList.add("dark"));
+      await open(page, "Что будет в QR-коде");
+      const darkInput = await colors(url);
+      const darkAction = await colors(png);
+      assert.ok(contrast(darkInput.text, darkInput.background) >= 4.5);
+      assert.ok(contrast(darkAction.text, darkAction.background) >= 4.5);
+      assert.notEqual((await colors(body)).background, (await colors(card)).background);
+      assert.equal(await svgOf(page), originalSvg, "Interface theme does not recolor the QR");
+      await settleLayout(page);
+      await page.screenshot({ path: `test-results/editor-blue-dark-${width}.png`, fullPage: true });
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`distinguishes selected options and toggles Wi-Fi password at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    try {
+      await page.goto(baseUrl);
+      const wifiTab = page.getByRole("tab", { name: "Wi-Fi", exact: true });
+      await wifiTab.click();
+      const password = page.getByLabel("Пароль сети", { exact: true });
+      const value = await password.inputValue();
+      const original = await svgOf(page);
+      assert.equal(await password.getAttribute("type"), "password");
+      await page.getByRole("button", { name: "Показать пароль", exact: true }).click();
+      assert.equal(await password.getAttribute("type"), "text");
+      assert.equal(await password.inputValue(), value);
+      assert.equal(await svgOf(page), original);
+      const hide = page.getByRole("button", { name: "Скрыть пароль", exact: true });
+      assert.equal(await hide.getAttribute("aria-pressed"), "true");
+      await hide.press("Enter");
+      assert.equal(await password.getAttribute("type"), "password");
+      await page.getByRole("button", { name: "Показать пароль", exact: true }).click();
+      await page.getByRole("tab", { name: "Текст", exact: true }).click();
+      await wifiTab.click();
+      assert.equal(
+        await password.getAttribute("type"),
+        "password",
+        "Returning to Wi-Fi hides the password",
+      );
+      const security = page.getByRole("combobox", { name: "Защита сети", exact: true });
+      await security.click();
+      const selected = page.getByRole("option", { name: "WPA / WPA2 / WPA3", exact: true });
+      const selectedBackground = await selected.evaluate(
+        (element) => getComputedStyle(element, "::before").backgroundColor,
+      );
+      const tabBackground = await wifiTab.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      assert.equal(
+        selectedBackground,
+        tabBackground,
+        "Selected tabs and options share the same accent surface",
+      );
+      if (width === 1280) {
+        const alternative = page.getByRole("option", { name: "WEP", exact: true });
+        await alternative.hover();
+        const hoverBackground = await alternative.evaluate(
+          (element) => getComputedStyle(element, "::before").backgroundColor,
+        );
+        assert.notEqual(hoverBackground, selectedBackground, "Hover differs from selection");
+      }
+      await settleLayout(page);
+      await page.screenshot({
+        path: `test-results/editor-wifi-options-${width}.png`,
+        fullPage: true,
+      });
+      await page.getByRole("option", { name: "Без пароля", exact: true }).click();
+      assert.equal(await password.count(), 0);
+      assert.equal(
+        await page.getByRole("button", { name: /Показать пароль|Скрыть пароль/ }).count(),
+        0,
+      );
+      await security.click();
+      await page.getByRole("option", { name: "WPA / WPA2 / WPA3", exact: true }).click();
+      assert.equal(await password.inputValue(), value);
+      assert.equal(await password.getAttribute("type"), "password");
+      assert.equal(await svgOf(page), original);
+    } finally {
+      await context.close();
+    }
+  });
+}

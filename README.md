@@ -40,7 +40,7 @@ UI-тесты поднимают собственный локальный се�
 - [Продукт](docs/product.md) — границы релизов, требования и приёмка.
 - [Архитектура](docs/architecture.md) — пакеты, интеграция UI и технические решения.
 - [Toolkit](packages/qr-toolkit/README.md) — API и подключение редактора.
-- [Тема](packages/theme/README.md) — токены Iris и адаптер Nuxt UI.
+- [Тема](packages/theme/README.md) — токены QR Studio и адаптер Nuxt UI.
 - [Правила работы](AGENTS.md).
 
 Исторические исследования: [редакторы и UX](docs/archive/qr-studio-competitive-ux-research-2026-10-14.md),

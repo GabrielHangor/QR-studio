@@ -1,14 +1,16 @@
 import ui from "@nuxt/ui/vite";
-import { irisTheme } from "@qr-studio/theme/nuxt-ui";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
+
+// Bundle the workspace config so Vite watches it instead of caching it as an external package.
+import { studioTheme } from "../../packages/theme/nuxt-ui.js";
 
 export default defineConfig(({ command }) => ({
   plugins: [
     vue(),
     ui({
-      ui: irisTheme,
-      icon: { clientBundle: { icons: Object.values(irisTheme.icons) } },
+      ui: studioTheme,
+      icon: { clientBundle: { icons: Object.values(studioTheme.icons) } },
       router: false,
       colorMode: false,
       autoImport: false,

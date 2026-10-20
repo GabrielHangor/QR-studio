@@ -154,6 +154,8 @@ async function perform(operation: "png" | "scan") {
           <UButton
             v-if="config.formats.includes('svg')"
             label="SVG"
+            color="neutral"
+            variant="outline"
             :aria-label="messages.downloadSvg"
             :disabled="!svg"
             @click="downloadSvg"
@@ -161,6 +163,8 @@ async function perform(operation: "png" | "scan") {
           <UButton
             v-if="config.formats.includes('png')"
             label="PNG"
+            color="primary"
+            variant="solid"
             :aria-label="messages.downloadPng"
             :disabled="!svg || !!busy"
             :loading="busy === 'png'"

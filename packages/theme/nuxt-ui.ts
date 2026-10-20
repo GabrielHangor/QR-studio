@@ -1,9 +1,20 @@
-// Iris export from ui.nuxt.com/theme. Applied once by the host application.
-export const irisTheme = {
+const primaryButtonStates = [
+  {
+    color: "primary" as const,
+    variant: "solid" as const,
+    class: "hover:bg-(--studio-primary-hover) active:bg-(--studio-primary-active)",
+  },
+];
+
+// Shared QR Studio component defaults. Applied once by the host application.
+const selectItem =
+  "font-medium text-highlighted data-[state=checked]:text-primary data-[state=checked]:before:bg-selected data-highlighted:data-[state=checked]:before:bg-selected";
+
+export const studioTheme = {
   colors: {
-    primary: "violet",
-    secondary: "fuchsia",
-    neutral: "mauve",
+    primary: "brand",
+    secondary: "slate",
+    neutral: "slate",
   },
   icons: {
     arrowDown: "i-ri-arrow-down-line",
@@ -51,6 +62,7 @@ export const irisTheme = {
     warning: "i-ri-alert-line",
   },
   button: {
+    compoundVariants: primaryButtonStates,
     defaultVariants: {
       variant: "outline",
     },
@@ -61,53 +73,57 @@ export const irisTheme = {
     },
   },
   input: {
+    slots: { base: "font-medium text-highlighted" },
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   select: {
+    slots: { base: "font-medium text-highlighted", item: selectItem },
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   textarea: {
+    slots: { base: "font-medium text-highlighted" },
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   selectMenu: {
+    slots: { base: "font-medium text-highlighted", item: selectItem },
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   inputMenu: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   inputNumber: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   inputTags: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   inputDate: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   inputTime: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
   pinInput: {
     defaultVariants: {
-      variant: "subtle",
+      variant: "outline",
     },
   },
 } as const;

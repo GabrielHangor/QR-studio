@@ -1,25 +1,60 @@
-/* Portable Iris tokens: usable without Vue, Nuxt UI or Tailwind. */
+/* Portable QR Studio tokens: usable without Vue, Nuxt UI or Tailwind. */
 @import "@fontsource-variable/manrope";
 
 :root {
   --studio-font-sans: "Manrope Variable", sans-serif;
   --studio-letter-spacing: -0.01em;
   --studio-radius: 0.5rem;
-  --studio-primary: oklch(60.6% 0.25 292.717);
-  --studio-secondary: oklch(66.7% 0.295 322.15);
-  --studio-bg: oklch(98.5% 0 0);
-  --studio-bg-muted: oklch(96% 0.003 325.6);
-  --studio-text: oklch(36.4% 0.029 323.89);
-  --studio-text-highlighted: oklch(21.2% 0.019 322.12);
-  --studio-text-inverted: oklch(98.5% 0 0);
+  --studio-blue-50: #f3f6ff;
+  --studio-blue-100: #eaf0fc;
+  --studio-blue-200: #cbdaf8;
+  --studio-blue-300: #aac4f5;
+  --studio-blue-400: #7ca3ec;
+  --studio-blue-500: #4779db;
+  --studio-blue-600: #2457c5;
+  --studio-blue-700: #1d47a4;
+  --studio-blue-800: #173b8c;
+  --studio-blue-900: #183363;
+  --studio-blue-950: #101f3d;
+  --studio-primary: var(--studio-blue-600);
+  --studio-primary-hover: var(--studio-blue-700);
+  --studio-primary-active: var(--studio-blue-800);
+  --studio-secondary: #526176;
+  --studio-bg-page: #f4f6f9;
+  --studio-bg: #ffffff;
+  --studio-bg-muted: #f4f6f9;
+  --studio-bg-elevated: #eaf0f6;
+  --studio-bg-accented: #dfe5ed;
+  --studio-bg-selected: var(--studio-blue-100);
+  --studio-bg-inverted: #182334;
+  --studio-border: #dfe5ed;
+  --studio-border-control: #b8c4d4;
+  --studio-text: #182334;
+  --studio-text-highlighted: #182334;
+  --studio-text-toned: #34445b;
+  --studio-text-muted: #526176;
+  --studio-text-dimmed: #637288;
+  --studio-text-inverted: #ffffff;
 }
 
 .dark {
-  --studio-primary: oklch(70.2% 0.183 293.541);
-  --studio-secondary: oklch(74% 0.238 322.16);
-  --studio-bg: oklch(21.2% 0.019 322.12);
-  --studio-bg-muted: oklch(26.3% 0.024 320.12);
-  --studio-text: oklch(86.5% 0.012 325.68);
-  --studio-text-highlighted: oklch(98.5% 0 0);
-  --studio-text-inverted: oklch(21.2% 0.019 322.12);
+  --studio-primary: #8db3ff;
+  --studio-primary-hover: #a8c5ff;
+  --studio-primary-active: #cbdaf8;
+  --studio-secondary: #adbcd0;
+  --studio-bg-page: #0e1726;
+  --studio-bg: #172334;
+  --studio-bg-muted: #1d2d42;
+  --studio-bg-elevated: #263750;
+  --studio-bg-accented: #34445b;
+  --studio-bg-selected: #243c65;
+  --studio-bg-inverted: #e2e8f0;
+  --studio-border: #34445b;
+  --studio-border-control: #526176;
+  --studio-text: #e2e8f0;
+  --studio-text-highlighted: #f8fafc;
+  --studio-text-toned: #c4d0df;
+  --studio-text-muted: #adbcd0;
+  --studio-text-dimmed: #93a5bc;
+  --studio-text-inverted: #0e1726;
 }

@@ -131,9 +131,9 @@ const contentType = computed({
       :aria-label="messages.contentType"
       class="w-fit"
       :ui="{
-        list: 'flex-wrap justify-start gap-1',
+        list: 'flex-wrap justify-start gap-1 bg-default ring ring-default',
         indicator: 'hidden',
-        trigger: 'flex-none px-3 data-[state=active]:bg-primary data-[state=active]:text-inverted',
+        trigger: 'flex-none px-3 data-[state=active]:bg-selected data-[state=active]:text-primary',
       }"
     />
     <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(22rem,1fr)]">
@@ -147,12 +147,12 @@ const contentType = computed({
           class="@container space-y-2"
           :ui="{
             item: 'min-w-0 overflow-hidden rounded-xl border border-default last:border-b bg-default',
-            header: 'bg-elevated/50',
+            header: 'bg-default',
             trigger:
-              'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-elevated transition-colors',
+              'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-muted data-[state=open]:bg-muted transition-colors',
             content: 'overflow-hidden',
             body: 'p-4',
-            trailingIcon: 'text-primary',
+            trailingIcon: 'text-muted',
           }"
         >
           <template #content-body>

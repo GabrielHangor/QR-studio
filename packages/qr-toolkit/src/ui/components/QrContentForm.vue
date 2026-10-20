@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import UButton from "@nuxt/ui/components/Button.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
 import UTextarea from "@nuxt/ui/components/Textarea.vue";
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 
 import type { QrEditorControls } from "../../editor/config.js";
 import {
@@ -25,6 +26,13 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ "update:state": [value: QrEditorState] }>();
 const touched = ref<Record<string, boolean>>({});
+const passwordVisible = ref(false);
+watch(
+  () => [props.state.contentType, props.state.contentDrafts?.wifi?.security],
+  () => {
+    passwordVisible.value = false;
+  },
+);
 function touch(field: string) {
   touched.value[`${props.state.contentType}.${field}`] = true;
 }
@@ -90,6 +98,7 @@ function selectPoint(point: { latitude: string; longitude: string }) {
   });
 }
 function inputType(field: QrContentField) {
+  if (field === "password" && passwordVisible.value) return "text";
   const types: Partial<Record<QrContentField, "password" | "email" | "tel">> = {
     password: "password",
     email: "email",
@@ -209,7 +218,19 @@ function required(field: QrContentField) {
             :autocomplete="field === 'password' ? 'off' : undefined"
             class="w-full"
             @update:model-value="updateField(field, String($event))"
-          />
+          >
+            <template v-if="field === 'password'" #trailing>
+              <UButton
+                :icon="passwordVisible ? 'i-ri-eye-off-line' : 'i-ri-eye-line'"
+                :aria-label="passwordVisible ? messages.hidePassword : messages.showPassword"
+                :aria-pressed="passwordVisible"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                @click="passwordVisible = !passwordVisible"
+              />
+            </template>
+          </UInput>
         </UFormField>
       </div>
       <QrLocationPicker

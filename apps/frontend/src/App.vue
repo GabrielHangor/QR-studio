@@ -28,6 +28,7 @@ const configOptions = [
             :key="option.value"
             :variant="configMode === option.value ? 'solid' : 'ghost'"
             :aria-pressed="configMode === option.value"
+            color="neutral"
             @click="configMode = option.value"
           >
             {{ option.label }}
