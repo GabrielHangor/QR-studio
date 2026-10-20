@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import QrColorInput from "./QrColorInput.vue";
-import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
 import USwitch from "@nuxt/ui/components/Switch.vue";
+import { computed } from "vue";
 
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import QrColorInput from "./QrColorInput.vue";
 const props = defineProps<{ design: RenderQrSvgOptions; messages: QrEditorMessages }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 function patch(value: Partial<RenderQrSvgOptions>) {
@@ -53,37 +53,42 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
 
 <template>
   <div class="grid gap-3 @min-[38rem]:grid-cols-2">
-    <UFormField :label="messages.fill" class="@min-[38rem]:col-span-2"
-      ><USelect
+    <UFormField :label="messages.fill" class="@min-[38rem]:col-span-2">
+      <USelect
         :model-value="gradient?.direction ?? 'solid'"
         :items="fills"
         class="w-full"
         @update:model-value="changeFill($event)"
-    /></UFormField>
+      />
+    </UFormField>
     <div class="grid gap-4 sm:grid-cols-2 @min-[38rem]:col-span-2">
-      <UFormField :label="messages.foreground"
-        ><QrColorInput
+      <UFormField :label="messages.foreground">
+        <QrColorInput
           :label="messages.foreground"
           :model-value="foreground"
           class="w-full"
-          @update:model-value="changeForeground(String($event))" /></UFormField
-      ><UFormField :label="messages.background"
-        ><QrColorInput
+          @update:model-value="changeForeground(String($event))"
+        />
+      </UFormField>
+      <UFormField :label="messages.background">
+        <QrColorInput
           :label="messages.background"
           light
           :model-value="design.background ?? '#ffffff'"
           class="w-full"
           @update:model-value="patch({ background: String($event) })"
-      /></UFormField>
+        />
+      </UFormField>
     </div>
     <div v-if="gradient">
-      <UFormField :label="messages.gradientEnd"
-        ><QrColorInput
+      <UFormField :label="messages.gradientEnd">
+        <QrColorInput
           :label="messages.gradientEnd"
           :model-value="gradient.endColor"
           class="w-full"
           @update:model-value="patch({ foreground: { ...gradient, endColor: String($event) } })"
-      /></UFormField>
+        />
+      </UFormField>
     </div>
     <details class="@min-[38rem]:col-span-2">
       <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
@@ -96,13 +101,14 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
             :label="messages.customOuter"
             @update:model-value="finder({ outerColor: $event ? '#202833' : undefined })"
           />
-          <UFormField v-if="design.finder?.outerColor" :label="messages.outerColor"
-            ><QrColorInput
+          <UFormField v-if="design.finder?.outerColor" :label="messages.outerColor">
+            <QrColorInput
               :label="messages.outerColor"
               :model-value="design.finder.outerColor"
               class="w-full"
               @update:model-value="finder({ outerColor: String($event) })"
-          /></UFormField>
+            />
+          </UFormField>
         </div>
         <div class="space-y-3">
           <USwitch
@@ -110,13 +116,14 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
             :label="messages.customInner"
             @update:model-value="finder({ innerColor: $event ? '#202833' : undefined })"
           />
-          <UFormField v-if="design.finder?.innerColor" :label="messages.innerColor"
-            ><QrColorInput
+          <UFormField v-if="design.finder?.innerColor" :label="messages.innerColor">
+            <QrColorInput
               :label="messages.innerColor"
               :model-value="design.finder.innerColor"
               class="w-full"
               @update:model-value="finder({ innerColor: String($event) })"
-          /></UFormField>
+            />
+          </UFormField>
         </div>
       </div>
     </details>
@@ -135,26 +142,29 @@ const frame = computed(() => (typeof props.design.frame === "object" ? props.des
         <UFormField
           v-if="design.artworkBackground !== undefined"
           :label="messages.artworkBackground"
-          ><QrColorInput
+        >
+          <QrColorInput
             :label="messages.artworkBackground"
             light
             :model-value="design.artworkBackground"
             class="w-full"
             @update:model-value="patch({ artworkBackground: String($event) })"
-        /></UFormField>
+          />
+        </UFormField>
       </div>
     </details>
     <div
       v-if="design.frame && design.frame !== 'none' && frame.style !== 'none'"
       class="@min-[38rem]:col-span-2"
     >
-      <UFormField :label="messages.frameColor"
-        ><QrColorInput
+      <UFormField :label="messages.frameColor">
+        <QrColorInput
           :label="messages.frameColor"
           :model-value="frame.color ?? '#202833'"
           class="w-full"
           @update:model-value="patch({ frame: { ...frame, color: String($event) } })"
-      /></UFormField>
+        />
+      </UFormField>
     </div>
   </div>
 </template>

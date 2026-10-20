@@ -1,13 +1,13 @@
-import { QrError } from "./errors.js";
-import { isQrModuleShape } from "./shapes.js";
+import { getQrArtworkLayout } from "./artwork.js";
 import {
   QR_QUIET_ZONE_DEFAULT_MODULES,
   QR_QUIET_ZONE_MIN_MODULES,
   QR_SVG_DEFAULT_SIZE_PX,
 } from "./constants.js";
-import { getQrArtworkLayout } from "./artwork.js";
+import { QrError } from "./errors.js";
 import { normalizeQrFinder } from "./finders.js";
 import { inspectQrLogoOverlay, isValidQrMatrix } from "./renderer.js";
+import { isQrModuleShape } from "./shapes.js";
 import type {
   AnalyzeQrDesignOptions,
   QrDesignAnalysis,

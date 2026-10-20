@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import UButton from "@nuxt/ui/components/Button.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
 import UBadge from "@nuxt/ui/components/Badge.vue";
+import UButton from "@nuxt/ui/components/Button.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import USlider from "@nuxt/ui/components/Slider.vue";
-import QrFieldHelp from "./QrFieldHelp.vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+
+import type { RenderQrSvgOptions } from "../../engine/types.js";
 import { downloadQrBlob, qrPngBlob, scanQrSvg, QrBrowserError, SVG_MIME_TYPE } from "../browser.js";
 import type { QrEditorMessages } from "../messages.js";
 import type { QrEditorPreview } from "../useQrEditor.js";
-import type { RenderQrSvgOptions } from "../../engine/types.js";
+import QrFieldHelp from "./QrFieldHelp.vue";
 const props = defineProps<{
   preview: QrEditorPreview;
   design: RenderQrSvgOptions;
@@ -111,11 +112,11 @@ async function perform(operation: "png" | "scan") {
         @update:model-value="changeResolution"
       />
       <div class="flex justify-between gap-2 text-xs text-muted">
-        <span>{{ messages.smallerFile }}</span
-        ><output :aria-label="messages.exportDimensions" class="font-medium text-highlighted">{{
-          dimensions
-        }}</output
-        ><span>{{ messages.moreDetail }}</span>
+        <span>{{ messages.smallerFile }}</span>
+        <output :aria-label="messages.exportDimensions" class="font-medium text-highlighted">
+          {{ dimensions }}
+        </output>
+        <span>{{ messages.moreDetail }}</span>
       </div>
     </UFormField>
     <p class="text-xs text-muted">{{ messages.vectorHint }}</p>

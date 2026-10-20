@@ -9,9 +9,9 @@ import {
   type QrModuleShape,
   type RenderQrSvgOptions,
 } from "../src/engine/index.js";
-import { playgroundPresets, type PlaygroundPreset } from "./presets.js";
 import { formatQrError, formatQrDiagnostic } from "../src/i18n/index.js";
 import { qrMessagesRu } from "../src/i18n/ru.js";
+import { playgroundPresets, type PlaygroundPreset } from "./presets.js";
 
 const LOGO_MAX_FILE_SIZE_BYTES = 700 * 1024;
 const SVG_MIME_TYPE = "image/svg+xml;charset=utf-8";

@@ -2,8 +2,9 @@
 import UApp from "@nuxt/ui/components/App.vue";
 import UBadge from "@nuxt/ui/components/Badge.vue";
 import { ru } from "@nuxt/ui/locale";
-import { editorPresets } from "./presets.js";
 import { QrEditor } from "@qr-studio/toolkit/ui";
+
+import { editorPresets } from "./presets.js";
 </script>
 
 <template>

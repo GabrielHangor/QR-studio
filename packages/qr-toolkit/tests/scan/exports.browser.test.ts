@@ -8,6 +8,7 @@ import {
   type ReaderOptions,
 } from "zxing-wasm/reader";
 import wasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
+
 import { analyzeQrDesign, encodeQr, renderQrSvg } from "../../src/engine/index.js";
 import { scanCases } from "./cases.js";
 import { base64, canvas, encodeImage, logoDataUri, rasterizeSvg, scanImage } from "./images.js";

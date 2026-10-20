@@ -80,8 +80,8 @@ ECC, `functionModules` и координаты трёх finder patterns. Мас�
 
 ```ts
 import { formatQrError, formatQrDiagnostic } from "@qr-studio/toolkit/i18n";
-import { qrMessagesRu } from "@qr-studio/toolkit/i18n/ru";
 import { qrMessagesEn } from "@qr-studio/toolkit/i18n/en";
+import { qrMessagesRu } from "@qr-studio/toolkit/i18n/ru";
 
 try {
   encodeQr("https://example.com", { version: 0 });

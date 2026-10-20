@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+
+import { playgroundPresets } from "../playground/presets.js";
 import {
   QrError,
   analyzeQrDesign,
@@ -6,7 +8,6 @@ import {
   renderQrSvg,
   type RenderQrSvgOptions,
 } from "../src/engine/index.js";
-import { playgroundPresets } from "../playground/presets.js";
 
 describe("whole finder markers", () => {
   it.each(["square", "rounded", "circle"] as const)(

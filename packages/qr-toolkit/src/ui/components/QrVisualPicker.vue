@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T extends string">
-import { computed } from "vue";
 import URadioGroup from "@nuxt/ui/components/RadioGroup.vue";
+import { computed } from "vue";
 
 const props = defineProps<{
   label: string;
@@ -47,9 +47,9 @@ function choose(value: string) {
         :class="large ? 'size-20' : 'size-10'"
       >
         <img v-if="item.source" :src="item.source" alt="" class="block size-full object-contain" />
-        <span v-else class="flex aspect-square w-16 items-center justify-center text-dimmed"
-          >—</span
-        >
+        <span v-else class="flex aspect-square w-16 items-center justify-center text-dimmed">
+          —
+        </span>
       </span>
       <span :class="hideLabels ? 'sr-only' : undefined">{{ item.label }}</span>
     </template>

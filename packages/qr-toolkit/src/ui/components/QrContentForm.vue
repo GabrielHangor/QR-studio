@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import UTextarea from "@nuxt/ui/components/Textarea.vue";
-import UFormField from "@nuxt/ui/components/FormField.vue";
+import { computed, ref } from "vue";
+
 import { createQrEditorState } from "../../editor/index.js";
 import type { QrContentType } from "../../editor/index.js";
 import type { QrEditorMessages } from "../messages.js";

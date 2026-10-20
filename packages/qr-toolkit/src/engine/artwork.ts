@@ -1,11 +1,11 @@
-import { QrError } from "./errors.js";
 import {
   QR_FRAME_PADDING_MODULES,
   QR_QUIET_ZONE_DEFAULT_MODULES,
   QR_SVG_DEFAULT_SIZE_PX,
 } from "./constants.js";
-import type { QrCaptionOptions, RenderQrSvgOptions } from "./types.js";
+import { QrError } from "./errors.js";
 import { normalizeQrFrame } from "./frame.js";
+import type { QrCaptionOptions, RenderQrSvgOptions } from "./types.js";
 
 /** Default text size in output pixels, independent of QR version. */
 const CAPTION_FONT_SIZE_PX = 18;

@@ -1,5 +1,4 @@
-import { QrError } from "./errors.js";
-import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
+import { getQrArtworkLayout, type QrCaptionLayout } from "./artwork.js";
 import {
   ERROR_CORRECTION_LEVELS,
   QR_FINDER_PATTERN_SIZE,
@@ -11,9 +10,10 @@ import {
   QR_VERSION_MAX,
   QR_VERSION_MIN,
 } from "./constants.js";
-import { createQrFinderPatterns, createQrFunctionModules } from "./layout.js";
-import { getQrArtworkLayout, type QrCaptionLayout } from "./artwork.js";
+import { QrError } from "./errors.js";
 import { normalizeQrFinder, renderQrFinders } from "./finders.js";
+import { createQrFinderPatterns, createQrFunctionModules } from "./layout.js";
+import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
 import type {
   QrLinearGradient,
   QrLogoOptions,

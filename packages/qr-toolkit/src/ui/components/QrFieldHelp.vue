@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import UTooltip from "@nuxt/ui/components/Tooltip.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
+import UTooltip from "@nuxt/ui/components/Tooltip.vue";
+import { ref } from "vue";
 
 defineProps<{ label: string; text: string; actionLabel: string }>();
 const open = ref(false);

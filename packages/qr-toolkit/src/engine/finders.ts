@@ -1,6 +1,6 @@
+import { QR_FINDER_PATTERN_SIZE } from "./constants.js";
 import { QrError } from "./errors.js";
 import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
-import { QR_FINDER_PATTERN_SIZE } from "./constants.js";
 import type { QrFinderOptions, QrMatrix, QrModuleShape } from "./types.js";
 
 /** A finder ring is one module thick and its pupil is inset by two modules. */

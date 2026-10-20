@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import QrVisualPicker from "./QrVisualPicker.vue";
-import { qrDesignThumbnail } from "../visuals.js";
+
 import type { QrDesignPreset } from "../../editor/index.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import { qrDesignThumbnail } from "../visuals.js";
+import QrVisualPicker from "./QrVisualPicker.vue";
 
 const props = defineProps<{
   presets: readonly QrDesignPreset[];

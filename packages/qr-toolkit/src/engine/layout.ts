@@ -1,4 +1,3 @@
-import { QrError } from "./errors.js";
 import {
   QR_FINDER_PATTERN_SIZE,
   QR_VERSION_DIMENSION_BASE,
@@ -6,6 +5,7 @@ import {
   QR_VERSION_MAX,
   QR_VERSION_MIN,
 } from "./constants.js";
+import { QrError } from "./errors.js";
 import type { QrFinderPattern } from "./types.js";
 
 /** Finder separators extend one module beyond each 7 × 7 finder pattern. */

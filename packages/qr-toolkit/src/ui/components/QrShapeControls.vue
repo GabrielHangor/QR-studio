@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import QrVisualPicker from "./QrVisualPicker.vue";
-import QrFinderControls from "./QrFinderControls.vue";
-import QrArtworkControls from "./QrArtworkControls.vue";
-import { qrShapeThumbnail } from "../visuals.js";
+
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import { qrShapeThumbnail } from "../visuals.js";
+import QrArtworkControls from "./QrArtworkControls.vue";
+import QrFinderControls from "./QrFinderControls.vue";
+import QrVisualPicker from "./QrVisualPicker.vue";
 
 const props = defineProps<{
   design: RenderQrSvgOptions;

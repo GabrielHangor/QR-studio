@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
 import ui from "@nuxt/ui/vite";
 import { irisTheme } from "@qr-studio/theme/nuxt-ui";
+import vue from "@vitejs/plugin-vue";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [

@@ -1,4 +1,5 @@
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
+
 import {
   resolveQrEditorContent,
   qrEditorRenderOptions,

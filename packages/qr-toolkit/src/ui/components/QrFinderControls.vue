@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import QrVisualPicker from "./QrVisualPicker.vue";
-import QrFieldHelp from "./QrFieldHelp.vue";
-import { qrShapeThumbnail } from "../visuals.js";
 
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import { qrShapeThumbnail } from "../visuals.js";
+import QrFieldHelp from "./QrFieldHelp.vue";
+import QrVisualPicker from "./QrVisualPicker.vue";
 const props = defineProps<{ design: RenderQrSvgOptions; messages: QrEditorMessages }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 function patch(value: Partial<RenderQrSvgOptions>) {

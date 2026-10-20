@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   QrError,
   QrEncodingError,
@@ -11,9 +12,9 @@ import {
   type QrDiagnosticParams,
   type QrDesignDiagnostic,
 } from "../src/engine/index.js";
+import { qrMessagesEn } from "../src/i18n/en.js";
 import { formatQrError, formatQrDiagnostic, type QrMessageCatalog } from "../src/i18n/index.js";
 import { qrMessagesRu } from "../src/i18n/ru.js";
-import { qrMessagesEn } from "../src/i18n/en.js";
 
 function catchError(action: () => unknown): QrError {
   let actualError: unknown;

@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref, type Ref } from "vue";
+
 import type { QrEditorState } from "../editor/index.js";
 import { readQrLogo, QrBrowserError } from "./browser.js";
 

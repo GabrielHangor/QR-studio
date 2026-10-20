@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ref } from "vue";
+
 import { createQrEditorState, resolveQrEditorContent } from "../src/editor/index.js";
-import { useQrEditor } from "../src/ui/useQrEditor.js";
 import { formatQrError } from "../src/i18n/index.js";
 import { qrEditorMessagesRu, qrEditorMessagesEn } from "../src/ui/messages.js";
+import { useQrEditor } from "../src/ui/useQrEditor.js";
 
 describe("editor content boundary", () => {
   it.each(["https://example.com", "http://example.com/path", "https://пример.рф/Привет?q=🙂"])(

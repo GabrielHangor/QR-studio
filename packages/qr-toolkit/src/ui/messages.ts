@@ -1,6 +1,6 @@
+import { qrMessagesEn } from "../i18n/en.js";
 import type { QrMessageCatalog } from "../i18n/index.js";
 import { qrMessagesRu } from "../i18n/ru.js";
-import { qrMessagesEn } from "../i18n/en.js";
 
 export interface QrEditorMessages {
   settings: string;
@@ -149,11 +149,11 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   settings: "Настройки QR",
   contentType: "Тип содержимого",
   shapeLabels: {
-    square: "Квадраты",
-    rounded: "Скруглённые",
-    circle: "Круги",
-    soft: "Мягкие",
-    leaf: "Лепестки",
+    "square": "Квадраты",
+    "rounded": "Скруглённые",
+    "circle": "Круги",
+    "soft": "Мягкие",
+    "leaf": "Лепестки",
     "leaf-reverse": "Лепестки ↗",
   },
   clearLogo: "Убрать код под логотипом",
@@ -305,11 +305,11 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   settings: "QR settings",
   contentType: "Content type",
   shapeLabels: {
-    square: "Squares",
-    rounded: "Rounded",
-    circle: "Circles",
-    soft: "Soft",
-    leaf: "Leaves",
+    "square": "Squares",
+    "rounded": "Rounded",
+    "circle": "Circles",
+    "soft": "Soft",
+    "leaf": "Leaves",
     "leaf-reverse": "Leaves ↗",
   },
   clearLogo: "Clear QR behind the logo",

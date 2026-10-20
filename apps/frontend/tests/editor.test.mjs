@@ -1,9 +1,10 @@
-import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+
 import { chromium } from "playwright";
 import { createServer } from "vite";
-import { readFile } from "node:fs/promises";
 import { prepareZXingModule, readBarcodes } from "zxing-wasm/reader";
 
 let server;

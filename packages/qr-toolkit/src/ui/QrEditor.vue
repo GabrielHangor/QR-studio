@@ -2,24 +2,25 @@
 import UAccordion from "@nuxt/ui/components/Accordion.vue";
 import UTabs from "@nuxt/ui/components/Tabs.vue";
 import { computed, ref } from "vue";
+
 import {
   createQrEditorState,
   applyQrPreset,
   type QrEditorState,
   type QrDesignPreset,
 } from "../editor/index.js";
-import { qrEditorMessagesRu, qrEditorMessagesEn, type QrEditorMessages } from "./messages.js";
-import { useQrLogo } from "./useQrLogo.js";
 import { QrBrowserError } from "./browser.js";
-import { useQrEditor, type QrEditorPreview } from "./useQrEditor.js";
-import QrContentForm from "./components/QrContentForm.vue";
-import QrShapeControls from "./components/QrShapeControls.vue";
-import QrPaintControls from "./components/QrPaintControls.vue";
-import QrLogoControls from "./components/QrLogoControls.vue";
 import QrCaptionControls from "./components/QrCaptionControls.vue";
-import QrPresetPicker from "./components/QrPresetPicker.vue";
+import QrContentForm from "./components/QrContentForm.vue";
 import QrEncodingControls from "./components/QrEncodingControls.vue";
+import QrLogoControls from "./components/QrLogoControls.vue";
+import QrPaintControls from "./components/QrPaintControls.vue";
+import QrPresetPicker from "./components/QrPresetPicker.vue";
 import QrPreview from "./components/QrPreview.vue";
+import QrShapeControls from "./components/QrShapeControls.vue";
+import { qrEditorMessagesRu, qrEditorMessagesEn, type QrEditorMessages } from "./messages.js";
+import { useQrEditor, type QrEditorPreview } from "./useQrEditor.js";
+import { useQrLogo } from "./useQrLogo.js";
 
 const props = withDefaults(
   defineProps<{
@@ -105,8 +106,8 @@ const contentType = computed({
             trailingIcon: 'text-primary',
           }"
         >
-          <template #content
-            ><QrContentForm
+          <template #content>
+            <QrContentForm
               :content-type="model.contentType"
               :url="model.url"
               :text="model.text"
@@ -114,28 +115,32 @@ const contentType = computed({
               :messages="messages"
               @update:url="update('url', $event)"
               @update:text="update('text', $event)"
-          /></template>
-          <template #presets
-            ><QrPresetPicker
+            />
+          </template>
+          <template #presets>
+            <QrPresetPicker
               :presets="props.presets"
               :design="model.design"
               :messages="messages"
               @preset="model = applyQrPreset(model, $event)"
-          /></template>
-          <template #colors
-            ><QrPaintControls
+            />
+          </template>
+          <template #colors>
+            <QrPaintControls
               :design="model.design"
               :messages="messages"
               @update:design="update('design', $event)"
-          /></template>
-          <template #shapes
-            ><QrShapeControls
+            />
+          </template>
+          <template #shapes>
+            <QrShapeControls
               :design="model.design"
               :messages="messages"
               @update:design="update('design', $event)"
-          /></template>
-          <template #logo
-            ><QrLogoControls
+            />
+          </template>
+          <template #logo>
+            <QrLogoControls
               :busy="logo.busy.value"
               :issue="logo.issue.value"
               :design="model.design"
@@ -143,29 +148,33 @@ const contentType = computed({
               @upload="logo.upload"
               @remove="logo.remove"
               @update:design="update('design', $event)"
-          /></template>
-          <template #captions
-            ><div class="grid gap-5 sm:grid-cols-2">
+            />
+          </template>
+          <template #captions>
+            <div class="grid gap-5 sm:grid-cols-2">
               <QrCaptionControls
                 position="top"
                 :design="model.design"
                 :messages="messages"
                 @update:design="update('design', $event)"
-              /><QrCaptionControls
+              />
+              <QrCaptionControls
                 position="bottom"
                 :design="model.design"
                 :messages="messages"
                 @update:design="update('design', $event)"
-              /></div
-          ></template>
-          <template #technical
-            ><QrEncodingControls
+              />
+            </div>
+          </template>
+          <template #technical>
+            <QrEncodingControls
               :encoding="model.encoding"
               :design="model.design"
               :messages="messages"
               @update:encoding="update('encoding', $event)"
               @update:design="update('design', $event)"
-          /></template>
+            />
+          </template>
         </UAccordion>
         <p class="text-xs text-muted">{{ messages.privacy }}</p>
       </div>

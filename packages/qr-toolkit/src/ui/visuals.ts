@@ -1,10 +1,10 @@
+import { qrEditorRenderOptions } from "../editor/index.js";
 import {
   encodeQr,
   renderQrSvg,
   type QrModuleShape,
   type RenderQrSvgOptions,
 } from "../engine/index.js";
-import { qrEditorRenderOptions } from "../editor/index.js";
 
 // A fixed sample keeps picker thumbnails stable when the user's content changes.
 const sampleMatrix = encodeQr("https://example.com", { errorCorrectionLevel: "M" });

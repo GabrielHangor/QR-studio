@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import QrColorInput from "./QrColorInput.vue";
-import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
-import QrFieldHelp from "./QrFieldHelp.vue";
+import { computed } from "vue";
+
 import { qrCaptionDrafts, updateQrCaption } from "../../editor/index.js";
 import type { QrCaptionOptions, RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import QrColorInput from "./QrColorInput.vue";
+import QrFieldHelp from "./QrFieldHelp.vue";
 
 const props = defineProps<{
   design: RenderQrSvgOptions;
@@ -42,29 +43,33 @@ function change(value: Partial<QrCaptionOptions>) {
 <template>
   <fieldset class="min-w-0 space-y-4 pb-5" :aria-label="title">
     <legend class="mb-3 font-medium text-highlighted">{{ title }}</legend>
-    <UFormField :label="title + ': ' + messages.captionText"
-      ><UInput
+    <UFormField :label="title + ': ' + messages.captionText">
+      <UInput
         :model-value="caption?.text ?? ''"
         :maxlength="80"
         class="w-full"
         @update:model-value="change({ text: String($event) })"
-    /></UFormField>
+      />
+    </UFormField>
     <template v-if="caption?.text.trim()">
-      <UFormField :label="messages.captionStyle"
-        ><USelect
+      <UFormField :label="messages.captionStyle">
+        <USelect
           :model-value="caption?.style ?? 'plain'"
           :items="styles"
           class="w-full"
           @update:model-value="change({ style: $event })"
-      /></UFormField>
+        />
+      </UFormField>
       <div class="grid grid-cols-2 gap-4">
-        <UFormField :label="messages.fontSize"
-          ><template #hint
-            ><QrFieldHelp
+        <UFormField :label="messages.fontSize">
+          <template #hint>
+            <QrFieldHelp
               :label="messages.fontSize"
               :text="messages.captionSizeHint"
-              :action-label="messages.help" /></template
-          ><UInput
+              :action-label="messages.help"
+            />
+          </template>
+          <UInput
             :model-value="caption?.fontSize ?? 18"
             type="number"
             :min="8"
@@ -72,9 +77,10 @@ function change(value: Partial<QrCaptionOptions>) {
             :step="1"
             class="w-full"
             @update:model-value="change({ fontSize: Number($event) })"
-        /></UFormField>
-        <UFormField :label="messages.captionColor" class="col-span-2"
-          ><QrColorInput
+          />
+        </UFormField>
+        <UFormField :label="messages.captionColor" class="col-span-2">
+          <QrColorInput
             :label="messages.captionColor"
             :model-value="
               caption?.color ??
@@ -82,17 +88,19 @@ function change(value: Partial<QrCaptionOptions>) {
             "
             class="w-full"
             @update:model-value="change({ color: String($event) })"
-        /></UFormField>
+          />
+        </UFormField>
       </div>
       <div v-if="caption?.style === 'banner'">
-        <UFormField :label="messages.captionBackground"
-          ><QrColorInput
+        <UFormField :label="messages.captionBackground">
+          <QrColorInput
             :label="messages.captionBackground"
             light
             :model-value="caption?.background ?? design.background ?? '#ffffff'"
             class="w-full"
             @update:model-value="change({ background: String($event) })"
-        /></UFormField>
+          />
+        </UFormField>
       </div>
       <details>
         <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">

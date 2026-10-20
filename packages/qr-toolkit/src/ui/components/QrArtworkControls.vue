@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
-import QrFieldHelp from "./QrFieldHelp.vue";
-import QrVisualPicker from "./QrVisualPicker.vue";
-import { qrShapeThumbnail } from "../visuals.js";
 import USelect from "@nuxt/ui/components/Select.vue";
-import { changeQrArtworkShape } from "../../editor/index.js";
+import { computed } from "vue";
 
+import { changeQrArtworkShape } from "../../editor/index.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import { qrShapeThumbnail } from "../visuals.js";
+import QrFieldHelp from "./QrFieldHelp.vue";
+import QrVisualPicker from "./QrVisualPicker.vue";
 const props = defineProps<{ design: RenderQrSvgOptions; messages: QrEditorMessages }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 function patch(value: Partial<RenderQrSvgOptions>) {
@@ -56,8 +56,8 @@ const framed = computed(
       />
     </div>
     <div class="grid grid-cols-2 content-start gap-3">
-      <UFormField :label="messages.frame" :class="framed ? undefined : 'col-span-2'"
-        ><USelect
+      <UFormField :label="messages.frame" :class="framed ? undefined : 'col-span-2'">
+        <USelect
           :model-value="framed ? (frame.style ?? 'outline') : 'none'"
           :items="[
             { label: messages.noFrame, value: 'none' as const },
@@ -78,9 +78,10 @@ const framed = computed(
                     },
             })
           "
-      /></UFormField>
-      <UFormField v-if="framed" :label="messages.frameWidth"
-        ><UInput
+        />
+      </UFormField>
+      <UFormField v-if="framed" :label="messages.frameWidth">
+        <UInput
           :model-value="frame.widthPx ?? 2"
           type="number"
           :min="0.5"
@@ -88,7 +89,8 @@ const framed = computed(
           :step="0.5"
           class="w-full"
           @update:model-value="patch({ frame: { ...frame, widthPx: Number($event) } })"
-      /></UFormField>
+        />
+      </UFormField>
     </div>
   </div>
 </template>

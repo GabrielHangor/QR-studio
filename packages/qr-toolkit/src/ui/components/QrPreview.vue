@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import UCard from "@nuxt/ui/components/Card.vue";
-import QrExportActions from "./QrExportActions.vue";
-import UAlert from "@nuxt/ui/components/Alert.vue";
 import UAccordion from "@nuxt/ui/components/Accordion.vue";
-import { QrBrowserError } from "../browser.js";
+import UAlert from "@nuxt/ui/components/Alert.vue";
+import UCard from "@nuxt/ui/components/Card.vue";
+import { computed, ref } from "vue";
+
+import type { RenderQrSvgOptions } from "../../engine/types.js";
 import { formatQrError, formatQrDiagnostic } from "../../i18n/index.js";
+import { QrBrowserError } from "../browser.js";
 import type { QrEditorMessages } from "../messages.js";
 import type { QrEditorPreview } from "../useQrEditor.js";
-import type { RenderQrSvgOptions } from "../../engine/types.js";
+import QrExportActions from "./QrExportActions.vue";
 
 const props = defineProps<{
   preview: QrEditorPreview;
@@ -55,9 +56,9 @@ const previewSource = computed(() =>
       body: 'p-4 sm:p-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto',
     }"
   >
-    <template #header
-      ><h3 class="font-semibold text-highlighted">{{ messages.preview }}</h3></template
-    >
+    <template #header>
+      <h3 class="font-semibold text-highlighted">{{ messages.preview }}</h3>
+    </template>
     <div
       class="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg bg-elevated p-4 lg:min-h-32 lg:flex-1 lg:p-3"
     >

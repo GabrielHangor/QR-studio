@@ -1,6 +1,7 @@
 import { decodeQR } from "qr/decode.js";
 import { describe, expect, it } from "vitest";
 
+import { QR_QUIET_ZONE_DEFAULT_MODULES } from "../src/engine/constants.js";
 import {
   analyzeQrDesign,
   encodeQr,
@@ -8,7 +9,6 @@ import {
   QrEncodingError,
   renderQrSvg,
 } from "../src/engine/index.js";
-import { QR_QUIET_ZONE_DEFAULT_MODULES } from "../src/engine/constants.js";
 import type {
   ErrorCorrectionLevel,
   QrEncodingErrorCode,

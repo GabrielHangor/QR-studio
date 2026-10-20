@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import UInput from "@nuxt/ui/components/Input.vue";
+import { computed } from "vue";
 
 const props = defineProps<{ modelValue: string; label: string; light?: boolean }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();

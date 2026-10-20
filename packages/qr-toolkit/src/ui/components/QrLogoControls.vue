@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import USwitch from "@nuxt/ui/components/Switch.vue";
-import UInput from "@nuxt/ui/components/Input.vue";
-import UFormField from "@nuxt/ui/components/FormField.vue";
-import UButton from "@nuxt/ui/components/Button.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
+import UButton from "@nuxt/ui/components/Button.vue";
+import UFormField from "@nuxt/ui/components/FormField.vue";
+import UInput from "@nuxt/ui/components/Input.vue";
 import USlider from "@nuxt/ui/components/Slider.vue";
-import QrFieldHelp from "./QrFieldHelp.vue";
+import USwitch from "@nuxt/ui/components/Switch.vue";
+
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
+import QrFieldHelp from "./QrFieldHelp.vue";
 const props = defineProps<{
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
@@ -16,8 +17,8 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   "update:design": [value: RenderQrSvgOptions];
-  upload: [value: File];
-  remove: [];
+  "upload": [value: File];
+  "remove": [];
 }>();
 function patchLogo(value: Partial<NonNullable<RenderQrSvgOptions["logo"]>>) {
   if (props.design.logo) {
@@ -34,9 +35,14 @@ function upload(event: Event) {
 <template>
   <div class="space-y-4 pb-4">
     <p v-if="!design.logo && !busy && !issue" class="text-sm text-muted">{{ messages.noLogo }}</p>
-    <UFormField :label="messages.logoFile" :help="messages.logoHelp"
-      ><UInput type="file" accept="image/png,image/jpeg,image/webp" class="w-full" @change="upload"
-    /></UFormField>
+    <UFormField :label="messages.logoFile" :help="messages.logoHelp">
+      <UInput
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        class="w-full"
+        @change="upload"
+      />
+    </UFormField>
     <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
     <USwitch
       v-if="design.logo"
@@ -56,8 +62,8 @@ function upload(event: Event) {
           @update:model-value="patchLogo({ widthModules: $event })"
         />
         <div class="flex justify-between text-xs text-muted">
-          <span>{{ messages.smaller }}</span
-          ><span>{{ messages.larger }}</span>
+          <span>{{ messages.smaller }}</span>
+          <span>{{ messages.larger }}</span>
         </div>
       </UFormField>
       <details>
@@ -65,13 +71,15 @@ function upload(event: Event) {
           {{ messages.advanced }}
         </summary>
         <div class="mt-3 grid grid-cols-2 gap-4">
-          <UFormField :label="messages.logoWidth"
-            ><template #hint
-              ><QrFieldHelp
+          <UFormField :label="messages.logoWidth">
+            <template #hint>
+              <QrFieldHelp
                 :label="messages.logoWidth"
                 :text="messages.logoSizeHint"
-                :action-label="messages.help" /></template
-            ><UInput
+                :action-label="messages.help"
+              />
+            </template>
+            <UInput
               type="number"
               :min="1"
               :max="20"
@@ -79,9 +87,10 @@ function upload(event: Event) {
               :model-value="design.logo.widthModules"
               class="w-full"
               @update:model-value="patchLogo({ widthModules: Number($event) })"
-          /></UFormField>
-          <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding"
-            ><UInput
+            />
+          </UFormField>
+          <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding">
+            <UInput
               type="number"
               :min="0"
               :max="8"
@@ -89,7 +98,8 @@ function upload(event: Event) {
               :model-value="design.logo.paddingModules ?? 0.5"
               class="w-full"
               @update:model-value="patchLogo({ paddingModules: Number($event) })"
-          /></UFormField>
+            />
+          </UFormField>
         </div>
       </details>
     </template>
