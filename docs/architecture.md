@@ -41,6 +41,8 @@ Frontend владеет Nuxt UI Vite/runtime plugin, одним `UApp` и имп
 Общая [тема Iris](../packages/theme/README.md) использует локальные Manrope и Remix Icons.
 Vite компилирует UI toolkit из исходников; `resolve.dedupe` объединяет Vue/Nuxt UI,
 `scanPackages` и Tailwind `@source` охватывают toolkit.
+Обнаружение используемых Nuxt UI-компонентов включено только при сборке: в dev список
+не обновляется при HMR, из-за чего новый компонент может остаться без стилей.
 
 `prepare:ui` генерирует локальный контекст `#build/ui` в `node_modules/.nuxt-ui` без запуска сервера.
 Он вызывается при проверке типов и запуске frontend; auto-import и его декларации отключены.

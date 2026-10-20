@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import UButton from "@nuxt/ui/components/Button.vue";
+import UColorPicker from "@nuxt/ui/components/ColorPicker.vue";
+import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
-import { computed } from "vue";
+import UPopover from "@nuxt/ui/components/Popover.vue";
+import * as v from "valibot";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{ modelValue: string; label: string; palette: readonly string[] }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
@@ -9,32 +14,72 @@ const color = computed(() =>
     ? "#" + Array.from(props.modelValue.slice(1), (value) => value + value).join("")
     : props.modelValue,
 );
+const hexSchema = v.pipe(v.string(), v.regex(/^#(?:[\da-f]{3}|[\da-f]{6})$/i));
+const hexDraft = ref(color.value);
+const hexValid = computed(() => v.is(hexSchema, hexDraft.value));
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (value !== hexDraft.value) hexDraft.value = color.value;
+  },
+);
+function updateHex(value: string | number) {
+  hexDraft.value = String(value);
+  const parsed = v.safeParse(hexSchema, hexDraft.value);
+  if (parsed.success) emit("update:modelValue", parsed.output);
+}
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-2">
-    <div class="flex items-center gap-2">
-      <UInput
-        :model-value="color"
-        :aria-label="label"
-        type="color"
-        :ui="{ base: 'size-9 cursor-pointer p-1' }"
-        class="w-9 shrink-0"
-        @update:model-value="emit('update:modelValue', String($event))"
-      />
-      <span class="min-w-16 font-mono text-xs text-muted">{{ color.toUpperCase() }}</span>
-    </div>
-    <div class="flex flex-wrap gap-1" role="group" :aria-label="label + ' (HEX)'">
+    <UPopover :content="{ align: 'start' }">
+      <UButton :aria-label="label" color="neutral" variant="outline" class="font-mono text-xs">
+        <template #leading>
+          <span
+            :style="{ backgroundColor: color }"
+            class="size-5 shrink-0 rounded border border-accented"
+          />
+        </template>
+        {{ color.toUpperCase() }}
+      </UButton>
+      <template #content>
+        <div class="grid gap-3 p-3">
+          <UColorPicker
+            :model-value="color"
+            format="hex"
+            :aria-label="label"
+            @update:model-value="$event && emit('update:modelValue', $event)"
+          />
+          <UFormField :label="label + ' (HEX)'" :error="hexValid ? undefined : '#RGB / #RRGGBB'">
+            <UInput
+              :model-value="hexDraft"
+              :maxlength="7"
+              autocomplete="off"
+              spellcheck="false"
+              class="w-full"
+              :ui="{ base: 'font-mono' }"
+              @update:model-value="updateHex"
+            />
+          </UFormField>
+        </div>
+      </template>
+    </UPopover>
+    <div
+      v-if="palette.length"
+      class="flex flex-wrap gap-1"
+      role="group"
+      :aria-label="label + ' (HEX)'"
+    >
       <button
         v-for="value in palette"
         :key="value"
         type="button"
         :aria-label="label + ' ' + value"
-        :aria-pressed="color.toLowerCase() === value"
+        :aria-pressed="color.toLowerCase() === value.toLowerCase()"
         :style="{ backgroundColor: value }"
         class="size-8 shrink-0 rounded-md border border-accented outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
         :class="
-          color.toLowerCase() === value
+          color.toLowerCase() === value.toLowerCase()
             ? 'ring-2 ring-primary ring-offset-1 ring-offset-default'
             : ''
         "

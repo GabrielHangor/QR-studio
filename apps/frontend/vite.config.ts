@@ -3,7 +3,7 @@ import { irisTheme } from "@qr-studio/theme/nuxt-ui";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     vue(),
     ui({
@@ -13,10 +13,11 @@ export default defineConfig({
       colorMode: false,
       autoImport: false,
       components: false,
-      experimental: { componentDetection: true },
+      // Detection runs only at startup; HMR can introduce components after that scan.
+      experimental: { componentDetection: command === "build" },
       dts: false,
       scanPackages: ["@qr-studio/toolkit"],
     }),
   ],
   resolve: { dedupe: ["vue", "@nuxt/ui"] },
-});
+}));

@@ -47,6 +47,7 @@ after(async () => {
 });
 
 async function open(page, name) {
+  await settleLayout(page);
   const button = page.getByRole("button", { name, exact: true });
   if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
   await page.getByRole("button", { name, exact: true, expanded: true }).waitFor();
@@ -395,7 +396,10 @@ for (const width of [1920, 1440, 768, 390]) {
       }
       await open(page, "Цвета");
       await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
-      assert.equal(await page.getByLabel("Цвет QR", { exact: true }).inputValue(), "#1e40af");
+      assert.equal(
+        (await page.getByRole("button", { name: "Цвет QR", exact: true }).textContent()).trim(),
+        "#1E40AF",
+      );
       await open(page, "Формы и рамка");
       const group = page.getByRole("radiogroup", { name: "Форма точек", exact: true });
       assert.equal(await group.getByRole("radio").count(), 10);
@@ -468,7 +472,9 @@ for (const width of [1280, 390]) {
         .filter({ hasText: /^Настроить цвета углов$/ })
         .click();
       await page.getByRole("switch", { name: "Свой цвет контура", exact: true }).click();
-      await page.getByLabel("Цвет контура", { exact: true }).fill("#123456");
+      await page.getByRole("button", { name: "Цвет контура", exact: true }).click();
+      await page.getByRole("textbox", { name: "Цвет контура (HEX)", exact: true }).fill("#123456");
+      await page.keyboard.press("Escape");
       await page
         .locator("summary")
         .filter({ hasText: /^Настроить цвета углов$/ })
@@ -1028,7 +1034,7 @@ for (const width of [1280, 390]) {
       await previewOf(page).waitFor();
       await page.getByRole("textbox", { name: /^Ссылка/ }).fill("https://example.org/keep");
       await open(page, "Цвета");
-      await page.getByLabel("Цвет QR", { exact: true }).fill("#1e40af");
+      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
       await open(page, "Формы и рамка");
       await pick(page, "Форма точек", "Лепестки ↗");
       await pick(page, "Форма контура", "Круги");
@@ -1102,8 +1108,8 @@ for (const width of [1280, 390]) {
         1,
       );
       assert.equal(
-        await page.getByLabel("Цвет QR", { exact: true }).inputValue(),
-        "#1e40af",
+        (await page.getByRole("button", { name: "Цвет QR", exact: true }).textContent()).trim(),
+        "#1E40AF",
         "Changing a palette does not change the current color",
       );
       const slider = page.getByRole("slider", { name: "Разрешение PNG", exact: true });
@@ -1136,6 +1142,71 @@ for (const width of [1280, 390]) {
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
         false,
       );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`chooses colors with Nuxt UI and validates HEX at ${width}px`, async () => {
+    const context = await browser.newContext({
+      viewport: { width, height: 900 },
+      hasTouch: width === 390,
+    });
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    try {
+      await page.goto(baseUrl);
+      await open(page, "Цвета");
+      const trigger = page.getByRole("button", { name: "Цвет QR", exact: true });
+      await trigger.focus();
+      await trigger.press("Enter");
+      const picker = page.locator('[data-slot="root"][aria-label="Цвет QR"]');
+      await picker.waitFor();
+      const panel = page.getByRole("dialog");
+      await settleLayout(page);
+      const bounds = await panel.boundingBox();
+      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, "Picker fits the viewport");
+      const previousPreview = await previewOf(page).getAttribute("src");
+      const selector = picker.locator('[data-slot="selector"]');
+      const colorArea = await selector.boundingBox();
+      const hueTrack = await picker.locator('[data-slot="track"]').boundingBox();
+      assert.ok(
+        colorArea.width >= 150 && colorArea.height >= 150,
+        "Color area has visible dimensions",
+      );
+      assert.ok(hueTrack.width >= 8 && hueTrack.height >= 150, "Hue track has visible dimensions");
+      if (width === 390) await selector.tap({ position: { x: 100, y: 80 } });
+      else await selector.click({ position: { x: 100, y: 80 } });
+      await page.waitForFunction(
+        (previous) => document.querySelector('img[alt="Предпросмотр QR-кода"]')?.src !== previous,
+        previousPreview,
+      );
+      const hex = page.getByRole("textbox", { name: "Цвет QR (HEX)", exact: true });
+      const picked = await hex.inputValue();
+      assert.match(picked, /^#[\da-f]{6}$/i);
+      assert.ok((await svgOf(page)).toLowerCase().includes(picked.toLowerCase()));
+      const validSvg = await svgOf(page);
+      await hex.fill("#zzzzzz");
+      assert.equal(await hex.getAttribute("aria-invalid"), "true");
+      assert.equal(await svgOf(page), validSvg, "Invalid HEX never replaces the valid preview");
+      await hex.fill("#123");
+      assert.equal((await trigger.textContent()).trim(), "#112233");
+      await hex.press("End");
+      await hex.pressSequentially("456");
+      assert.equal(await hex.inputValue(), "#123456");
+      assert.ok((await svgOf(page)).includes("#123456"));
+      await page.screenshot({ path: `test-results/editor-color-picker-${width}.png` });
+      await hex.press("Escape");
+      await panel.waitFor({ state: "hidden" });
+      assert.equal(await trigger.evaluate((element) => element === document.activeElement), true);
+      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
+      await trigger.click();
+      assert.equal(await hex.inputValue(), "#1e40af");
+      assert.equal(await page.locator('input[type="color"]').count(), 0);
+      assert.deepEqual(errors, []);
     } finally {
       await context.close();
     }
