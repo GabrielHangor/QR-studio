@@ -4,6 +4,7 @@ import UAlert from "@nuxt/ui/components/Alert.vue";
 import UCard from "@nuxt/ui/components/Card.vue";
 import { computed, ref } from "vue";
 
+import type { QrEditorConfig } from "../../editor/config.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import { formatQrError, formatQrDiagnostic } from "../../i18n/index.js";
 import { QrBrowserError } from "../browser.js";
@@ -15,16 +16,17 @@ const props = defineProps<{
   preview: QrEditorPreview;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
+  config: QrEditorConfig;
 }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 const recommendationsOpen = ref<string>();
-const failure = computed(() =>
-  props.preview.status === "error"
-    ? props.preview.error instanceof QrBrowserError
-      ? props.messages[props.preview.error.code]
-      : formatQrError(props.preview.error, props.messages.engine)
-    : undefined,
-);
+const failure = computed(() => {
+  if (props.preview.status !== "error") return undefined;
+  if (props.preview.error instanceof QrBrowserError) {
+    return props.messages[props.preview.error.code];
+  }
+  return formatQrError(props.preview.error, props.messages.engine);
+});
 const diagnostics = computed(() =>
   props.preview.status === "ready" ? props.preview.analysis.diagnostics : [],
 );
@@ -82,13 +84,16 @@ const previewSource = computed(() =>
             preview.status === "loading"
               ? messages.loadingLogo
               : preview.status === "invalid"
-                ? messages.invalidUrl
+                ? preview.code === "INVALID_URL"
+                  ? messages.invalidUrl
+                  : messages.invalidContent
                 : messages.emptyHint
           }}
         </p>
       </div>
     </div>
     <QrExportActions
+      :config="config.export"
       :preview="preview"
       :design="design"
       :messages="messages"
@@ -96,7 +101,7 @@ const previewSource = computed(() =>
       @update:design="emit('update:design', $event)"
     />
     <UAccordion
-      v-if="recommendations.length || stylingNotice"
+      v-if="config.recommendations && (recommendations.length || stylingNotice)"
       v-model="recommendationsOpen"
       :items="[
         { label: messages.recommendations, value: 'recommendations', slot: 'recommendations' },

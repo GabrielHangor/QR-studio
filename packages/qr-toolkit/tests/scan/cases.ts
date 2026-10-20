@@ -97,7 +97,17 @@ export const scanCases: readonly ScanCase[] = [
         },
       })),
   ),
-  ...(["soft", "leaf", "leaf-reverse"] as const).flatMap((shape) =>
+  ...(
+    [
+      "soft",
+      "leaf",
+      "leaf-reverse",
+      "classy",
+      "classy-reverse",
+      "rounded-top",
+      "rounded-bottom",
+    ] as const
+  ).flatMap((shape) =>
     ["modules", "outer", "inner"].map((part) => ({
       id: `new-${part}-${shape}`,
       payload: "QR Studio — проверка 👋",

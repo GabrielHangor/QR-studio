@@ -5,6 +5,29 @@ import { qrMessagesRu } from "../i18n/ru.js";
 export interface QrEditorMessages {
   settings: string;
   contentType: string;
+  contentLabels: Record<import("../editor/content.js").QrContentType, string>;
+  contentFields: Record<import("../editor/content.js").QrContentField, string>;
+  invalidContent: string;
+  validation: Record<import("../editor/validation.js").QrContentIssueCode, string>;
+  mapLabel: string;
+  mapSearch: string;
+  mapSearchPlaceholder: string;
+  mapSearchButton: string;
+  mapSearchResults: string;
+  mapSearchInvalid: string;
+  mapSearchEmpty: string;
+  mapSearchFailed: string;
+  mapMarker: string;
+  mapUnavailable: string;
+  mapHint: string;
+  mapZoomIn: string;
+  mapZoomOut: string;
+  mapSelectCenter: string;
+  mapRetry: string;
+  staticContentHint: string;
+  noPassword: string;
+  visibleNetwork: string;
+  hiddenNetwork: string;
   shapeLabels: Record<import("../engine/types.js").QrModuleShape, string>;
   clearLogo: string;
   noFrame: string;
@@ -112,6 +135,8 @@ export interface QrEditorMessages {
   exportFailed: string;
   exportTooLarge: string;
   scan: string;
+  scanResult: string;
+  closeFeedback: string;
   scanUnavailable: string;
   scanMatched: string;
   scanSuccess: string;
@@ -147,7 +172,65 @@ export interface QrEditorMessages {
 
 export const qrEditorMessagesRu: QrEditorMessages = {
   settings: "Настройки QR",
+  scanResult: "Результат проверки QR",
+  closeFeedback: "Закрыть результат",
+  validation: {
+    required: "Заполните это поле.",
+    url: "Укажите полный адрес с https:// или http://.",
+    email: "Введите корректный email.",
+    phone: "Введите номер телефона, например +7 999 123-45-67.",
+    subject: "Тема письма должна быть в одну строку.",
+    security: "Выберите допустимый вариант.",
+    coordinate: "Введите координату числом.",
+    latitude: "Широта должна быть от −90 до 90.",
+    longitude: "Долгота должна быть от −180 до 180.",
+  },
+  mapLabel: "Выбор точки на карте",
+  mapSearch: "Найти место",
+  mapSearchPlaceholder: "Город, адрес или название места",
+  mapSearchButton: "Найти",
+  mapSearchResults: "Найденные места",
+  mapSearchInvalid: "Введите от 2 до 200 символов.",
+  mapSearchEmpty: "Ничего не найдено. Попробуйте уточнить название.",
+  mapSearchFailed: "Поиск временно недоступен. Можно выбрать точку на карте или ввести координаты.",
+  mapMarker: "Выбранная точка",
+  mapUnavailable: "Карта недоступна. Координаты можно указать вручную.",
+  mapHint: "Нажмите на карту или перетащите маркер, чтобы выбрать точку.",
+  mapZoomIn: "Приблизить карту",
+  mapZoomOut: "Отдалить карту",
+  mapSelectCenter: "Выбрать центр карты",
+  mapRetry: "Загрузить карту ещё раз",
   contentType: "Тип содержимого",
+  contentLabels: {
+    url: "Ссылка",
+    text: "Текст",
+    email: "Email",
+    phone: "Телефон",
+    sms: "SMS",
+    wifi: "Wi-Fi",
+    contact: "Контакт",
+    location: "Координаты",
+  },
+  contentFields: {
+    email: "Email",
+    subject: "Тема письма",
+    body: "Сообщение",
+    phone: "Номер телефона",
+    ssid: "Название сети (SSID)",
+    password: "Пароль сети",
+    security: "Защита сети",
+    hidden: "Видимость сети",
+    name: "Полное имя",
+    organization: "Организация",
+    latitude: "Широта",
+    longitude: "Долгота",
+  },
+  invalidContent: "Проверьте поля содержимого.",
+  staticContentHint:
+    "Данные записываются прямо в QR-код. Действие после сканирования зависит от приложения на телефоне.",
+  noPassword: "Без пароля",
+  visibleNetwork: "Обычная сеть",
+  hiddenNetwork: "Скрытая сеть",
   shapeLabels: {
     "square": "Квадраты",
     "rounded": "Скруглённые",
@@ -155,13 +238,17 @@ export const qrEditorMessagesRu: QrEditorMessages = {
     "soft": "Мягкие",
     "leaf": "Лепестки",
     "leaf-reverse": "Лепестки ↗",
+    "classy": "Острый угол ↖",
+    "classy-reverse": "Острый угол ↘",
+    "rounded-top": "Скругление сверху",
+    "rounded-bottom": "Скругление снизу",
   },
   clearLogo: "Убрать код под логотипом",
   noFrame: "Без рамки",
   solidFrame: "Сплошная",
   dashedFrame: "Пунктирная",
   title: "Создайте свой QR-код",
-  introduction: "Добавьте ссылку или текст — результат появится сразу.",
+  introduction: "Выберите тип содержимого и настройте QR-код — результат появится сразу.",
   content: "Что будет в QR-коде",
   url: "Ссылка",
   text: "Текст",
@@ -178,7 +265,7 @@ export const qrEditorMessagesRu: QrEditorMessages = {
   background: "Фон QR",
   preview: "Предпросмотр",
   emptyPreview: "Здесь появится ваш QR-код",
-  emptyHint: "Введите ссылку или текст в поле содержимого.",
+  emptyHint: "Заполните поля содержимого.",
   previewAlt: "Предпросмотр QR-кода",
   generationError: "Не удалось создать QR-код",
   privacy: "Содержимое обрабатывается в вашем браузере.",
@@ -303,7 +390,66 @@ export const qrEditorMessagesRu: QrEditorMessages = {
 
 export const qrEditorMessagesEn: QrEditorMessages = {
   settings: "QR settings",
+  scanResult: "QR scan result",
+  closeFeedback: "Close result",
+  validation: {
+    required: "Fill in this field.",
+    url: "Enter a full address starting with https:// or http://.",
+    email: "Enter a valid email address.",
+    phone: "Enter a phone number, for example +1 202 555 0123.",
+    subject: "Use a single line for the subject.",
+    security: "Select a valid option.",
+    coordinate: "Enter a numeric coordinate.",
+    latitude: "Latitude must be between −90 and 90.",
+    longitude: "Longitude must be between −180 and 180.",
+  },
+  mapLabel: "Select a point on the map",
+  mapSearch: "Find a place",
+  mapSearchPlaceholder: "City, address or place name",
+  mapSearchButton: "Search",
+  mapSearchResults: "Search results",
+  mapSearchInvalid: "Enter between 2 and 200 characters.",
+  mapSearchEmpty: "No places found. Try a more specific name.",
+  mapSearchFailed:
+    "Search is temporarily unavailable. Select a point on the map or enter coordinates.",
+  mapMarker: "Selected point",
+  mapUnavailable: "The map is unavailable. You can enter coordinates manually.",
+  mapHint: "Click the map or drag the marker to select a point.",
+  mapZoomIn: "Zoom in",
+  mapZoomOut: "Zoom out",
+  mapSelectCenter: "Select map center",
+  mapRetry: "Retry loading the map",
   contentType: "Content type",
+  contentLabels: {
+    url: "Link",
+    text: "Text",
+    email: "Email",
+    phone: "Phone",
+    sms: "SMS",
+    wifi: "Wi-Fi",
+    contact: "Contact",
+    location: "Coordinates",
+  },
+  contentFields: {
+    email: "Email",
+    subject: "Subject",
+    body: "Message",
+    phone: "Phone number",
+    ssid: "Network name (SSID)",
+    password: "Network password",
+    security: "Network security",
+    hidden: "Network visibility",
+    name: "Full name",
+    organization: "Organization",
+    latitude: "Latitude",
+    longitude: "Longitude",
+  },
+  invalidContent: "Check the content fields.",
+  staticContentHint:
+    "Data is stored directly in the QR code. The action after scanning depends on the phone app.",
+  noPassword: "No password",
+  visibleNetwork: "Visible network",
+  hiddenNetwork: "Hidden network",
   shapeLabels: {
     "square": "Squares",
     "rounded": "Rounded",
@@ -311,13 +457,17 @@ export const qrEditorMessagesEn: QrEditorMessages = {
     "soft": "Soft",
     "leaf": "Leaves",
     "leaf-reverse": "Leaves ↗",
+    "classy": "Sharp corner ↖",
+    "classy-reverse": "Sharp corner ↘",
+    "rounded-top": "Rounded top",
+    "rounded-bottom": "Rounded bottom",
   },
   clearLogo: "Clear QR behind the logo",
   noFrame: "No frame",
   solidFrame: "Solid",
   dashedFrame: "Dashed",
   title: "Create your QR code",
-  introduction: "Add a link or text to see the result instantly.",
+  introduction: "Choose a content type and customize your QR code to see the result instantly.",
   content: "QR content",
   url: "Link",
   text: "Text",
@@ -334,7 +484,7 @@ export const qrEditorMessagesEn: QrEditorMessages = {
   background: "QR background",
   preview: "Preview",
   emptyPreview: "Your QR code will appear here",
-  emptyHint: "Enter a link or text in the content field.",
+  emptyHint: "Fill in the content fields.",
   previewAlt: "QR code preview",
   generationError: "Could not create the QR code",
   privacy: "Content is processed in your browser.",

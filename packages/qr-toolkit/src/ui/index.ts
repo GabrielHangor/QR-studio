@@ -7,3 +7,14 @@ export { createQrEditorState } from "../editor/index.js";
 export type { QrEditorState, QrContentType } from "../editor/index.js";
 
 export type { QrDesignPreset } from "../editor/index.js";
+
+export type { QrLocationSearch, QrLocationSearchResult } from "./geocoding.js";
+
+export { fullEditorConfig, compactEditorConfig } from "../editor/config.js";
+export type {
+  QrEditorConfig,
+  QrEditorSection,
+  QrEditorSectionId,
+  QrEditorControls,
+  QrEditorRange,
+} from "../editor/config.js";

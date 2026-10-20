@@ -114,9 +114,6 @@ export async function scanQrSvg(
   }
   const canvas = await rasterizeQrSvg(svg);
   const codes = await new Detector({ formats: ["qr_code"] }).detect(canvas);
-  return codes.some((code) => code.rawValue === payload)
-    ? "scanMatched"
-    : codes.length
-      ? "scanMismatch"
-      : "scanMissing";
+  if (codes.some((code) => code.rawValue === payload)) return "scanMatched";
+  return codes.length ? "scanMismatch" : "scanMissing";
 }

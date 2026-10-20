@@ -2,14 +2,8 @@
 import UInput from "@nuxt/ui/components/Input.vue";
 import { computed } from "vue";
 
-const props = defineProps<{ modelValue: string; label: string; light?: boolean }>();
+const props = defineProps<{ modelValue: string; label: string; palette: readonly string[] }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
-// Dark inks and pale papers complement the exported QR's opaque backgrounds.
-const palette = computed(() =>
-  props.light
-    ? ["#ffffff", "#faf6ed", "#f1f5f9", "#f5f3ff", "#f0fdf4", "#fff7ed", "#fff1f2", "#e2e8f0"]
-    : ["#202833", "#173d51", "#1e40af", "#5b21b6", "#166534", "#115e59", "#9f1239", "#78350f"],
-);
 const color = computed(() =>
   /^#[\da-f]{3}$/i.test(props.modelValue)
     ? "#" + Array.from(props.modelValue.slice(1), (value) => value + value).join("")

@@ -5,3 +5,13 @@
 /* Tailwind must also see classes in source-first workspace packages. */
 @source '../../../packages/qr-toolkit/src/ui';
 @source '../../../packages/theme';
+
+html {
+  scrollbar-gutter: stable;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  html {
+    overflow-y: scroll;
+  }
+}

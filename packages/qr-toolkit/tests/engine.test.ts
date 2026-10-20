@@ -85,11 +85,12 @@ function matrixToStyledImageData(
       const isFinderModule = matrix.finderPatterns.some(
         (pattern) => x >= pattern.x && x < pattern.x + 7 && y >= pattern.y && y < pattern.y + 7,
       );
-      const shape = isFinderModule
-        ? finderShape
-        : matrix.functionModules[y]![x]
-          ? "square"
-          : moduleShape;
+      let shape = moduleShape;
+      if (isFinderModule) {
+        shape = finderShape;
+      } else if (matrix.functionModules[y]![x]) {
+        shape = "square";
+      }
 
       for (let offsetY = 0; offsetY < pixelsPerModule; offsetY++) {
         for (let offsetX = 0; offsetX < pixelsPerModule; offsetX++) {

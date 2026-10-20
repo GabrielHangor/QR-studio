@@ -7,6 +7,19 @@ import { chromium } from "playwright";
 import { createServer } from "vite";
 import { prepareZXingModule, readBarcodes } from "zxing-wasm/reader";
 
+async function stubMapTiles(page) {
+  await page.route("https://tile.openstreetmap.org/**", (route) =>
+    route.fulfill({
+      contentType: "image/png",
+      headers: { "access-control-allow-origin": "*" },
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+        "base64",
+      ),
+    }),
+  );
+}
+
 let server;
 let browser;
 let baseUrl;
@@ -137,7 +150,7 @@ for (const width of [1280, 390]) {
       assert.deepEqual(
         await geometry(),
         initialGeometry,
-        "The result must not resize or move the preview or controls",
+        "Scan results must not resize or move the preview or controls",
       );
       assert.match(await badge.locator("..").getAttribute("class"), /text-success/);
       await page.getByText("Проверьте также на целевых устройствах.", { exact: true }).waitFor();
@@ -229,8 +242,8 @@ for (const [width, height] of [
       for (const image of images) {
         /* oxlint-disable no-await-in-loop -- Check each visible card's geometry. */
         const bounds = await image.boundingBox();
-        assert.equal(bounds.width, 40);
-        assert.equal(bounds.height, 40);
+        assert.equal(bounds.width, 32);
+        assert.equal(bounds.height, 32);
         /* oxlint-enable no-await-in-loop */
       }
       const styledBox = await card.boundingBox();
@@ -346,7 +359,13 @@ for (const width of [1920, 1440, 768, 390]) {
         .getByRole("button", { name: "Логотип", exact: true })
         .evaluate((button) => button.closest('[data-slot="item"]').getBoundingClientRect().height);
       assert.ok(closedHeight < 70, "Collapsed panels should not retain body padding");
-      const tabs = await page.locator('[aria-label="Тип содержимого"]').boundingBox();
+      const tabsRoot = page.locator('[aria-label="Тип содержимого"]');
+      assert.equal(
+        await tabsRoot.locator('[data-slot="indicator"]:visible').count(),
+        0,
+        "Wrapped tabs use per-button selection backgrounds",
+      );
+      const tabs = await tabsRoot.boundingBox();
       const content = await page
         .getByRole("button", { name: "Что будет в QR-коде", exact: true })
         .boundingBox();
@@ -370,7 +389,7 @@ for (const width of [1920, 1440, 768, 390]) {
       if (width === 1920 || width === 390) {
         await settleLayout(page);
         await page
-          .getByRole("heading", { name: "QR Studio", exact: true })
+          .getByRole("heading", { name: "Создайте свой QR-код", exact: true })
           .scrollIntoViewIfNeeded();
         await page.screenshot({ path: `test-results/editor-${width}.png` });
       }
@@ -379,7 +398,7 @@ for (const width of [1920, 1440, 768, 390]) {
       assert.equal(await page.getByLabel("Цвет QR", { exact: true }).inputValue(), "#1e40af");
       await open(page, "Формы и рамка");
       const group = page.getByRole("radiogroup", { name: "Форма точек", exact: true });
-      assert.equal(await group.getByRole("radio").count(), 6);
+      assert.equal(await group.getByRole("radio").count(), 10);
       const selected = group.getByRole("radio", { checked: true });
       await selected.focus();
       await selected.press("ArrowRight", { delay: 50 });
@@ -482,6 +501,15 @@ for (const width of [1280, 390]) {
       const recommendations = page.getByRole("list", { name: "Рекомендации", exact: true });
       assert.equal(await recommendations.count(), 0);
       await recommendationButton.click();
+      const staticHint = page.getByText("Содержимое скачанного QR-кода изменить нельзя.", {
+        exact: true,
+      });
+      assert.ok(
+        (await recommendationButton.boundingBox()).y -
+          ((await staticHint.boundingBox()).y + (await staticHint.boundingBox()).height) <
+          28,
+        "Recommendations follow export actions without an empty feedback spacer",
+      );
       assert.equal(
         await recommendations.getByRole("listitem").count(),
         1,
@@ -646,6 +674,468 @@ for (const width of [1280, 390]) {
         false,
       );
       assert.deepEqual(errors, []);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`edits static payloads and preserves drafts at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 800 } });
+    const page = await context.newPage();
+    await stubMapTiles(page);
+    try {
+      await page.goto(baseUrl);
+      /* oxlint-disable no-await-in-loop -- Each draft must be entered and exported before changing tabs. */
+      for (const [type, fields, expected] of [
+        [
+          "Email",
+          { "Email": "me@example.com", "Тема письма": "Привет & QR" },
+          "mailto:me@example.com?subject=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%26%20QR",
+        ],
+        ["Телефон", { "Номер телефона": "+7 (999) 123-45-67" }, "tel:+79991234567"],
+        [
+          "SMS",
+          { "Номер телефона": "+79991234567", "Сообщение": "Привет" },
+          "sms:+79991234567?body=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
+        ],
+        [
+          "Wi-Fi",
+          { "Название сети (SSID)": "QR;Studio", "Пароль сети": "hello:qr" },
+          "WIFI:T:WPA;S:QR\\;Studio;P:hello\\:qr;H:false;;",
+        ],
+        [
+          "Контакт",
+          { "Полное имя": "Анна QR", "Email": "anna@example.com" },
+          "BEGIN:VCARD\r\nVERSION:3.0\r\nN:;Анна QR;;;\r\nFN:Анна QR\r\nEMAIL:anna@example.com\r\nEND:VCARD",
+        ],
+        ["Координаты", { Широта: "55.7558", Долгота: "37.6173" }, "geo:55.7558,37.6173"],
+      ]) {
+        await page.getByRole("tab", { name: type, exact: true }).click();
+        await previewOf(page).waitFor();
+        if (type === "Email") await page.getByLabel("Сообщение", { exact: true }).fill("");
+        if (type === "Контакт") {
+          await page.getByLabel("Организация", { exact: true }).fill("");
+          await page.getByLabel("Номер телефона", { exact: true }).fill("");
+        }
+        for (const [name, value] of Object.entries(fields)) {
+          await page.getByLabel(name, { exact: true }).fill(value);
+        }
+        await previewOf(page).evaluate((image) => image.decode());
+        const download = page.waitForEvent("download");
+        await page.getByRole("button", { name: "Скачать PNG", exact: true }).click();
+        const decoded = await readBarcodes(await readFile(await (await download).path()), {
+          formats: ["QRCode"],
+          tryHarder: true,
+          textMode: "Plain",
+        });
+        assert.equal(decoded[0]?.text, expected);
+      }
+      /* oxlint-enable no-await-in-loop */
+      await page.getByRole("textbox", { name: "Широта", exact: true }).fill("91");
+      assert.equal(await previewOf(page).count(), 0);
+      await page.getByRole("tab", { name: "Email", exact: true }).click();
+      assert.equal(
+        await page.getByRole("textbox", { name: "Email", exact: true }).inputValue(),
+        "me@example.com",
+      );
+      await page.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
+      await select(page, "Защита сети", "Без пароля");
+      assert.equal(await page.getByLabel("Пароль сети", { exact: true }).count(), 0);
+      await select(page, "Защита сети", "WPA / WPA2 / WPA3");
+      assert.equal(await page.getByLabel("Пароль сети", { exact: true }).inputValue(), "hello:qr");
+      await open(page, "Формы и рамка");
+      await settleLayout(page);
+      const panel = page
+        .getByRole("button", { name: "Формы и рамка", exact: true })
+        .locator('xpath=ancestor::*[@data-slot="item"][1]');
+      const content = panel.locator('[data-slot="content"]');
+      const padding = await content.evaluate((element) => ({
+        top: getComputedStyle(element).paddingTop,
+        bottom: getComputedStyle(element).paddingBottom,
+      }));
+      assert.deepEqual(padding, { top: "0px", bottom: "0px" });
+      const x = (await panel.boundingBox()).x;
+      const panelWidth = (await panel.boundingBox()).width;
+      await page.getByRole("button", { name: "Формы и рамка", exact: true }).click();
+      await settleLayout(page);
+      assert.ok((await content.boundingBox()) === null || (await content.boundingBox()).height < 1);
+      assert.equal((await panel.boundingBox()).x, x);
+      assert.equal((await panel.boundingBox()).width, panelWidth);
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`validates fields and selects coordinates on OpenLayers at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await stubMapTiles(page);
+    try {
+      await page.goto(baseUrl);
+      assert.equal(
+        await page.locator(".ol-viewport").count(),
+        0,
+        "No map before selecting coordinates",
+      );
+      await page.getByRole("tab", { name: "Email", exact: true }).click();
+      await previewOf(page).waitFor();
+      const email = page.getByLabel("Email", { exact: true });
+      await email.fill("bad");
+      await email.blur();
+      await page.getByText("Введите корректный email.", { exact: true }).waitFor();
+      assert.equal(await previewOf(page).count(), 0);
+      await email.fill("hello@example.com");
+      await previewOf(page).waitFor();
+      assert.equal(await page.getByText("Введите корректный email.", { exact: true }).count(), 0);
+      await page.getByRole("tab", { name: "Координаты", exact: true }).click();
+      const map = page.getByRole("region", { name: "Выбор точки на карте", exact: true });
+      await map.locator("canvas").waitFor();
+      const devtools = await context.newCDPSession(page);
+      const viewport = await devtools.send("Runtime.evaluate", {
+        expression: "document.querySelector('.ol-viewport')",
+      });
+      const listeners = await devtools.send("DOMDebugger.getEventListeners", {
+        objectId: viewport.result.objectId,
+      });
+      assert.ok(
+        listeners.listeners.some((listener) => listener.type === "wheel" && listener.passive),
+        "The map wheel listener is passive",
+      );
+      assert.ok(
+        !listeners.listeners.some((listener) => listener.type === "wheel" && !listener.passive),
+        "No blocking wheel handler remains",
+      );
+      await devtools.detach();
+      await page.getByRole("button", { name: "Выбрать центр карты", exact: true }).waitFor();
+      await map.getByRole("link", { name: "OpenStreetMap", exact: true }).waitFor();
+      const latitude = page.getByLabel("Широта", { exact: true });
+      const longitude = page.getByLabel("Долгота", { exact: true });
+      assert.equal(await latitude.inputValue(), "55.7558");
+      await map.click({ position: { x: 120, y: 90 } });
+      await page.waitForFunction(
+        () => document.querySelector('input[aria-label="Широта"]').value !== "55.7558",
+      );
+      assert.ok(
+        Number(await latitude.inputValue()) > 55.7558,
+        "Click above the center selects a more northern point",
+      );
+      await longitude.fill("37,6173");
+      await page.getByRole("button", { name: "Выбрать центр карты", exact: true }).click();
+      assert.equal(
+        await longitude.inputValue(),
+        "37.617300",
+        "Manual input moves the actual map center",
+      );
+      const marker = map.getByRole("button", { name: "Выбранная точка", exact: true });
+      await marker.waitFor();
+      const oldLongitude = await longitude.inputValue();
+      const markerBox = await marker.boundingBox();
+      await page.mouse.move(markerBox.x + markerBox.width / 2, markerBox.y + markerBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        markerBox.x + markerBox.width / 2 + 60,
+        markerBox.y + markerBox.height / 2,
+        { steps: 8 },
+      );
+      await page.mouse.up();
+      await page.waitForFunction(
+        (previous) => document.querySelector('input[aria-label="Долгота"]').value !== previous,
+        oldLongitude,
+      );
+      assert.ok(
+        Number(await longitude.inputValue()) > Number(oldLongitude),
+        "Dragging the actual marker east updates coordinates",
+      );
+      await latitude.fill("91");
+      await latitude.blur();
+      await page.getByText("Широта должна быть от −90 до 90.", { exact: true }).waitFor();
+      assert.equal(await previewOf(page).count(), 0);
+      assert.equal(await marker.isVisible(), false);
+      await latitude.fill("55.7");
+      await longitude.fill("37.6");
+      await previewOf(page).waitFor();
+      await marker.waitFor();
+      await page.getByRole("button", { name: "Приблизить карту", exact: true }).click();
+      await map.focus();
+      await map.press("ArrowRight");
+      await page.getByRole("button", { name: "Выбрать центр карты", exact: true }).click();
+      assert.ok(
+        Number(await longitude.inputValue()) > 37.6,
+        "Keyboard panning and center selection work",
+      );
+      const retainedLatitude = await latitude.inputValue();
+      const retainedLongitude = await longitude.inputValue();
+      await open(page, "Формы и рамка");
+      await open(page, "Что будет в QR-коде");
+      assert.equal(await latitude.inputValue(), retainedLatitude);
+      assert.equal(await longitude.inputValue(), retainedLongitude);
+      assert.equal(await map.locator(".ol-viewport").count(), 1);
+      await page.getByRole("tab", { name: "Текст", exact: true }).click();
+      await page.locator(".ol-viewport").waitFor({ state: "detached" });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+it("keeps coordinate entry working when map tiles cannot load", async () => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  let fail = true;
+  let requests = 0;
+  await page.route("https://tile.openstreetmap.org/**", async (route) => {
+    requests++;
+    if (fail) await route.abort();
+    else {
+      await route.fulfill({
+        contentType: "image/png",
+        headers: { "access-control-allow-origin": "*" },
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=",
+          "base64",
+        ),
+      });
+    }
+  });
+  try {
+    await page.goto(baseUrl);
+    assert.equal(requests, 0, "No tile requests before opening coordinates");
+    await page.getByRole("tab", { name: "Координаты", exact: true }).click();
+    const failure = page.getByText("Карта недоступна. Координаты можно указать вручную.", {
+      exact: true,
+    });
+    await failure.waitFor();
+    await page.getByLabel("Широта", { exact: true }).fill("60");
+    await page.getByLabel("Долгота", { exact: true }).fill("40");
+    await previewOf(page).waitFor();
+    await page.waitForLoadState("networkidle");
+    await failure.waitFor();
+    fail = false;
+    await page.getByRole("button", { name: "Загрузить карту ещё раз", exact: true }).click();
+    await failure.waitFor({ state: "detached" });
+    await page
+      .getByRole("region", { name: "Выбор точки на карте", exact: true })
+      .locator("canvas")
+      .waitFor();
+  } finally {
+    await context.close();
+  }
+});
+
+for (const width of [1280, 390]) {
+  it(`searches locations only on submit and selects results at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    await stubMapTiles(page);
+    const queries = [];
+    await page.route("https://photon.komoot.io/**", async (route) => {
+      const query = new URL(route.request().url()).searchParams.get("q");
+      queries.push(query);
+      if (query === "ошибка") {
+        await route.fulfill({ status: 503 });
+        return;
+      }
+      const features =
+        query === "нет места"
+          ? []
+          : [
+              {
+                geometry: { type: "Point", coordinates: [30.31413, 59.93863] },
+                properties: {
+                  osm_id: 1,
+                  osm_type: "N",
+                  name: "Дворцовая площадь",
+                  city: "Санкт-Петербург",
+                  country: "Россия",
+                },
+              },
+            ];
+      await route.fulfill({ json: { features }, headers: { "access-control-allow-origin": "*" } });
+    });
+    try {
+      await page.goto(baseUrl);
+      await page.getByRole("tab", { name: "Координаты", exact: true }).click();
+      const input = page.getByRole("textbox", { name: "Найти место", exact: true });
+      await input.fill("Дворцовая площадь");
+      assert.deepEqual(queries, []);
+      await input.press("Enter");
+      const result = page.getByRole("button", {
+        name: "Дворцовая площадь, Санкт-Петербург, Россия",
+        exact: true,
+      });
+      await result.waitFor();
+      await result.click();
+      assert.equal(await page.getByLabel("Широта", { exact: true }).inputValue(), "59.938630");
+      assert.equal(await page.getByLabel("Долгота", { exact: true }).inputValue(), "30.314130");
+      await previewOf(page).waitFor();
+      await input.fill("Дворцовая площадь");
+      await input.press("Enter");
+      await result.waitFor();
+      assert.equal(queries.length, 1, "Repeat queries use the cache");
+      await input.fill("нет места");
+      await page.getByRole("button", { name: "Найти", exact: true }).click();
+      await page
+        .getByText("Ничего не найдено. Попробуйте уточнить название.", { exact: true })
+        .waitFor();
+      await input.fill("ошибка");
+      await input.press("Enter");
+      await page
+        .getByText(
+          "Поиск временно недоступен. Можно выбрать точку на карте или ввести координаты.",
+          { exact: true },
+        )
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("Широта", { exact: true }).inputValue(),
+        "59.938630",
+        "A failed search keeps the selected point",
+      );
+      await previewOf(page).waitFor();
+      await input.fill("a");
+      await input.press("Enter");
+      await page.getByText("Введите от 2 до 200 символов.", { exact: true }).waitFor();
+      assert.equal(queries.length, 3);
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`changes editor capabilities without losing drafts or hidden design at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    const readState = async () =>
+      JSON.parse(await page.getByLabel("Test editor state", { exact: true }).textContent());
+    try {
+      await page.goto(`${baseUrl}tests/fixtures/config.html`);
+      await previewOf(page).waitFor();
+      await page.getByRole("textbox", { name: /^Ссылка/ }).fill("https://example.org/keep");
+      await open(page, "Цвета");
+      await page.getByLabel("Цвет QR", { exact: true }).fill("#1e40af");
+      await open(page, "Формы и рамка");
+      await pick(page, "Форма точек", "Лепестки ↗");
+      await pick(page, "Форма контура", "Круги");
+      await open(page, "Дополнительные настройки");
+      await select(page, "Устойчивость к повреждениям", "H — высокая");
+      await page.getByRole("spinbutton", { name: "Поля вокруг QR, ячейки", exact: true }).fill("6");
+      const previous = await readState();
+      const initialSvg = await svgOf(page);
+      const navigation = page.getByRole("navigation", { name: "Test configurations", exact: true });
+      await navigation.getByRole("button", { name: "compact", exact: true }).click();
+      assert.equal(await page.getByRole("tab").count(), 2);
+      assert.deepEqual(
+        await page.locator('[aria-label="Настройки QR"] [data-slot="trigger"]').allTextContents(),
+        ["Что будет в QR-коде", "Цвета", "Формы и рамка"],
+      );
+      await previewOf(page).waitFor();
+      assert.deepEqual(
+        await readState(),
+        previous,
+        "Changing visible capabilities does not change state",
+      );
+      assert.equal(await svgOf(page), initialSvg);
+      assert.equal(
+        await page.getByRole("button", { name: "Проверить считывание", exact: true }).count(),
+        0,
+      );
+      await open(page, "Цвета");
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      assert.equal(await page.getByText("Цвета углов", { exact: true }).count(), 0);
+      await open(page, "Формы и рамка");
+      assert.equal(await page.getByRole("radiogroup").count(), 1);
+      assert.equal(await page.getByRole("radio").count(), 3);
+      await pick(page, "Форма точек", "Скруглённые");
+      assert.deepEqual((await readState()).design.finder, previous.design.finder);
+      assert.deepEqual((await readState()).encoding, previous.encoding);
+      await navigation.getByRole("button", { name: "custom", exact: true }).click();
+      await previewOf(page).waitFor();
+      assert.equal((await readState()).contentType, "text");
+      assert.equal((await readState()).url, "https://example.org/keep");
+      assert.deepEqual(
+        await page.locator('[aria-label="Настройки QR"] [data-slot="trigger"]').allTextContents(),
+        ["Формы и рамка", "Дополнительные настройки", "Цвета"],
+      );
+      assert.equal(await page.getByRole("radio").count(), 1);
+      assert.equal(await page.getByRole("radio", { name: "Лепестки", exact: true }).count(), 1);
+      assert.equal(await page.getByRole("button", { name: "Скачать SVG", exact: true }).count(), 0);
+      assert.equal(
+        await page.getByRole("button", { name: "Рекомендации", exact: true }).count(),
+        0,
+      );
+      await open(page, "Дополнительные настройки");
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      const quietZone = page.getByRole("spinbutton", {
+        name: "Поля вокруг QR, ячейки",
+        exact: true,
+      });
+      assert.equal(await quietZone.getAttribute("min"), "8");
+      assert.equal(await quietZone.getAttribute("max"), "10");
+      assert.equal(await quietZone.getAttribute("step"), "2");
+      assert.equal(
+        await quietZone.inputValue(),
+        "6",
+        "Changing the UI range does not rewrite stored values",
+      );
+      await quietZone.fill("8");
+      await open(page, "Цвета");
+      const palette = page.getByRole("group", { name: "Цвет QR (HEX)", exact: true });
+      assert.equal(await palette.getByRole("button").count(), 1);
+      assert.equal(
+        await palette.getByRole("button", { name: "Цвет QR #112233", exact: true }).count(),
+        1,
+      );
+      assert.equal(
+        await page.getByLabel("Цвет QR", { exact: true }).inputValue(),
+        "#1e40af",
+        "Changing a palette does not change the current color",
+      );
+      const slider = page.getByRole("slider", { name: "Разрешение PNG", exact: true });
+      assert.equal(await slider.getAttribute("aria-valuemax"), "1");
+      await slider.press("End");
+      assert.equal((await readState()).design.size, 1536);
+      await navigation.getByRole("button", { name: "full", exact: true }).click();
+      assert.equal(
+        (await readState()).contentType,
+        "text",
+        "Restoring capabilities does not reset the user's selected type",
+      );
+      await page.getByRole("tab", { name: "Ссылка", exact: true }).click();
+      assert.equal(
+        await page.getByRole("textbox", { name: /^Ссылка/ }).inputValue(),
+        "https://example.org/keep",
+      );
+      assert.equal((await readState()).design.foreground, "#1e40af");
+      assert.equal((await readState()).encoding.errorCorrectionLevel, "H");
+      await navigation.getByRole("button", { name: "noMap", exact: true }).click();
+      await previewOf(page).waitFor();
+      assert.equal((await readState()).contentType, "location");
+      assert.equal(await page.getByLabel("Широта", { exact: true }).inputValue(), "55.7558");
+      assert.equal(await page.locator(".ol-viewport").count(), 0);
+      assert.equal(
+        await page.getByRole("textbox", { name: "Найти место", exact: true }).count(),
+        0,
+      );
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+      );
     } finally {
       await context.close();
     }

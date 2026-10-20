@@ -1,6 +1,6 @@
 import { QR_FINDER_PATTERN_SIZE } from "./constants.js";
 import { QrError } from "./errors.js";
-import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
+import { cornerShapePath, isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
 import type { QrFinderOptions, QrMatrix, QrModuleShape } from "./types.js";
 
 /** A finder ring is one module thick and its pupil is inset by two modules. */
@@ -69,6 +69,8 @@ export function renderQrFinders(
 }
 
 function contour(x: number, y: number, size: number, shape: QrModuleShape): string {
+  const custom = cornerShapePath(x, y, size, shape);
+  if (custom) return custom;
   if (shape === "leaf" || shape === "leaf-reverse") {
     return leafPath(x, y, size, shape === "leaf-reverse");
   }

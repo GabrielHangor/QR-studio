@@ -13,7 +13,7 @@ import {
 import { QrError } from "./errors.js";
 import { normalizeQrFinder, renderQrFinders } from "./finders.js";
 import { createQrFinderPatterns, createQrFunctionModules } from "./layout.js";
-import { isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
+import { cornerShapePath, isQrModuleShape, leafPath, SOFT_CORNER_RADIUS_RATIO } from "./shapes.js";
 import type {
   QrLinearGradient,
   QrLogoOptions,
@@ -184,12 +184,13 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
       ? ` stroke-dasharray="${formatNumber(layout.frameStrokeWidth * 4)} ${formatNumber(layout.frameStrokeWidth * 3)}"`
       : "";
   const strokeAttributes = `fill="none" stroke="${frameColor}" stroke-width="${formatNumber(layout.frameStrokeWidth)}"${dash}`;
-  const frameMarkup =
-    layout.frame.style !== "none"
-      ? layout.shape === "circle"
+  let frameMarkup = "";
+  if (layout.frame.style !== "none") {
+    frameMarkup =
+      layout.shape === "circle"
         ? `<circle ${circleGeometry} r="${formatNumber(extent / 2 - strokeInset)}" ${strokeAttributes}/>`
-        : `<rect x="${formatNumber(strokeInset)}" y="${formatNumber(strokeInset)}" width="${formatNumber(extent - strokeInset * 2)}" height="${formatNumber(height - strokeInset * 2)}" rx="1" ${strokeAttributes}/>`
-      : "";
+        : `<rect x="${formatNumber(strokeInset)}" y="${formatNumber(strokeInset)}" width="${formatNumber(extent - strokeInset * 2)}" height="${formatNumber(height - strokeInset * 2)}" rx="1" ${strokeAttributes}/>`;
+  }
   const backgroundMarkup =
     layout.shape === "circle"
       ? `<circle ${circleGeometry} r="${formatNumber(extent / 2)}" fill="${artworkBackground}"/>`
@@ -374,7 +375,10 @@ function renderModules(
 
       const moduleX = x + origin;
       const moduleY = y + origin;
-      if (shape === "leaf" || shape === "leaf-reverse") {
+      const custom = cornerShapePath(moduleX, moduleY, 1, shape);
+      if (custom) {
+        roundedRects.push(`<path d="${custom}"/>`);
+      } else if (shape === "leaf" || shape === "leaf-reverse") {
         roundedRects.push(`<path d="${leafPath(moduleX, moduleY, 1, shape === "leaf-reverse")}"/>`);
       } else if (shape === "rounded" || shape === "soft") {
         roundedRects.push(

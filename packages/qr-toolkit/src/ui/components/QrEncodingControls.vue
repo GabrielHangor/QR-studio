@@ -4,6 +4,7 @@ import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
 import { computed } from "vue";
 
+import type { QrEditorConfig, QrEditorControls } from "../../editor/config.js";
 import type {
   EncodeQrOptions,
   RenderQrSvgOptions,
@@ -16,22 +17,27 @@ const props = defineProps<{
   encoding: EncodeQrOptions;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
+  config: QrEditorConfig;
+  controls: readonly QrEditorControls["technical"][];
 }>();
 const emit = defineEmits<{
   "update:encoding": [value: EncodeQrOptions];
   "update:design": [value: RenderQrSvgOptions];
 }>();
-const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => [
-  { label: props.messages.eccLow, value: "L" },
-  { label: props.messages.eccMedium, value: "M" },
-  { label: props.messages.eccQuartile, value: "Q" },
-  { label: props.messages.eccHigh, value: "H" },
-]);
+const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => {
+  const labels = {
+    L: props.messages.eccLow,
+    M: props.messages.eccMedium,
+    Q: props.messages.eccQuartile,
+    H: props.messages.eccHigh,
+  };
+  return props.config.choices.ecc.map((value) => ({ label: labels[value], value }));
+});
 </script>
 
 <template>
   <div class="grid gap-5 sm:grid-cols-2">
-    <UFormField :label="messages.ecc">
+    <UFormField v-if="controls.includes('ecc')" :label="messages.ecc">
       <template #hint>
         <QrFieldHelp :label="messages.ecc" :text="messages.eccHint" :action-label="messages.help" />
       </template>
@@ -42,7 +48,7 @@ const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => 
         @update:model-value="emit('update:encoding', { ...encoding, errorCorrectionLevel: $event })"
       />
     </UFormField>
-    <UFormField :label="messages.quietZone">
+    <UFormField v-if="controls.includes('quietZone')" :label="messages.quietZone">
       <template #hint>
         <QrFieldHelp
           :label="messages.quietZone"
@@ -53,9 +59,9 @@ const levels = computed<{ label: string; value: ErrorCorrectionLevel }[]>(() => 
       <UInput
         :model-value="design.quietZone ?? 4"
         type="number"
-        :min="4"
-        :max="12"
-        :step="1"
+        :min="config.ranges.quietZone.min"
+        :max="config.ranges.quietZone.max"
+        :step="config.ranges.quietZone.step"
         class="w-full"
         @update:model-value="emit('update:design', { ...design, quietZone: Number($event) })"
       />

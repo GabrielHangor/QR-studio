@@ -1,16 +1,17 @@
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
 
 import {
-  resolveQrEditorContent,
+  resolveQrEditorStateContent,
   qrEditorRenderOptions,
   type QrEditorState,
+  type QrEditorContent,
 } from "../editor/index.js";
 import { encodeQr, renderQrSvg, analyzeQrDesign } from "../engine/index.js";
 import type { QrMatrix, QrDesignAnalysis } from "../engine/types.js";
 
 type EncodedResult =
   | { status: "empty" }
-  | { status: "invalid"; code: "INVALID_URL" }
+  | { status: "invalid"; code: "INVALID_URL" | "INVALID_CONTENT" }
   | { status: "error"; error: unknown }
   | { status: "encoded"; matrix: QrMatrix; payload: string };
 
@@ -27,11 +28,20 @@ export type QrEditorPreview =
 
 /** Vue orchestration only; encoder/renderer have no knowledge of editor state. */
 export function useQrEditor(state: MaybeRefOrGetter<QrEditorState>) {
-  const contentType = computed(() => toValue(state).contentType);
-  const draft = computed(() => toValue(state)[contentType.value]);
   const encoding = computed(() => toValue(state).encoding);
   const design = computed(() => toValue(state).design);
-  const content = computed(() => resolveQrEditorContent(contentType.value, draft.value));
+  const content = computed((previous: QrEditorContent | undefined): QrEditorContent => {
+    const next = resolveQrEditorStateContent(toValue(state));
+    // Host updates replace the whole state. Keep the encoding cache when only design changed.
+    if (
+      previous?.status === "valid" &&
+      next.status === "valid" &&
+      previous.payload === next.payload
+    ) {
+      return previous;
+    }
+    return next;
+  });
   // Styling changes render the same matrix, without encoding the payload again.
   const encoded = computed<EncodedResult>(() => {
     if (content.value.status !== "valid") return content.value;

@@ -95,12 +95,12 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
   if (!Number.isSafeInteger(quietExtent + baseFramePadding * 2)) {
     throw new QrError("SVG_DIMENSIONS_TOO_LARGE", {});
   }
-  const input =
-    options.caption === undefined
-      ? []
-      : Array.isArray(options.caption)
-        ? options.caption
-        : [options.caption];
+  let input: readonly QrCaptionOptions[] = [];
+  if (Array.isArray(options.caption)) {
+    input = options.caption;
+  } else if (options.caption !== undefined) {
+    input = [options.caption as QrCaptionOptions];
+  }
   const positions = new Set<string>();
   const captions = input.map((caption: QrCaptionOptions) => {
     if (
@@ -159,8 +159,10 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
     throw new QrError("SVG_DIMENSIONS_TOO_LARGE", {});
   }
   const modulePitchPx = size / extent;
-  const frameStrokeWidth =
-    frame.style !== "none" ? (frame.widthPx === undefined ? 1 : frameWidthPx / modulePitchPx) : 0;
+  let frameStrokeWidth = 0;
+  if (frame.style !== "none") {
+    frameStrokeWidth = frame.widthPx === undefined ? 1 : frameWidthPx / modulePitchPx;
+  }
   const framePadding = baseFramePadding + frameWidthPx / modulePitchPx;
   const captionLayouts: QrCaptionLayout[] = captions.map((caption) => {
     const layout: QrCaptionLayout = {

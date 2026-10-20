@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import UAccordion from "@nuxt/ui/components/Accordion.vue";
 import UTabs from "@nuxt/ui/components/Tabs.vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
+import {
+  qrSectionControls,
+  type QrEditorConfig,
+  type QrEditorSectionId,
+} from "../editor/config.js";
 import {
   createQrEditorState,
   applyQrPreset,
@@ -18,13 +23,16 @@ import QrPaintControls from "./components/QrPaintControls.vue";
 import QrPresetPicker from "./components/QrPresetPicker.vue";
 import QrPreview from "./components/QrPreview.vue";
 import QrShapeControls from "./components/QrShapeControls.vue";
+import type { QrLocationSearch } from "./geocoding.js";
 import { qrEditorMessagesRu, qrEditorMessagesEn, type QrEditorMessages } from "./messages.js";
 import { useQrEditor, type QrEditorPreview } from "./useQrEditor.js";
 import { useQrLogo } from "./useQrLogo.js";
 
 const props = withDefaults(
   defineProps<{
+    config: QrEditorConfig;
     locale?: "ru" | "en";
+    locationSearch?: QrLocationSearch;
     messages?: QrEditorMessages;
     presets?: readonly QrDesignPreset[];
   }>(),
@@ -48,27 +56,62 @@ const preview = computed<QrEditorPreview>(() => {
 function update<K extends keyof QrEditorState>(key: K, value: QrEditorState[K]) {
   model.value = { ...model.value, [key]: value };
 }
-const open = ref<string | undefined>("content");
-const sections = computed(() => [
-  { label: messages.value.content, slot: "content", value: "content" },
-  ...(props.presets.length
-    ? [{ label: messages.value.presets, slot: "presets", value: "presets" }]
-    : []),
-  { label: messages.value.paint, slot: "colors", value: "colors" },
-  { label: messages.value.shapes, slot: "shapes", value: "shapes" },
-  { label: messages.value.logo, slot: "logo", value: "logo" },
-  { label: messages.value.captions, slot: "captions", value: "captions" },
-  { label: messages.value.technical, slot: "technical", value: "technical" },
-]);
-const contentTypes = computed(() => [
-  { label: messages.value.url, value: "url" },
-  { label: messages.value.text, value: "text" },
-]);
+const open = ref<string>();
+let sectionsInitialized = false;
+const sections = computed(() => {
+  const labels: Record<QrEditorSectionId, string> = {
+    content: messages.value.content,
+    presets: messages.value.presets,
+    colors: messages.value.paint,
+    shapes: messages.value.shapes,
+    logo: messages.value.logo,
+    captions: messages.value.captions,
+    technical: messages.value.technical,
+  };
+  return props.config.sections
+    .filter((section) => {
+      if (section.id === "presets") return props.presets.length > 0;
+      return section.id === "content" || section.controls.length > 0;
+    })
+    .map((section) => ({ label: labels[section.id], slot: section.id, value: section.id }));
+});
+function controls<K extends QrEditorSectionId>(id: K) {
+  return qrSectionControls(props.config, id);
+}
+watch(
+  () => [props.config.contentTypes.slice(), model.value.contentType] as const,
+  () => {
+    if (!props.config.contentTypes.includes(model.value.contentType)) {
+      update("contentType", props.config.contentTypes[0]);
+    }
+  },
+  { immediate: true },
+);
+watch(
+  sections,
+  (items) => {
+    if (sectionsInitialized && open.value === undefined) return;
+    sectionsInitialized = true;
+    if (!items.some((item) => item.value === open.value)) {
+      open.value =
+        items.find((item) => item.value === props.config.initialSection)?.value ?? items[0]?.value;
+    }
+  },
+  { immediate: true },
+);
+const contentTypes = computed(() =>
+  props.config.contentTypes.map((value) => ({
+    label: messages.value.contentLabels[value],
+    value,
+  })),
+);
 const contentType = computed({
   get: () => model.value.contentType,
   set: (value: string | number) => {
-    update("contentType", value === "text" ? "text" : "url");
-    open.value = "content";
+    const type = props.config.contentTypes.find((type) => type === value);
+    if (!type) return;
+    update("contentType", type);
+    if (sections.value.some((section) => section.value === "content")) open.value = "content";
   },
 });
 </script>
@@ -86,7 +129,12 @@ const contentType = computed({
       :items="contentTypes"
       :content="false"
       :aria-label="messages.contentType"
-      class="w-full sm:w-80"
+      class="w-fit"
+      :ui="{
+        list: 'flex-wrap justify-start gap-1',
+        indicator: 'hidden',
+        trigger: 'flex-none px-3 data-[state=active]:bg-primary data-[state=active]:text-inverted',
+      }"
     />
     <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(22rem,1fr)]">
       <div class="min-w-0 space-y-3">
@@ -102,22 +150,21 @@ const contentType = computed({
             header: 'bg-elevated/50',
             trigger:
               'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-elevated transition-colors',
-            content: 'px-4 data-[state=open]:py-4',
+            content: 'overflow-hidden',
+            body: 'p-4',
             trailingIcon: 'text-primary',
           }"
         >
-          <template #content>
+          <template #content-body>
             <QrContentForm
-              :content-type="model.contentType"
-              :url="model.url"
-              :text="model.text"
-              :invalid-url="preview.status === 'invalid'"
+              :state="model"
+              :controls="controls('content')"
+              :location-search="props.locationSearch"
               :messages="messages"
-              @update:url="update('url', $event)"
-              @update:text="update('text', $event)"
+              @update:state="model = $event"
             />
           </template>
-          <template #presets>
+          <template #presets-body>
             <QrPresetPicker
               :presets="props.presets"
               :design="model.design"
@@ -125,22 +172,28 @@ const contentType = computed({
               @preset="model = applyQrPreset(model, $event)"
             />
           </template>
-          <template #colors>
+          <template #colors-body>
             <QrPaintControls
+              :config="config"
+              :controls="controls('colors')"
               :design="model.design"
               :messages="messages"
               @update:design="update('design', $event)"
             />
           </template>
-          <template #shapes>
+          <template #shapes-body>
             <QrShapeControls
+              :config="config"
+              :controls="controls('shapes')"
               :design="model.design"
               :messages="messages"
               @update:design="update('design', $event)"
             />
           </template>
-          <template #logo>
+          <template #logo-body>
             <QrLogoControls
+              :config="config"
+              :controls="controls('logo')"
               :busy="logo.busy.value"
               :issue="logo.issue.value"
               :design="model.design"
@@ -150,15 +203,21 @@ const contentType = computed({
               @update:design="update('design', $event)"
             />
           </template>
-          <template #captions>
+          <template #captions-body>
             <div class="grid gap-5 sm:grid-cols-2">
               <QrCaptionControls
+                :config="config"
+                :controls="controls('captions')"
+                v-if="controls('captions').includes('top')"
                 position="top"
                 :design="model.design"
                 :messages="messages"
                 @update:design="update('design', $event)"
               />
               <QrCaptionControls
+                :config="config"
+                :controls="controls('captions')"
+                v-if="controls('captions').includes('bottom')"
                 position="bottom"
                 :design="model.design"
                 :messages="messages"
@@ -166,8 +225,10 @@ const contentType = computed({
               />
             </div>
           </template>
-          <template #technical>
+          <template #technical-body>
             <QrEncodingControls
+              :config="config"
+              :controls="controls('technical')"
               :encoding="model.encoding"
               :design="model.design"
               :messages="messages"
@@ -179,6 +240,7 @@ const contentType = computed({
         <p class="text-xs text-muted">{{ messages.privacy }}</p>
       </div>
       <QrPreview
+        :config="config"
         :preview="preview"
         :design="model.design"
         :messages="messages"

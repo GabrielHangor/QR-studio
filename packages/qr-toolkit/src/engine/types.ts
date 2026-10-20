@@ -27,7 +27,7 @@ export interface QrFinderPattern {
   readonly y: number;
 }
 
-export type QrModuleShape = "square" | "rounded" | "circle" | "soft" | "leaf" | "leaf-reverse";
+export type QrModuleShape = (typeof import("./shapes.js").QR_MODULE_SHAPES)[number];
 
 /** Outer artwork silhouette; the encoded QR matrix always remains square. */
 export type QrArtworkShape = "square" | "circle";

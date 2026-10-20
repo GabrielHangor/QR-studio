@@ -36,7 +36,9 @@ describe("editor content boundary", () => {
     const first = createQrEditorState();
     first.design.background = "#abcdef";
     first.encoding.version = 1;
-    expect(createQrEditorState()).toEqual({
+    first.contentDrafts!.wifi!.ssid = "Changed";
+    expect(createQrEditorState().contentDrafts!.wifi!.ssid).toBe("QR Studio Guest");
+    expect(createQrEditorState()).toMatchObject({
       contentType: "url",
       url: "https://example.com",
       text: "QR Studio",

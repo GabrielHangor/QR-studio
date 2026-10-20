@@ -1,0 +1,44 @@
+diff --git a/Map.d.ts b/Map.d.ts
+index 9d90e8cdf0e64ff44ec6ab302f3ba172d2b123d6..140cbee51fb6466f03487a6a913a5dd5b64d99ce 100644
+--- a/Map.d.ts
++++ b/Map.d.ts
+@@ -169,6 +169,8 @@ export type MapEventHandler<Return> = import("./Observable.js").OnSignature<impo
+  * Object literal with config options for the map.
+  */
+ export type MapOptions = {
++    /** Use only when wheel interactions are disabled. Defaults to false. */
++    wheelListenerPassive?: boolean;
+     /**
+      * Controls initially added to the map. If not specified,
+      * {@link module :ol/control/defaults.defaults} is used. In a worker, no controls are added by default.
+diff --git a/Map.js b/Map.js
+index d4db8e21e69a02159bbaed5be8b57a2ba8c5bcc3..dec9b90d82c442fbc7f197a13a822d6f2c6a6d50 100644
+--- a/Map.js
++++ b/Map.js
+@@ -162,6 +162,7 @@ import {getUid} from './util.js';
+  * that layers are rendered in the order supplied, so if you want, for example,
+  * a vector layer to appear on top of a tile layer, it must come after the tile
+  * layer.
++ * @property {boolean} [wheelListenerPassive=false] Use a passive wheel listener when wheel interactions are disabled.
+  * @property {number} [maxTilesLoading=16] Maximum number tiles to load
+  * simultaneously.
+  * @property {number} [moveTolerance=1] The minimum distance in pixels the
+@@ -276,6 +277,9 @@ class Map extends BaseObject {
+ 
+     options = options || {};
+ 
++    /** @private @type {boolean} */
++    this.wheelListenerPassive_ = options.wheelListenerPassive ?? false;
++
+     /***
+      * @type {MapEventHandler<import("./events.js").EventsKey>}
+      */
+@@ -1506,7 +1510,7 @@ class Map extends BaseObject {
+         /** @type {!HTMLElement} */ (this.viewport_).addEventListener(
+           EventType.WHEEL,
+           /** @type {EventListener} */ (this.boundHandleBrowserEvent_),
+-          PASSIVE_EVENT_LISTENERS ? {passive: false} : false,
++          PASSIVE_EVENT_LISTENERS ? {passive: this.wheelListenerPassive_} : false,
+         );
+         // Track the physical Control key on the whole document, so it can be
+         // told apart from the ctrlKey browsers synthesize for trackpad pinch.

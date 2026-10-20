@@ -7,6 +7,7 @@ const props = defineProps<{
   modelValue?: T;
   items: readonly { value: T; label: string; source?: string }[];
   large?: boolean;
+  compact?: boolean;
   hideLabels?: boolean;
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: T] }>();
@@ -26,12 +27,16 @@ function choose(value: string) {
     indicator="hidden"
     orientation="horizontal"
     :ui="{
-      fieldset: large
-        ? 'grid grid-cols-3 gap-2 sm:grid-cols-4 @min-[42rem]:grid-cols-6'
-        : items.length === 2
-          ? 'grid grid-cols-[repeat(2,minmax(0,5rem))] gap-2'
-          : 'grid grid-cols-3 gap-1.5 @min-[38rem]:grid-cols-6',
-      item: 'min-w-0 cursor-pointer rounded-lg p-1.5 transition-colors',
+      fieldset: compact
+        ? 'grid grid-cols-5 gap-1.5 @min-[30rem]:grid-cols-10'
+        : large
+          ? 'grid grid-cols-3 gap-2 sm:grid-cols-4 @min-[42rem]:grid-cols-6'
+          : items.length === 2
+            ? 'grid grid-cols-[repeat(2,minmax(0,5rem))] gap-2'
+            : 'grid grid-cols-3 gap-1.5 @min-[38rem]:grid-cols-6',
+      item: compact
+        ? 'min-w-0 cursor-pointer rounded-md p-1 transition-colors'
+        : 'min-w-0 cursor-pointer rounded-lg p-1.5 transition-colors',
       container: 'sr-only',
       indicator: 'hidden',
       wrapper: 'min-w-0 w-full',
@@ -44,7 +49,8 @@ function choose(value: string) {
     <template #label="{ item }">
       <span
         class="flex shrink-0 items-center justify-center"
-        :class="large ? 'size-20' : 'size-10'"
+        :class="large ? 'size-20' : compact ? 'size-8' : 'size-10'"
+        :title="item.label"
       >
         <img v-if="item.source" :src="item.source" alt="" class="block size-full object-contain" />
         <span v-else class="flex aspect-square w-16 items-center justify-center text-dimmed">

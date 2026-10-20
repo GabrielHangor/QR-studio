@@ -3,9 +3,11 @@ import UAlert from "@nuxt/ui/components/Alert.vue";
 import UBadge from "@nuxt/ui/components/Badge.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UFormField from "@nuxt/ui/components/FormField.vue";
+import UPopover from "@nuxt/ui/components/Popover.vue";
 import USlider from "@nuxt/ui/components/Slider.vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
+import type { QrEditorConfig } from "../../editor/config.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import { downloadQrBlob, qrPngBlob, scanQrSvg, QrBrowserError, SVG_MIME_TYPE } from "../browser.js";
 import type { QrEditorMessages } from "../messages.js";
@@ -15,15 +17,18 @@ const props = defineProps<{
   preview: QrEditorPreview;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
+  config: QrEditorConfig["export"];
 }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 const svg = computed(() => (props.preview.status === "ready" ? props.preview.svg : undefined));
-const sizes = [256, 512, 1024, 2048];
-// Four fixed export resolutions; this is pixel count, not a scanability score.
+const sizes = computed(() => props.config.resolutions);
+// Available export resolutions are supplied by the host.
 const resolution = computed(() => {
   const current = props.design.size ?? 512;
-  const index = sizes.findIndex((size) => size >= current);
-  return index < 0 ? sizes.length - 1 : index;
+  const exact = sizes.value.indexOf(current);
+  if (exact >= 0) return exact;
+  const index = sizes.value.findIndex((size) => size >= current);
+  return index < 0 ? sizes.value.length - 1 : index;
 });
 const dimensions = computed(() => {
   const width = props.design.size ?? 512;
@@ -33,8 +38,12 @@ const dimensions = computed(() => {
   return `${width} × ${height ? Math.round(Number(height)) : width} px`;
 });
 function changeResolution(value: number | undefined) {
-  const size = value === undefined ? undefined : sizes[value];
+  const size = value === undefined ? undefined : sizes.value[value];
   if (size !== undefined) emit("update:design", { ...props.design, size });
+}
+const feedbackOpen = ref(false);
+function preventFocus(event: Event) {
+  event.preventDefault();
 }
 const busy = ref<"png" | "scan">();
 const issue = ref<"exportFailed" | "exportTooLarge">();
@@ -49,6 +58,7 @@ watch(
     busy.value = undefined;
     issue.value = undefined;
     scan.value = undefined;
+    feedbackOpen.value = false;
   },
   { immediate: true },
 );
@@ -62,6 +72,7 @@ async function perform(operation: "png" | "scan") {
   if (props.preview.status !== "ready" || busy.value) return;
   const snapshot = props.preview;
   const current = ++sequence;
+  feedbackOpen.value = false;
   busy.value = operation;
   issue.value = undefined;
   scan.value = undefined;
@@ -87,13 +98,19 @@ async function perform(operation: "png" | "scan") {
           : "exportFailed";
     }
   } finally {
-    if (current === sequence) busy.value = undefined;
+    if (current === sequence) {
+      busy.value = undefined;
+      feedbackOpen.value = !!(issue.value || scan.value);
+    }
   }
 }
 </script>
 <template>
   <div class="space-y-2">
-    <UFormField :label="messages.resolution">
+    <UFormField
+      v-if="config.resolution && config.resolutions.length > 1"
+      :label="messages.resolution"
+    >
       <template #hint>
         <QrFieldHelp
           :label="messages.resolution"
@@ -119,44 +136,76 @@ async function perform(operation: "png" | "scan") {
         <span>{{ messages.moreDetail }}</span>
       </div>
     </UFormField>
-    <p class="text-xs text-muted">{{ messages.vectorHint }}</p>
-    <div class="flex flex-wrap gap-2">
-      <UButton
-        label="SVG"
-        :aria-label="messages.downloadSvg"
-        :disabled="!svg"
-        @click="downloadSvg"
-      />
-      <UButton
-        label="PNG"
-        :aria-label="messages.downloadPng"
-        :disabled="!svg || !!busy"
-        :loading="busy === 'png'"
-        @click="perform('png')"
-      />
-      <UButton
-        :label="messages.scan"
-        leading-icon="i-ri-check-line"
-        :disabled="!svg || !!busy"
-        :loading="busy === 'scan'"
-        color="neutral"
-        variant="ghost"
-        @click="perform('scan')"
-      />
-    </div>
+    <p v-if="config.formats.includes('svg')" class="text-xs text-muted">
+      {{ messages.vectorHint }}
+    </p>
+    <UPopover
+      v-model:open="feedbackOpen"
+      :content="{
+        side: 'top',
+        align: 'end',
+        onOpenAutoFocus: preventFocus,
+        onCloseAutoFocus: preventFocus,
+      }"
+      :ui="{ content: 'relative w-80 max-w-[calc(100vw-2rem)] p-4' }"
+    >
+      <template #anchor>
+        <div class="flex flex-wrap gap-2">
+          <UButton
+            v-if="config.formats.includes('svg')"
+            label="SVG"
+            :aria-label="messages.downloadSvg"
+            :disabled="!svg"
+            @click="downloadSvg"
+          />
+          <UButton
+            v-if="config.formats.includes('png')"
+            label="PNG"
+            :aria-label="messages.downloadPng"
+            :disabled="!svg || !!busy"
+            :loading="busy === 'png'"
+            @click="perform('png')"
+          />
+          <UButton
+            v-if="config.scan"
+            :label="messages.scan"
+            leading-icon="i-ri-check-line"
+            :disabled="!svg || !!busy"
+            :loading="busy === 'scan'"
+            color="neutral"
+            variant="ghost"
+            @click="perform('scan')"
+          />
+        </div>
+      </template>
+      <template #content>
+        <UButton
+          :aria-label="messages.closeFeedback"
+          icon="i-ri-close-line"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          class="absolute top-1 right-1"
+          @click="feedbackOpen = false"
+        />
+        <div
+          class="max-h-64 space-y-1.5 overflow-y-auto pr-5"
+          role="status"
+          :aria-label="messages.scanResult"
+        >
+          <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
+          <UBadge
+            v-if="scan === 'scanMatched'"
+            color="success"
+            variant="soft"
+            :label="messages.scanSuccess"
+          />
+          <p v-if="scan" class="text-xs text-muted">
+            {{ scan === "scanMatched" ? messages.scanDeviceHint : messages[scan] }}
+          </p>
+        </div>
+      </template>
+    </UPopover>
     <p class="text-xs text-muted">{{ messages.staticHint }}</p>
-    <!-- Keep feedback space stable during scans, retries and long localized messages. -->
-    <div class="h-16 space-y-1.5 overflow-y-auto" role="status">
-      <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
-      <UBadge
-        v-if="scan === 'scanMatched'"
-        color="success"
-        variant="soft"
-        :label="messages.scanSuccess"
-      />
-      <p v-if="scan" class="text-xs text-muted">
-        {{ scan === "scanMatched" ? messages.scanDeviceHint : messages[scan] }}
-      </p>
-    </div>
   </div>
 </template>

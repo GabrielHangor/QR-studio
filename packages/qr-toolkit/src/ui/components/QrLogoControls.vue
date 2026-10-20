@@ -6,12 +6,15 @@ import UInput from "@nuxt/ui/components/Input.vue";
 import USlider from "@nuxt/ui/components/Slider.vue";
 import USwitch from "@nuxt/ui/components/Switch.vue";
 
+import type { QrEditorConfig, QrEditorControls } from "../../editor/config.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
 import type { QrEditorMessages } from "../messages.js";
 import QrFieldHelp from "./QrFieldHelp.vue";
 const props = defineProps<{
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
+  config: QrEditorConfig;
+  controls: readonly QrEditorControls["logo"][];
   busy: boolean;
   issue?: "logoFormat" | "logoTooLarge" | "logoInvalid";
 }>();
@@ -35,7 +38,11 @@ function upload(event: Event) {
 <template>
   <div class="space-y-4 pb-4">
     <p v-if="!design.logo && !busy && !issue" class="text-sm text-muted">{{ messages.noLogo }}</p>
-    <UFormField :label="messages.logoFile" :help="messages.logoHelp">
+    <UFormField
+      v-if="controls.includes('upload')"
+      :label="messages.logoFile"
+      :help="messages.logoHelp"
+    >
       <UInput
         type="file"
         accept="image/png,image/jpeg,image/webp"
@@ -45,18 +52,18 @@ function upload(event: Event) {
     </UFormField>
     <UAlert v-if="issue" color="error" :description="messages[issue]" role="alert" />
     <USwitch
-      v-if="design.logo"
+      v-if="design.logo && controls.includes('clearBackground')"
       :model-value="design.logo.clearBackground ?? true"
       :label="messages.clearLogo"
       @update:model-value="patchLogo({ clearBackground: $event })"
     />
     <template v-if="design.logo">
-      <UFormField :label="messages.logoSize">
+      <UFormField v-if="controls.includes('size')" :label="messages.logoSize">
         <USlider
           :model-value="design.logo.widthModules"
-          :min="1"
-          :max="20"
-          :step="0.5"
+          :min="config.ranges.logoSize.min"
+          :max="config.ranges.logoSize.max"
+          :step="config.ranges.logoSize.step"
           :aria-label="messages.logoSize"
           class="my-3"
           @update:model-value="patchLogo({ widthModules: $event })"
@@ -66,12 +73,12 @@ function upload(event: Event) {
           <span>{{ messages.larger }}</span>
         </div>
       </UFormField>
-      <details>
+      <details v-if="controls.includes('size') || controls.includes('padding')">
         <summary class="cursor-pointer py-2 text-sm font-medium text-highlighted">
           {{ messages.advanced }}
         </summary>
         <div class="mt-3 grid grid-cols-2 gap-4">
-          <UFormField :label="messages.logoWidth">
+          <UFormField v-if="controls.includes('size')" :label="messages.logoWidth">
             <template #hint>
               <QrFieldHelp
                 :label="messages.logoWidth"
@@ -81,20 +88,23 @@ function upload(event: Event) {
             </template>
             <UInput
               type="number"
-              :min="1"
-              :max="20"
-              :step="0.5"
+              :min="config.ranges.logoSize.min"
+              :max="config.ranges.logoSize.max"
+              :step="config.ranges.logoSize.step"
               :model-value="design.logo.widthModules"
               class="w-full"
               @update:model-value="patchLogo({ widthModules: Number($event) })"
             />
           </UFormField>
-          <UFormField v-if="design.logo.clearBackground !== false" :label="messages.logoPadding">
+          <UFormField
+            v-if="design.logo.clearBackground !== false && controls.includes('padding')"
+            :label="messages.logoPadding"
+          >
             <UInput
               type="number"
-              :min="0"
-              :max="8"
-              :step="0.5"
+              :min="config.ranges.logoPadding.min"
+              :max="config.ranges.logoPadding.max"
+              :step="config.ranges.logoPadding.step"
               :model-value="design.logo.paddingModules ?? 0.5"
               class="w-full"
               @update:model-value="patchLogo({ paddingModules: Number($event) })"
@@ -104,7 +114,7 @@ function upload(event: Event) {
       </details>
     </template>
     <UButton
-      v-if="design.logo || busy || issue"
+      v-if="controls.includes('remove') && (design.logo || busy || issue)"
       color="neutral"
       :label="messages.removeLogo"
       @click="emit('remove')"

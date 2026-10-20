@@ -394,19 +394,19 @@ export function applyPlaygroundDesign(design: PlaygroundPreset["design"]): void 
   finderOuterColor.value = design.finder?.outerColor ?? foreground.value;
   finderInnerColor.value = design.finder?.innerColor ?? foreground.value;
   const frameOptions = typeof design.frame === "object" ? design.frame : undefined;
-  frame.value = frameOptions
-    ? (frameOptions.style ?? "outline")
-    : typeof design.frame === "string"
-      ? design.frame
-      : "none";
+  if (frameOptions) {
+    frame.value = frameOptions.style ?? "outline";
+  } else {
+    frame.value = typeof design.frame === "string" ? design.frame : "none";
+  }
   frameColor.value = frameOptions?.color ?? foreground.value;
   frameWidth.value = String(frameOptions?.widthPx ?? 2);
-  const captions: readonly QrCaptionOptions[] =
-    design.caption === undefined
-      ? []
-      : Array.isArray(design.caption)
-        ? design.caption
-        : [design.caption as QrCaptionOptions];
+  let captions: readonly QrCaptionOptions[] = [];
+  if (Array.isArray(design.caption)) {
+    captions = design.caption;
+  } else if (design.caption !== undefined) {
+    captions = [design.caption as QrCaptionOptions];
+  }
   for (const control of captionControls) {
     const options = captions.find((caption) => (caption.position ?? "bottom") === control.position);
     control.text.value = options?.text ?? "";
