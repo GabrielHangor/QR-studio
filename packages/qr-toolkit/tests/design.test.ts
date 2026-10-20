@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { playgroundPresets } from "../playground/presets.js";
 import {
   QrError,
   analyzeQrDesign,
@@ -8,6 +7,7 @@ import {
   renderQrSvg,
   type RenderQrSvgOptions,
 } from "../src/engine/index.js";
+import { designPresets } from "./fixtures/design-presets.js";
 
 describe("whole finder markers", () => {
   it.each(["square", "rounded", "circle"] as const)(
@@ -174,21 +174,18 @@ describe("independent typography and framing", () => {
 });
 
 describe("caller-owned preset data", () => {
-  it.each(playgroundPresets)(
-    "renders the external demo preset $id without changing it",
-    (preset) => {
-      const matrix = encodeQr("https://example.com");
-      const serialized = JSON.stringify(preset.design);
-      const design: RenderQrSvgOptions = JSON.parse(serialized);
-      expect(renderQrSvg(matrix, design)).toContain("</svg>");
-      const analysis = analyzeQrDesign(matrix, design, { minimumContrastRatio: 4 });
-      expect(analysis.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      expect(analysis.diagnostics.some(({ code }) => code === "CONTRAST_BELOW_THRESHOLD")).toBe(
-        false,
-      );
-      expect(JSON.stringify(preset.design)).toBe(serialized);
-    },
-  );
+  it.each(designPresets)("renders the external demo preset $id without changing it", (preset) => {
+    const matrix = encodeQr("https://example.com");
+    const serialized = JSON.stringify(preset.design);
+    const design: RenderQrSvgOptions = JSON.parse(serialized);
+    expect(renderQrSvg(matrix, design)).toContain("</svg>");
+    const analysis = analyzeQrDesign(matrix, design, { minimumContrastRatio: 4 });
+    expect(analysis.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+    expect(analysis.diagnostics.some(({ code }) => code === "CONTRAST_BELOW_THRESHOLD")).toBe(
+      false,
+    );
+    expect(JSON.stringify(preset.design)).toBe(serialized);
+  });
 });
 
 describe("matrix-wide gradients", () => {

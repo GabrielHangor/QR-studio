@@ -1,6 +1,6 @@
 # QR Studio — технический план
 
-Основа: v0.1 от 14.10.2026. Актуальная редакция: 17.10.2026.
+Основа: v0.1 от 14.10.2026. Актуальная редакция: 20.10.2026.
 Границы продукта — в [брифе](./qr-studio-final-product-brief-ru-v1.4.md), требования редактора — в [PRD](./qr-editor-prd-release-0-ru-v0.1.md).
 
 ## Принятые решения
@@ -10,10 +10,10 @@
 | Монорепозиторий | pnpm Workspaces, `apps/*` и `packages/*` | Настроен |
 | QR Encoder | `qr@0.7.2` от Paul Miller, адаптер к собственному `QrMatrix` | Реализован |
 | Renderer | Собственный синхронный SVG Renderer без DOM/Vue | Реализован |
-| PNG | Растеризация того же SVG в браузерном слое | Playground и Vue editor |
+| PNG | Растеризация того же SVG в браузерном слое | Vue editor и браузерные тесты |
 | Toolkit tooling | TypeScript, Vite, Vitest, Oxlint, Oxfmt | Настроено; Vite+ не используется |
 | Публичные страницы | Astro + Vue island, `/qr-generator` | План |
-| Кабинет | Vue SPA на Vite + Nuxt UI, тема Iris | Editor URL/Text со всеми настройками playground |
+| Кабинет | Vue SPA на Vite + Nuxt UI, тема Iris | Общий editor с внешней конфигурацией; стенд ручной проверки |
 | Backend | AdonisJS + PostgreSQL | План для Release 1 |
 | Инфраструктура | Docker Compose для локальных сервисов | Только пустая заготовка |
 
@@ -38,7 +38,7 @@ Redis, очереди, микросервисы и Turborepo/Nx добавляю
 apps/landing        Astro: лендинг и публичный редактор          [план]
 apps/frontend       Vue SPA: подключён общий Vue editor
 apps/backend        AdonisJS: API, маршруты, аналитика             [план]
-packages/qr-toolkit  headless engine + i18n + /ui + playground
+packages/qr-toolkit  headless engine + i18n + /editor + /ui
 packages/theme       переносимые CSS-токены Iris + адаптер Nuxt UI
 packages/shared     общие API-типы/схемы                          [резерв]
 ```

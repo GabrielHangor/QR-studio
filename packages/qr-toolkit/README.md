@@ -10,19 +10,21 @@ Engine и `/editor` собираются в ESM и `.d.ts`; Vue editor дост�
 ```sh
 nvm use
 pnpm install
-pnpm --filter @qr-studio/toolkit playground
+pnpm dev
 ```
 
 Node закреплён в `.nvmrc`, pnpm — в корневом `packageManager`.
+Редактор для ручной проверки работает в `apps/frontend`; над ним есть переключатель
+полной и компактной конфигураций. Отдельного playground в toolkit нет.
 Инструменты локальны пакету: TypeScript, Vite, Vitest, Oxlint и Oxfmt. Vite+ не используется.
 
-| Команда после `pnpm --filter @qr-studio/toolkit` | Результат                                                      |
-| ------------------------------------------------ | -------------------------------------------------------------- |
-| `build` / `dev`                                  | ESM + декларации в `dist` / пересборка при изменении           |
-| `check`                                          | Линтер, типы библиотеки/playground/scan-тестов, форматирование |
-| `test`                                           | Быстрые Node-тесты Vitest                                      |
-| `format`                                         | Oxfmt                                                          |
-| `playground` / `build:playground`                | Vite dev server / страница в `dist-playground`                 |
+| Команда после `pnpm --filter @qr-studio/toolkit` | Результат                                              |
+| ------------------------------------------------ | ------------------------------------------------------ |
+| `build` / `dev`                                  | ESM + декларации в `dist` / пересборка при изменении   |
+| `check`                                          | Линтер, типы библиотеки/UI/scan-тестов, форматирование |
+| `test`                                           | Быстрые Node-тесты Vitest                              |
+| `format`                                         | Oxfmt                                                  |
+| `test:scan`                                      | Декодирование SVG/PNG в Chromium через ZXing WASM      |
 
 ## API engine
 
@@ -104,19 +106,15 @@ const warnings = analysis.diagnostics.map((item) => formatQrDiagnostic(item, qrM
 Для неизвестного исключения `formatQrError` возвращает `unknownError` или третий аргумент;
 произвольные технические сообщения и исходная причина не показываются пользователю.
 
-## Пресеты и playground
+## Внешние пресеты
 
 Engine принимает обычный `RenderQrSvgOptions`, не ID: дизайн может приходить из конфигурации,
-API или внешнего каталога. Демо-каталоги принадлежат playground и frontend, а не библиотеке.
-`setPlaygroundPresets(catalog)` и `applyPlaygroundDesign(design)` из `playground/main.ts`
-позволяют подставить свой каталог/дизайн. Это API тестовой страницы, не engine.
-Выбор пресета сохраняет payload, ECC, версию, размер, quiet zone и загруженный логотип.
+API или внешнего каталога. Каталог интерфейса находится в `apps/frontend/src/presets.ts`
+и передаётся в `QrEditor` через `presets`. Выбор пресета сохраняет payload, ECC,
+версию, размер, quiet zone и загруженный логотип.
 
-Playground — HTML/CSS/TypeScript без UI-зависимостей: примеры содержимого, ручные параметры,
-шесть дизайнов, диагностика на русском, SVG/PNG-скачивание. `<img src="blob:…">` показывает
-именно SVG Renderer; SVG-файл берётся из той же строки, PNG растеризуется через canvas.
-Ошибка генерации скрывает старый preview и отключает экспорт. Логотип и payload обрабатываются локально.
-`BarcodeDetector` проверяет изображение только при наличии API; его отсутствие — не результат проверки QR.
+Шесть фиксированных дизайнов для тестов геометрии и считывания находятся в
+`tests/fixtures/design-presets.ts`. Они не зависят от интерфейса и не входят в сборку библиотеки.
 
 ## Функциональные тесты экспорта
 
@@ -139,7 +137,7 @@ pnpm --filter @qr-studio/toolkit test:scan
 Для полной проверки запускайте `check`, `test` и `test:scan`; обычный `test` браузер не запускает.
 Один сценарий: `pnpm --filter @qr-studio/toolkit test:scan -t atelier-url-256`.
 
-Набор в `tests/scan/cases.ts` фиксирован: все шесть пресетов × четыре payload × два размера;
+Набор в `tests/scan/cases.ts` фиксирован: все шесть тестовых пресетов × четыре payload × два размера;
 уменьшение до 60%, blur 0.6 px и JPEG quality 0.72 для пресетов при 512 px; версии
 1/7/10/27/40 × ECC L/M/Q/H; комбинации форм маркеров; длинный Unicode; растровый логотип.
 Дополнительно проверяются 16 пресетов frontend на 256/512 px и новые формы точек/маркеров.
@@ -223,7 +221,8 @@ Preview — SVG renderer в изолированном `img` с data URI: без
 с фактическими размерами изображения и пояснением о векторном SVG. Масштаб preview
 от разрешения не зависит. Desktop preview ограничен высотой viewport; в низких окнах
 его содержимое прокручивается, сохраняя минимальный размер QR. Версия QR подбирается автоматически;
-ручная версия, исходный SVG и измерения остаются в engine/playground, без контролов в редакторе.
+ручная версия и измерения доступны через API engine, без контролов в редакторе.
+Исходный SVG можно получить через `renderQrSvg` или скачать из редактора.
 Предупреждения о формах и градиенте объединены в одно напоминание о проверке камерой;
 конкретные риски показываются отдельно. Есть проверка через `BarcodeDetector`, если API
 доступен. При ошибке экспорт блокируется.
@@ -248,7 +247,6 @@ PNG сохраняет прозрачность SVG; растеризация о
 содержимого, без Vue/DOM. `/ui` — source-first entrypoint: host компилирует `src` через Vite.
 Vue/Nuxt UI остаются optional peers для headless-потребителей; UI-host устанавливает их явно.
 Host владеет Nuxt UI plugin, одним `UApp` и глобальным CSS; пример — `apps/frontend`.
-Playground остаётся независимым от Vue.
 
 Для IDE используется `src/ui/tsconfig.json` и локальный контекст `#build/ui/*`.
 `prepare:ui` генерирует его в `node_modules/.nuxt-ui`; команда включена в `typecheck`
@@ -291,7 +289,7 @@ https://github.com/komoot/photon#demo-server. Для другого сервер
 `QrEditor` требует явный `config: QrEditorConfig`. Готовые `fullEditorConfig` и
 `compactEditorConfig` экспортируются через `/ui` и `/editor`; редактор не выбирает
 конфигурацию по тарифу, маршруту или окружению. В `apps/frontend` родитель передаёт
-`fullEditorConfig`, сохраняя прежний интерфейс. При миграции существующих вызовов
+полную или компактную конфигурацию через переключатель. При миграции существующих вызовов
 нужно добавить `:config="fullEditorConfig"`.
 
 ```vue

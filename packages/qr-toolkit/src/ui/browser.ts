@@ -1,4 +1,4 @@
-/** Same upload limit as the technical playground; never upload logos to a server. */
+/** Local logo upload limit; never upload logos to a server. */
 export const LOGO_MAX_FILE_SIZE_BYTES = 700 * 1024;
 /** Bound canvas memory for programmatic hosts as well as the standard size selector. */
 const MAX_CANVAS_PIXELS = 16_777_216;

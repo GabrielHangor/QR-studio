@@ -1,15 +1,15 @@
-import type { RenderQrSvgOptions } from "../src/engine/index.js";
+import type { RenderQrSvgOptions } from "../../src/engine/index.js";
 
 /** UI catalog metadata stays outside the headless engine; design is ordinary renderer data. */
-export interface PlaygroundPreset {
+interface DesignPresetFixture {
   readonly id: string;
   readonly title: string;
   readonly description: string;
   readonly design: Omit<RenderQrSvgOptions, "size" | "quietZone" | "logo">;
 }
 
-/** Demo catalog only. A consumer can supply the same data from configuration or an API. */
-export const playgroundPresets: readonly PlaygroundPreset[] = [
+/** Fixed external designs shared by geometry and browser decoding tests. */
+export const designPresets: readonly DesignPresetFixture[] = [
   {
     id: "minimal",
     title: "Минимализм",

@@ -40,11 +40,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
-    "playground": "vite --host 127.0.0.1",
-    "build:playground": "vite build",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check",
     "lint": "oxlint --deny-warnings",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p playground/tsconfig.json && tsc --noEmit -p tests/scan/tsconfig.json && pnpm prepare:ui && vue-tsc --noEmit -p src/ui/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests/scan/tsconfig.json && pnpm prepare:ui && vue-tsc --noEmit -p src/ui/tsconfig.json",
     "test": "vitest run",
     "test:scan": "vitest run --config vitest.scan.config.ts",
     "test:scan:install": "playwright install chromium",

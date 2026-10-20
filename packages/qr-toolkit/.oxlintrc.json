@@ -64,7 +64,6 @@
   "ignorePatterns": [
     "node_modules/**",
     "dist/**",
-    "dist-playground/**",
     "coverage/**",
     "test-results/**",
     "playwright-report/**"
@@ -77,7 +76,7 @@
       }
     },
     {
-      "files": ["src/ui/**/*.ts", "src/ui/**/*.vue", "playground/**/*.ts", "tests/scan/**/*.ts"],
+      "files": ["src/ui/**/*.ts", "src/ui/**/*.vue", "tests/scan/**/*.ts"],
       "env": {
         "browser": true
       }

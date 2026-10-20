@@ -1,6 +1,6 @@
 import { editorPresets } from "../../../../apps/frontend/src/presets.js";
-import { playgroundPresets } from "../../playground/presets.js";
 import type { EncodeQrOptions, RenderQrSvgOptions } from "../../src/engine/index.js";
+import { designPresets } from "../fixtures/design-presets.js";
 
 export interface ScanCase {
   readonly id: string;
@@ -20,7 +20,7 @@ const payloads = [
 ];
 
 export const scanCases: readonly ScanCase[] = [
-  ...playgroundPresets.flatMap((preset) =>
+  ...designPresets.flatMap((preset) =>
     payloads.flatMap((payload) =>
       [256, 512].map((size) => ({
         id: `${preset.id}-${payload.id}-${size}`,
@@ -30,7 +30,7 @@ export const scanCases: readonly ScanCase[] = [
       })),
     ),
   ),
-  ...playgroundPresets.flatMap((preset) =>
+  ...designPresets.flatMap((preset) =>
     (["reduce", "blur", "jpeg"] as const).map((effect) => ({
       id: `${preset.id}-${effect}`,
       payload: payloads[0]!.text,
