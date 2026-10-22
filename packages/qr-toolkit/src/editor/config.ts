@@ -25,8 +25,15 @@ export interface QrEditorControls {
     | "innerColor"
     | "artworkBackground"
     | "frameColor";
-  shapes: "moduleShape" | "finderOuter" | "finderInner" | "artworkShape" | "frame" | "frameWidth";
-  logo: "upload" | "remove" | "clearBackground" | "size" | "padding";
+  shapes:
+    | "moduleShape"
+    | "finderOuter"
+    | "finderInner"
+    | "artworkShape"
+    | "codeScale"
+    | "frame"
+    | "frameWidth";
+  logo: "presets" | "upload" | "remove" | "clearBackground" | "size" | "padding";
   captions:
     | "top"
     | "bottom"
@@ -63,6 +70,7 @@ export interface QrEditorConfig {
   };
   readonly ranges: {
     readonly quietZone: QrEditorRange;
+    readonly codeScale: QrEditorRange;
     readonly frameWidth: QrEditorRange;
     readonly logoSize: QrEditorRange;
     readonly logoPadding: QrEditorRange;
@@ -110,11 +118,12 @@ export const fullEditorConfig = {
         "finderOuter",
         "finderInner",
         "artworkShape",
+        "codeScale",
         "frame",
         "frameWidth",
       ],
     },
-    { id: "logo", controls: ["upload", "remove", "clearBackground", "size", "padding"] },
+    { id: "logo", controls: ["presets", "upload", "remove", "clearBackground", "size", "padding"] },
     {
       id: "captions",
       controls: [
@@ -144,6 +153,7 @@ export const fullEditorConfig = {
   },
   ranges: {
     quietZone: { min: 4, max: 12, step: 1 },
+    codeScale: { min: 40, max: 200, step: 1 },
     frameWidth: { min: 0.5, max: 16, step: 0.5 },
     logoSize: { min: 1, max: 20, step: 0.5 },
     logoPadding: { min: 0, max: 8, step: 0.5 },

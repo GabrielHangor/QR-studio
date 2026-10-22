@@ -2,10 +2,26 @@
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import { ru } from "@nuxt/ui/locale";
-import { QrEditor, fullEditorConfig, compactEditorConfig } from "@qr-studio/toolkit/ui";
-import { computed, ref } from "vue";
+import {
+  QrEditor,
+  fullEditorConfig,
+  compactEditorConfig,
+  type QrLogoPreset,
+} from "@qr-studio/toolkit/ui";
+import { computed, onMounted, ref, shallowRef } from "vue";
 
 import { editorPresets } from "./presets.js";
+
+// Keep the optional image catalog out of the editor's initial JavaScript chunk.
+const editorLogoPresets = shallowRef<readonly QrLogoPreset[]>([]);
+onMounted(async () => {
+  try {
+    const catalog = await import("./logo-presets.js");
+    editorLogoPresets.value = catalog.editorLogoPresets;
+  } catch {
+    // The optional gallery can fail independently; local file upload remains available.
+  }
+});
 
 const configMode = ref<"full" | "compact">("full");
 const editorConfig = computed(() =>
@@ -35,7 +51,7 @@ const configOptions = [
           </UButton>
         </div>
       </header>
-      <QrEditor :config="editorConfig" :presets="editorPresets" />
+      <QrEditor :config="editorConfig" :presets="editorPresets" :logo-presets="editorLogoPresets" />
     </main>
   </UApp>
 </template>

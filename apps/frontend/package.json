@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "logos:generate": "node scripts/generate-logo-presets.mjs",
     "dev": "pnpm --filter @qr-studio/toolkit prepare:ui && vite --host 127.0.0.1",
     "build": "vite build && vue-tsc --noEmit",
     "typecheck": "pnpm prepare:ui && vue-tsc --noEmit",

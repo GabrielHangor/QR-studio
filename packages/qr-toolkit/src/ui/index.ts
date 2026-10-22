@@ -6,7 +6,7 @@ export type { QrEditorMessages } from "./messages.js";
 export { createQrEditorState } from "../editor/index.js";
 export type { QrEditorState, QrContentType } from "../editor/index.js";
 
-export type { QrDesignPreset } from "../editor/index.js";
+export type { QrDesignPreset, QrLogoPreset } from "../editor/index.js";
 
 export type { QrLocationSearch, QrLocationSearchResult } from "./geocoding.js";
 

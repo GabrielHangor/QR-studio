@@ -15,6 +15,7 @@ import type { QrEditorPreview } from "../useQrEditor.js";
 import QrFieldHelp from "./QrFieldHelp.vue";
 const props = defineProps<{
   preview: QrEditorPreview;
+  disabled?: boolean;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
   config: QrEditorConfig["export"];
@@ -32,10 +33,10 @@ const resolution = computed(() => {
 });
 const dimensions = computed(() => {
   const width = props.design.size ?? 512;
-  if (props.preview.status !== "ready") return `${width} px`;
+  if (props.preview.status !== "ready") return `${width} ${props.messages.pixelUnit}`;
   // Captions can make the image taller than it is wide. Read the renderer's dimensions.
   const height = props.preview.svg.match(/^<svg[^>]* height="([\d.]+)"/)?.[1];
-  return `${width} × ${height ? Math.round(Number(height)) : width} px`;
+  return `${width} × ${height ? Math.round(Number(height)) : width} ${props.messages.pixelUnit}`;
 });
 function changeResolution(value: number | undefined) {
   const size = value === undefined ? undefined : sizes.value[value];
@@ -52,7 +53,7 @@ const scan = ref<
 >();
 let sequence = 0;
 watch(
-  svg,
+  [svg, () => props.disabled],
   () => {
     sequence++;
     busy.value = undefined;
@@ -66,10 +67,12 @@ onBeforeUnmount(() => {
   sequence++;
 });
 function downloadSvg() {
-  if (svg.value) downloadQrBlob(new Blob([svg.value], { type: SVG_MIME_TYPE }), "qr-studio.svg");
+  if (svg.value && !props.disabled) {
+    downloadQrBlob(new Blob([svg.value], { type: SVG_MIME_TYPE }), "qr-studio.svg");
+  }
 }
 async function perform(operation: "png" | "scan") {
-  if (props.preview.status !== "ready" || busy.value) return;
+  if (props.preview.status !== "ready" || props.disabled || busy.value) return;
   const snapshot = props.preview;
   const current = ++sequence;
   feedbackOpen.value = false;
@@ -157,7 +160,7 @@ async function perform(operation: "png" | "scan") {
             color="neutral"
             variant="outline"
             :aria-label="messages.downloadSvg"
-            :disabled="!svg"
+            :disabled="disabled || !svg"
             @click="downloadSvg"
           />
           <UButton
@@ -166,7 +169,7 @@ async function perform(operation: "png" | "scan") {
             color="primary"
             variant="solid"
             :aria-label="messages.downloadPng"
-            :disabled="!svg || !!busy"
+            :disabled="disabled || !svg || !!busy"
             :loading="busy === 'png'"
             @click="perform('png')"
           />
@@ -174,7 +177,7 @@ async function perform(operation: "png" | "scan") {
             v-if="config.scan"
             :label="messages.scan"
             leading-icon="i-ri-check-line"
-            :disabled="!svg || !!busy"
+            :disabled="disabled || !svg || !!busy"
             :loading="busy === 'scan'"
             color="neutral"
             variant="ghost"

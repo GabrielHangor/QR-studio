@@ -13,6 +13,7 @@ import {
   applyQrPreset,
   type QrEditorState,
   type QrDesignPreset,
+  type QrLogoPreset,
 } from "../editor/index.js";
 import { QrBrowserError } from "./browser.js";
 import QrCaptionControls from "./components/QrCaptionControls.vue";
@@ -35,10 +36,12 @@ const props = withDefaults(
     locationSearch?: QrLocationSearch;
     messages?: QrEditorMessages;
     presets?: readonly QrDesignPreset[];
+    logoPresets?: readonly QrLogoPreset[];
   }>(),
   {
     locale: "ru",
     presets: () => [],
+    logoPresets: () => [],
   },
 );
 const model = defineModel<QrEditorState>({ default: createQrEditorState });
@@ -48,7 +51,6 @@ const messages = computed(
 const { preview: generatedPreview } = useQrEditor(model);
 const logo = useQrLogo(model);
 const preview = computed<QrEditorPreview>(() => {
-  if (logo.busy.value) return { status: "loading" };
   if (logo.issue.value) return { status: "error", error: new QrBrowserError(logo.issue.value) };
   return generatedPreview.value;
 });
@@ -146,7 +148,7 @@ const contentType = computed({
           :aria-label="messages.settings"
           class="@container space-y-2"
           :ui="{
-            item: 'min-w-0 overflow-hidden rounded-xl border border-default last:border-b bg-default',
+            item: 'min-w-0 overflow-hidden rounded-lg border border-default last:border-b bg-default',
             header: 'bg-default',
             trigger:
               'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-muted data-[state=open]:bg-muted transition-colors',
@@ -183,6 +185,10 @@ const contentType = computed({
           </template>
           <template #shapes-body>
             <QrShapeControls
+              :code-scale="preview.status === 'ready' ? preview.analysis.codeScale : undefined"
+              :maximum-code-scale="
+                preview.status === 'ready' ? preview.analysis.maximumCodeScale : undefined
+              "
               :config="config"
               :controls="controls('shapes')"
               :design="model.design"
@@ -194,11 +200,13 @@ const contentType = computed({
             <QrLogoControls
               :config="config"
               :controls="controls('logo')"
+              :presets="props.logoPresets"
               :busy="logo.busy.value"
               :issue="logo.issue.value"
               :design="model.design"
               :messages="messages"
               @upload="logo.upload"
+              @preset="logo.select($event.dataUri)"
               @remove="logo.remove"
               @update:design="update('design', $event)"
             />
@@ -242,6 +250,7 @@ const contentType = computed({
       <QrPreview
         :config="config"
         :preview="preview"
+        :loading-logo="logo.busy.value"
         :design="model.design"
         :messages="messages"
         class="min-w-0 lg:sticky lg:top-5"

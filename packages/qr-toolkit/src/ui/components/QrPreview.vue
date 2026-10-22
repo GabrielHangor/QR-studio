@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import UAccordion from "@nuxt/ui/components/Accordion.vue";
 import UAlert from "@nuxt/ui/components/Alert.vue";
 import UCard from "@nuxt/ui/components/Card.vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import type { QrEditorConfig } from "../../editor/config.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
@@ -14,12 +13,12 @@ import QrExportActions from "./QrExportActions.vue";
 
 const props = defineProps<{
   preview: QrEditorPreview;
+  loadingLogo?: boolean;
   design: RenderQrSvgOptions;
   messages: QrEditorMessages;
   config: QrEditorConfig;
 }>();
 const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
-const recommendationsOpen = ref<string>();
 const failure = computed(() => {
   if (props.preview.status !== "error") return undefined;
   if (props.preview.error instanceof QrBrowserError) {
@@ -36,10 +35,43 @@ const stylingCodes = new Set([
   "FINDER_SHAPE_REQUIRES_DEVICE_TEST",
   "GRADIENT_REQUIRES_DEVICE_TEST",
 ]);
-const stylingNotice = computed(() => diagnostics.value.some((item) => stylingCodes.has(item.code)));
-const recommendations = computed(() =>
-  diagnostics.value.filter((item) => !stylingCodes.has(item.code)),
+const criticalRecommendations = computed(() =>
+  diagnostics.value
+    .filter((item) => item.severity === "error")
+    .map((item) => formatQrDiagnostic(item, props.messages.engine)),
 );
+const recommendationUi = {
+  root: "gap-2.5 p-3",
+  icon: "size-5",
+  title: "text-sm font-semibold text-highlighted",
+  description: "text-xs leading-relaxed text-default",
+};
+const recommendations = computed(() => {
+  const warnings = diagnostics.value.filter(
+    (item) => item.severity === "warning" && !stylingCodes.has(item.code),
+  );
+  const styling = diagnostics.value.some(
+    (item) => item.severity === "warning" && stylingCodes.has(item.code),
+  );
+  const format = (items: typeof diagnostics.value) =>
+    items.map((item) => formatQrDiagnostic(item, props.messages.engine));
+  return [
+    {
+      id: "warning",
+      color: "warning" as const,
+      icon: "i-ri-alert-line",
+      title: props.messages.warningRecommendations,
+      items: format(warnings),
+    },
+    {
+      id: "styling",
+      color: "info" as const,
+      icon: "i-ri-information-line",
+      title: props.messages.stylingRecommendations,
+      items: styling ? [props.messages.stylingNotice] : [],
+    },
+  ].filter((group) => group.items.length);
+});
 // An image document isolates SVG fragment IDs when several editors share the page.
 // It needs neither DOM injection nor an object URL with a cleanup lifecycle.
 const previewSource = computed(() =>
@@ -61,7 +93,29 @@ const previewSource = computed(() =>
     <template #header>
       <h3 class="font-semibold text-highlighted">{{ messages.preview }}</h3>
     </template>
+    <UAlert
+      v-if="config.recommendations && criticalRecommendations.length"
+      color="error"
+      variant="subtle"
+      icon="i-ri-error-warning-line"
+      :title="messages.criticalRecommendations"
+      :aria-label="messages.criticalRecommendations"
+      :ui="recommendationUi"
+      role="alert"
+      class="mb-3 lg:mb-0 lg:shrink-0"
+    >
+      <template #description>
+        <ul
+          :aria-label="messages.criticalRecommendations"
+          class="space-y-1.5"
+          :class="criticalRecommendations.length > 1 ? 'list-disc ps-4' : undefined"
+        >
+          <li v-for="(text, index) in criticalRecommendations" :key="index">{{ text }}</li>
+        </ul>
+      </template>
+    </UAlert>
     <div
+      :aria-busy="loadingLogo"
       class="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg bg-elevated p-4 lg:min-h-32 lg:flex-1 lg:p-3"
     >
       <img
@@ -93,6 +147,7 @@ const previewSource = computed(() =>
       </div>
     </div>
     <QrExportActions
+      :disabled="loadingLogo"
       :config="config.export"
       :preview="preview"
       :design="design"
@@ -100,32 +155,31 @@ const previewSource = computed(() =>
       class="mt-4 lg:mt-0 lg:shrink-0"
       @update:design="emit('update:design', $event)"
     />
-    <UAccordion
-      v-if="config.recommendations && (recommendations.length || stylingNotice)"
-      v-model="recommendationsOpen"
-      :items="[
-        { label: messages.recommendations, value: 'recommendations', slot: 'recommendations' },
-      ]"
-      class="mt-3 lg:mt-0 lg:shrink-0"
-      :ui="{ trigger: 'py-2 text-xs font-semibold text-highlighted', body: 'pb-1' }"
+    <section
+      v-if="config.recommendations && recommendations.length"
       :aria-label="messages.recommendations"
+      class="mt-3 space-y-2 lg:mt-0 lg:shrink-0"
     >
-      <template #recommendations>
-        <ul
-          class="max-h-48 list-disc space-y-2 overflow-y-auto ps-5 text-xs text-muted"
-          tabindex="0"
-          :aria-label="messages.recommendations"
-        >
-          <li
-            v-for="(diagnostic, index) in recommendations"
-            :key="diagnostic.code + index"
-            :class="diagnostic.severity === 'error' ? 'text-error' : undefined"
+      <UAlert
+        v-for="group in recommendations"
+        :key="group.id"
+        :color="group.color"
+        variant="subtle"
+        :icon="group.icon"
+        :title="group.title"
+        :aria-label="group.title"
+        :ui="recommendationUi"
+      >
+        <template #description>
+          <ul
+            :aria-label="group.title"
+            class="space-y-1.5"
+            :class="group.items.length > 1 ? 'list-disc ps-4' : undefined"
           >
-            {{ formatQrDiagnostic(diagnostic, messages.engine) }}
-          </li>
-          <li v-if="stylingNotice">{{ messages.stylingNotice }}</li>
-        </ul>
-      </template>
-    </UAccordion>
+            <li v-for="(text, index) in group.items" :key="index">{{ text }}</li>
+          </ul>
+        </template>
+      </UAlert>
+    </section>
   </UCard>
 </template>

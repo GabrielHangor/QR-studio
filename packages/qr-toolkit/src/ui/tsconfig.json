@@ -11,6 +11,6 @@
       "#build/ui/*": ["../../node_modules/.nuxt-ui/ui/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.vue"],
+  "include": ["**/*.ts", "**/*.vue", "../../tests/ui/**/*.ts"],
   "exclude": []
 }

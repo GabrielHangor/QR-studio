@@ -191,6 +191,7 @@ describe("language boundary", () => {
       INVALID_LOGO_SIZE: { matrixSize: 21 },
       LOGO_OVERLAPS_FUNCTION_MODULES: {},
       INVALID_ARTWORK_SHAPE: {},
+      INVALID_CODE_SCALE: {},
       INVALID_CAPTION_TEXT: {},
       INVALID_CAPTION_POSITION: {},
       DUPLICATE_CAPTION_POSITION: { position: "top" },
@@ -226,6 +227,7 @@ describe("language boundary", () => {
         severity: "error",
         params: { minimum: 4 },
       },
+      QUIET_ZONE_CLIPPED: { code: "QUIET_ZONE_CLIPPED", severity: "warning", params: {} },
       CONTRAST_BELOW_THRESHOLD: {
         code: "CONTRAST_BELOW_THRESHOLD",
         severity: "warning",

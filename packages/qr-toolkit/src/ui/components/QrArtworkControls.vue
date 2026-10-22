@@ -2,6 +2,7 @@
 import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USelect from "@nuxt/ui/components/Select.vue";
+import USlider from "@nuxt/ui/components/Slider.vue";
 import { computed } from "vue";
 
 import type { QrEditorConfig, QrEditorControls } from "../../editor/config.js";
@@ -13,6 +14,8 @@ import QrFieldHelp from "./QrFieldHelp.vue";
 import QrVisualPicker from "./QrVisualPicker.vue";
 const props = defineProps<{
   design: RenderQrSvgOptions;
+  codeScale?: number;
+  maximumCodeScale?: number;
   messages: QrEditorMessages;
   config: QrEditorConfig;
   controls: readonly QrEditorControls["shapes"][];
@@ -21,6 +24,13 @@ const emit = defineEmits<{ "update:design": [value: RenderQrSvgOptions] }>();
 function patch(value: Partial<RenderQrSvgOptions>) {
   emit("update:design", { ...props.design, ...value });
 }
+
+const scaleMaximum = computed(() => {
+  const { min, max, step } = props.config.ranges.codeScale;
+  const limit = Math.min(max, props.maximumCodeScale ?? 100);
+  return limit <= min ? limit : min + Math.floor((limit - min) / step) * step;
+});
+const scale = computed(() => props.codeScale ?? props.design.codeScale ?? 100);
 
 const shapes = computed(() =>
   props.config.choices.artworkShape.map((value) => ({
@@ -104,5 +114,33 @@ const framed = computed(
         />
       </UFormField>
     </div>
+    <UFormField
+      v-if="controls.includes('codeScale')"
+      :label="messages.codeScale"
+      class="col-span-full"
+    >
+      <template #hint>
+        <QrFieldHelp
+          :label="messages.codeScale"
+          :text="messages.codeScaleHint"
+          :action-label="messages.help"
+        />
+      </template>
+      <div class="flex items-center gap-4">
+        <USlider
+          :model-value="scale"
+          :min="Math.min(config.ranges.codeScale.min, scaleMaximum)"
+          :max="scaleMaximum"
+          :step="config.ranges.codeScale.step"
+          :aria-label="messages.codeScale"
+          :aria-valuetext="`${Math.round(scale)}%`"
+          class="flex-1"
+          @update:model-value="$event !== undefined && patch({ codeScale: $event })"
+        />
+        <output class="w-12 text-right text-sm tabular-nums text-highlighted">
+          {{ Math.round(scale) }}%
+        </output>
+      </div>
+    </UFormField>
   </div>
 </template>

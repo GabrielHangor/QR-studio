@@ -1,3 +1,5 @@
+import * as v from "valibot";
+
 /** Local logo upload limit; never upload logos to a server. */
 export const LOGO_MAX_FILE_SIZE_BYTES = 700 * 1024;
 /** Bound canvas memory for programmatic hosts as well as the standard size selector. */
@@ -22,6 +24,36 @@ async function loadImage(source: string): Promise<HTMLImageElement> {
   image.src = source;
   await image.decode();
   return image;
+}
+
+const logoDataUriSchema = v.pipe(
+  v.string(),
+  v.regex(/^data:image\/(?:png|jpeg|webp);base64,([a-z\d+/]+={0,2})$/i),
+);
+
+/** Safe for an img source without contacting a remote server or admitting SVG. */
+const LOGO_MAX_DATA_URI_LENGTH = Math.ceil(LOGO_MAX_FILE_SIZE_BYTES / 3) * 4 + 32;
+export function isQrLogoDataUri(source: unknown): source is string {
+  return (
+    typeof source === "string" &&
+    source.length <= LOGO_MAX_DATA_URI_LENGTH &&
+    v.is(logoDataUriSchema, source)
+  );
+}
+
+/** Preset images use the same local raster boundary as uploaded files. */
+export async function readQrLogoDataUri(source: string): Promise<string> {
+  if (source.length > LOGO_MAX_DATA_URI_LENGTH) throw new QrBrowserError("logoTooLarge");
+  if (!isQrLogoDataUri(source)) throw new QrBrowserError("logoFormat");
+  const body = source.slice(source.indexOf(",") + 1);
+  const bytes = (body.length * 3) / 4 - (body.match(/=+$/)?.[0].length ?? 0);
+  if (bytes > LOGO_MAX_FILE_SIZE_BYTES) throw new QrBrowserError("logoTooLarge");
+  try {
+    await loadImage(source);
+    return source;
+  } catch {
+    throw new QrBrowserError("logoInvalid");
+  }
 }
 
 export async function readQrLogo(file: File): Promise<string> {

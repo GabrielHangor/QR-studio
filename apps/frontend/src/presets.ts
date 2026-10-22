@@ -1,117 +1,258 @@
 import type { QrDesignPreset } from "@qr-studio/toolkit/editor";
-import type { RenderQrSvgOptions } from "@qr-studio/toolkit/engine";
 
-// The host owns this catalog. Designs contain no brand text or embedded assets.
-const designs: readonly RenderQrSvgOptions[] = [
-  { foreground: "#202833", finder: { outerShape: "square" } },
+// Caller-owned styles: no payload, captions or embedded assets are imposed on the user.
+export const editorPresets = [
   {
-    foreground: "#173d51",
-    moduleShape: "soft",
-    finder: { outerShape: "rounded", innerShape: "circle" },
+    id: "classic",
+    title: "Классика",
+    description: "Чистая геометрия для документов, инструкций и повседневных задач.",
+    design: { foreground: "#202833", finder: { outerShape: "square" } },
   },
   {
-    foreground: "#166534",
-    background: "#f0fdf4",
-    moduleShape: "rounded",
-    shape: "circle",
-    finder: { outerShape: "rounded" },
-    frame: { color: "#166534", widthPx: 2 },
-  },
-  {
-    foreground: "#881337",
-    moduleShape: "leaf",
-    finder: { outerShape: "leaf", innerShape: "rounded" },
-  },
-  {
-    foreground: "#5b21b6",
-    moduleShape: "circle",
-    finder: { outerShape: "soft", innerShape: "circle" },
-  },
-  {
-    foreground: "#202833",
-    background: "#f1f5f9",
-    moduleShape: "soft",
-    finder: { outerShape: "circle", innerShape: "circle" },
-    frame: { widthPx: 3 },
-  },
-  {
-    foreground: {
-      type: "linear",
-      direction: "diagonal",
-      startColor: "#173d51",
-      endColor: "#115e59",
+    id: "business",
+    title: "Деловой",
+    description: "Глубокий синий и строгие маркеры для визиток и деловых материалов.",
+    design: {
+      foreground: "#16345b",
+      moduleShape: "rounded",
+      finder: { outerShape: "rounded-top", innerShape: "square" },
+      frame: { color: "#a7b6c9", widthPx: 2 },
     },
-    background: "#faf6ed",
-    moduleShape: "rounded",
-    finder: { outerShape: "rounded", innerShape: "circle" },
   },
   {
-    foreground: "#202833",
-    shape: "circle",
-    moduleShape: "leaf-reverse",
-    finder: { outerShape: "soft" },
-    frame: { style: "dashed", widthPx: 2 },
-  },
-  {
-    foreground: "#14532d",
-    background: "#f0fdf4",
-    moduleShape: "leaf-reverse",
-    finder: { outerShape: "leaf-reverse" },
-  },
-  {
-    foreground: "#78350f",
-    background: "#fff7ed",
-    moduleShape: "square",
-    finder: { outerShape: "rounded", innerShape: "square" },
-    frame: { color: "#78350f", widthPx: 2 },
-  },
-  {
-    foreground: "#172554",
-    shape: "circle",
-    finder: { outerShape: "square", innerShape: "circle" },
-    frame: { color: "#172554", widthPx: 3 },
-  },
-  {
-    foreground: "#3730a3",
-    background: "#f5f3ff",
-    moduleShape: "soft",
-    finder: { outerShape: "soft", innerShape: "square" },
-  },
-  {
-    foreground: {
-      type: "linear",
-      direction: "horizontal",
-      startColor: "#1e3a8a",
-      endColor: "#115e59",
+    id: "nordic",
+    title: "Сканди",
+    description: "Воздушная сетка на холодном светлом фоне для портфолио и цифровых продуктов.",
+    design: {
+      foreground: "#33485d",
+      background: "#f1f5f8",
+      moduleShape: "circle",
+      finder: { outerShape: "soft", innerShape: "circle" },
     },
-    moduleShape: "circle",
-    finder: { outerShape: "rounded", innerShape: "circle" },
   },
   {
-    foreground: "#9f1239",
-    background: "#fff1f2",
-    moduleShape: "leaf",
-    shape: "circle",
-    finder: { outerShape: "rounded", innerShape: "leaf" },
-    frame: { widthPx: 2, color: "#9f1239" },
+    id: "precision",
+    title: "Точность",
+    description: "Контрастный кобальт и квадратная сетка для навигации, табличек и инструкций.",
+    design: {
+      foreground: "#17449a",
+      moduleShape: "square",
+      finder: { outerShape: "square", innerShape: "rounded" },
+      frame: { color: "#17449a", widthPx: 3 },
+    },
   },
   {
-    foreground: "#44403c",
-    background: "#faf6ed",
-    moduleShape: "rounded",
-    finder: { outerShape: "leaf-reverse", innerShape: "circle" },
+    id: "sapphire",
+    title: "Сапфир",
+    description: "Сине-фиолетовый переход и выразительные маркеры для презентаций и афиш.",
+    design: {
+      foreground: {
+        type: "linear",
+        direction: "diagonal",
+        startColor: "#143f83",
+        endColor: "#503778",
+      },
+      moduleShape: "soft",
+      finder: { outerShape: "rounded", innerShape: "rounded" },
+    },
   },
   {
-    foreground: "#202833",
-    moduleShape: "soft",
-    finder: { outerShape: "rounded", innerShape: "circle" },
-    frame: { style: "dashed", widthPx: 2 },
+    id: "coffee",
+    title: "Кофейня",
+    description: "Шоколадная графика на сливочном фоне для меню, упаковки и небольших заведений.",
+    design: {
+      foreground: "#4e3428",
+      background: "#fcf4e6",
+      moduleShape: "rounded",
+      finder: { outerShape: "rounded", innerShape: "circle" },
+      frame: { color: "#a58b6d", widthPx: 2 },
+    },
   },
-];
-
-export const editorPresets: readonly QrDesignPreset[] = designs.map((design, index) => ({
-  id: `preset-${index + 1}`,
-  title: `Вариант ${index + 1}`,
-  description: "",
-  design,
-}));
+  {
+    id: "workshop",
+    title: "Мастерская",
+    description: "Терракота и скошенные формы для изделий ручной работы и авторских проектов.",
+    design: {
+      foreground: "#873d2c",
+      background: "#fff6ed",
+      moduleShape: "classy",
+      finder: { outerShape: "classy-reverse", innerShape: "square" },
+    },
+  },
+  {
+    id: "botanical",
+    title: "Ботаника",
+    description: "Листовые формы и хвойный зелёный для цветов, косметики и природных коллекций.",
+    design: {
+      foreground: "#1e513d",
+      background: "#f4f8ef",
+      moduleShape: "leaf",
+      finder: { outerShape: "leaf", innerShape: "leaf-reverse" },
+    },
+  },
+  {
+    id: "matcha",
+    title: "Матча",
+    description: "Мягкие точки на фисташковом фоне для кафе, студий и заботы о себе.",
+    design: {
+      foreground: "#36533a",
+      background: "#edf3df",
+      moduleShape: "circle",
+      finder: { outerShape: "rounded", innerShape: "soft" },
+    },
+  },
+  {
+    id: "sandstone",
+    title: "Песчаник",
+    description: "Тёплый каменный оттенок и лаконичные формы для интерьеров и предметного дизайна.",
+    design: {
+      foreground: "#575045",
+      background: "#f8f2e8",
+      moduleShape: "rounded-bottom",
+      finder: { outerShape: "rounded", innerShape: "square" },
+      frame: { color: "#b7a58e", widthPx: 2 },
+    },
+  },
+  {
+    id: "ocean",
+    title: "Океан",
+    description: "Переход от морского синего к бирюзовому для путешествий и творческих проектов.",
+    design: {
+      foreground: {
+        type: "linear",
+        direction: "horizontal",
+        startColor: "#123c69",
+        endColor: "#17645e",
+      },
+      moduleShape: "circle",
+      finder: { outerShape: "circle", innerShape: "circle" },
+    },
+  },
+  {
+    id: "north",
+    title: "Север",
+    description:
+      "Ледяной фон и чёткие синие акценты для технологий, выставок и городской навигации.",
+    design: {
+      foreground: "#184b64",
+      background: "#edf8fa",
+      moduleShape: "soft",
+      finder: { outerShape: "rounded", innerShape: "square", innerColor: "#1c6b73" },
+      frame: { style: "dashed", color: "#638993", widthPx: 2 },
+    },
+  },
+  {
+    id: "iris",
+    title: "Ирис",
+    description:
+      "Глубокий сливовый на лавандовом фоне для приглашений, студий и культурных событий.",
+    design: {
+      foreground: "#573565",
+      background: "#f7f0fa",
+      moduleShape: "leaf-reverse",
+      finder: { outerShape: "soft", innerShape: "circle" },
+    },
+  },
+  {
+    id: "cherry",
+    title: "Вишня",
+    description:
+      "Винная графика и мягкая геометрия для кондитерских, подарков и праздничной полиграфии.",
+    design: {
+      foreground: "#8a2946",
+      background: "#fff2f3",
+      moduleShape: "soft",
+      finder: { outerShape: "rounded", innerShape: "rounded" },
+      frame: { color: "#b76c7c", widthPx: 3 },
+    },
+  },
+  {
+    id: "graphite",
+    title: "Графит",
+    description: "Сдержанная монохромная композиция для архитектуры, галерей и печатных каталогов.",
+    design: {
+      foreground: "#252b34",
+      background: "#eef0f2",
+      moduleShape: "square",
+      finder: { outerShape: "rounded", innerShape: "square" },
+    },
+  },
+  {
+    id: "seal",
+    title: "Печать",
+    description:
+      "Тёмный круг с тонкой золотистой обводкой для этикеток, сертификатов и подарочной упаковки.",
+    design: {
+      foreground: "#1b3045",
+      background: "#ffffff",
+      artworkBackground: "#1b3045",
+      shape: "circle",
+      moduleShape: "rounded",
+      finder: { outerShape: "rounded", innerShape: "square" },
+      frame: { color: "#b99758", widthPx: 4 },
+    },
+  },
+  {
+    id: "olive",
+    title: "Олива",
+    description:
+      "Природный медальон с белой подложкой для фермерских продуктов и натуральной косметики.",
+    design: {
+      foreground: "#344b35",
+      background: "#ffffff",
+      artworkBackground: "#e3e9d5",
+      shape: "circle",
+      moduleShape: "leaf",
+      finder: { outerShape: "leaf", innerShape: "rounded" },
+      frame: { color: "#7d8d65", widthPx: 3 },
+    },
+  },
+  {
+    id: "celebration",
+    title: "Праздник",
+    description:
+      "Ягодный круг и контрастная светлая подложка для свадеб, приглашений и памятных событий.",
+    design: {
+      foreground: {
+        type: "linear",
+        direction: "vertical",
+        startColor: "#70213c",
+        endColor: "#923a57",
+      },
+      background: "#fff8f7",
+      artworkBackground: "#f7dfe6",
+      shape: "circle",
+      moduleShape: "circle",
+      finder: { outerShape: "soft", innerShape: "circle" },
+      frame: { color: "#a85b71", widthPx: 2 },
+    },
+  },
+  {
+    id: "gallery",
+    title: "Галерея",
+    description:
+      "Светлая квадратная композиция с графичной рамкой для выставок, портфолио и музейных табличек.",
+    design: {
+      foreground: "#292b35",
+      background: "#ffffff",
+      artworkBackground: "#f0e9df",
+      moduleShape: "classy-reverse",
+      finder: { outerShape: "rounded", innerShape: "circle" },
+      frame: { color: "#292b35", widthPx: 4 },
+    },
+  },
+  {
+    id: "contour",
+    title: "Контур",
+    description: "Пунктирный круг и тонкая графика для наклеек, бейджей и упаковки.",
+    design: {
+      foreground: "#24455a",
+      background: "#ffffff",
+      artworkBackground: "#edf4f7",
+      shape: "circle",
+      moduleShape: "soft",
+      finder: { outerShape: "circle", innerShape: "rounded" },
+      frame: { style: "dashed", color: "#527f93", widthPx: 2 },
+    },
+  },
+] as const satisfies readonly QrDesignPreset[];

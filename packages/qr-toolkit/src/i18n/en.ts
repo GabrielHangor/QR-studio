@@ -55,6 +55,7 @@ export const qrMessagesEn: QrMessageCatalog = {
       "The logo and its padding do not fit inside the QR code. Reduce the logo size or padding.",
     LOGO_OVERLAPS_FUNCTION_MODULES: () =>
       "The logo covers QR function patterns. Reduce the logo size or padding.",
+    INVALID_CODE_SCALE: () => "QR scale must be a finite number greater than zero.",
     INVALID_ARTWORK_SHAPE: () => "Choose a square or circular overall shape.",
     INVALID_CAPTION_TEXT: () => "Enter caption text or remove the caption from the design.",
     INVALID_CAPTION_POSITION: () => "Place the caption above or below the QR code.",
@@ -81,6 +82,8 @@ export const qrMessagesEn: QrMessageCatalog = {
   diagnostics: {
     QUIET_ZONE_TOO_SMALL: ({ minimum }) =>
       `Keep a quiet zone of at least ${n(minimum)} modules around the QR code.`,
+    QUIET_ZONE_CLIPPED: () =>
+      "Scaling above 100% reduces the QR quiet zone. Reduce the scale or test scanning on the target devices.",
     CONTRAST_BELOW_THRESHOLD: ({ target, actual, minimum }) =>
       `Contrast for the ${foregrounds[target]} is ${n(actual)}:1, below the specified threshold of ${n(minimum)}:1. Use a darker color or a lighter background.`,
     MODULE_PITCH_BELOW_THRESHOLD: ({ actual, minimum }) =>

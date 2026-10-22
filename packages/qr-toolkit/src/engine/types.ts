@@ -52,7 +52,7 @@ export interface QrLinearGradient {
 export interface QrLogoOptions {
   /** Base64 PNG, JPEG, or WebP data URI. SVG data URIs are intentionally excluded. */
   readonly dataUri: string;
-  /** Centered square logo width, measured in QR modules. */
+  /** Square logo width in QR modules; placed nearest the center without covering function cells. */
   readonly widthModules: number;
   /** Clear background padding around the logo, measured in QR modules. */
   readonly paddingModules?: number;
@@ -88,11 +88,16 @@ export interface RenderQrSvgOptions {
   size?: number;
   /** Clear border in modules, at least 4. Defaults to 4. */
   quietZone?: number;
+  /** Positive scale percentage. At 100 the full quiet-zone square fits the artwork.
+   * Larger values crop the quiet zone, never encoded modules; capped at the geometric limit.
+   * Omit to preserve legacy composition spacing. Does not change export width.
+   */
+  codeScale?: number;
   /** Opaque #RGB or #RRGGBB color, or a two-stop linear gradient. */
   foreground?: string | QrLinearGradient;
   /** Opaque #RGB or #RRGGBB color. Defaults to #ffffff. */
   background?: string;
-  /** Outer artwork color; the full QR quiet-zone square keeps background. */
+  /** Outer artwork color; the QR backing keeps background, clipped to the artwork above 100%. */
   artworkBackground?: string;
   /** Outer background and frame shape. Defaults to square; circle has transparent corners. */
   shape?: QrArtworkShape;
@@ -106,7 +111,7 @@ export interface RenderQrSvgOptions {
   logo?: QrLogoOptions;
   /** One label, or up to two labels: one above and one below the symbol. */
   caption?: QrCaptionOptions | readonly QrCaptionOptions[];
-  /** Draw a simple outline outside the required quiet zone. */
+  /** Draw an outline; above 100% the quiet zone may be reduced towards the frame. */
   frame?: "none" | "outline" | QrFrameOptions;
 }
 
@@ -132,6 +137,10 @@ export interface QrDesignAnalysis {
   readonly contrastRatio: number | null;
   /** Width of one QR module at the requested SVG output size. */
   readonly modulePitchPx: number;
+  /** Effective scale relative to the full quiet-zone fit, including legacy spacing and capping. */
+  readonly codeScale: number;
+  /** Largest whole-percent scale that keeps the encoded square clear of the frame/artwork edge. */
+  readonly maximumCodeScale: number;
   /** Geometric percentage of symbol area covered by logo plus its knockout. */
   readonly logoCoveragePercent: number | null;
   readonly diagnostics: readonly QrDesignDiagnostic[];

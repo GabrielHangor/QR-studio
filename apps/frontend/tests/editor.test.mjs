@@ -7,6 +7,9 @@ import { chromium } from "playwright";
 import { createServer } from "vite";
 import { prepareZXingModule, readBarcodes } from "zxing-wasm/reader";
 
+import { editorLogoPresets } from "../src/logo-presets.ts";
+import { editorPresets } from "../src/presets.ts";
+
 async function stubMapTiles(page) {
   await page.route("https://tile.openstreetmap.org/**", (route) =>
     route.fulfill({
@@ -74,6 +77,23 @@ const previewOf = (page) => page.getByRole("img", { name: "Предпросмо�
 async function svgOf(page) {
   return decodeURIComponent((await previewOf(page).getAttribute("src")).split(",")[1]);
 }
+
+const contrast = (first, second) => {
+  const luminance = (color) => {
+    const channels = color
+      .match(/[\d.]+/g)
+      .slice(0, 3)
+      .map(Number)
+      .map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const values = [luminance(first), luminance(second)].toSorted((a, b) => a - b);
+  return (values[1] + 0.05) / (values[0] + 0.05);
+};
+
 async function settleLayout(page) {
   await page.waitForFunction(() => document.fonts.status === "loaded", undefined, {
     timeout: 5000,
@@ -154,12 +174,14 @@ for (const width of [1280, 390]) {
         "Scan results must not resize or move the preview or controls",
       );
       assert.match(await badge.locator("..").getAttribute("class"), /text-success/);
-      await page.getByText("Проверьте также на целевых устройствах.", { exact: true }).waitFor();
+      await page
+        .getByText("Дополнительно проверьте QR-код на нескольких телефонах.", { exact: true })
+        .waitFor();
       if (width === 1280) {
         await settleLayout(page);
         await page.screenshot({ path: "test-results/editor-scan-success.png", fullPage: true });
       }
-      await open(page, "Что будет в QR-коде");
+      await open(page, "Содержимое");
       await page.getByRole("textbox", { name: /^Ссылка/ }).fill("https://example.org");
       await badge.waitFor({ state: "detached" });
       await page.getByRole("button", { name: "Проверить считывание", exact: true }).click();
@@ -207,7 +229,7 @@ for (const [width, height] of [
         "The QR retains a usable preview size",
       );
       const previewBefore = await previewOf(page).boundingBox();
-      const slider = page.getByRole("slider", { name: "Разрешение PNG", exact: true });
+      const slider = page.getByRole("slider", { name: "Размер PNG", exact: true });
       assert.ok((await slider.boundingBox()).height >= 12, "The slider theme is rendered");
       await slider.press("End");
       await previewOf(page).evaluate((image) => image.decode());
@@ -215,12 +237,12 @@ for (const [width, height] of [
       assert.equal(previewBefore.width, previewAfter.width);
       assert.equal(previewBefore.height, previewAfter.height);
       assert.match(
-        await page.getByLabel("Размер скачиваемого изображения", { exact: true }).innerText(),
-        /^2048 × 2048 px$/,
+        await page.getByLabel("Размер изображения", { exact: true }).innerText(),
+        /^2048 × 2048 пкс$/,
       );
       await open(page, "Цвета");
       const swatch = await page
-        .getByRole("button", { name: "Цвет QR #1e40af", exact: true })
+        .getByRole("button", { name: "Цвет элементов #1e40af", exact: true })
         .boundingBox();
       assert.equal(swatch.width, 32);
       assert.equal(swatch.height, 32);
@@ -228,8 +250,8 @@ for (const [width, height] of [
         await settleLayout(page);
         await page.screenshot({ path: "test-results/editor-compact-colors.png", fullPage: true });
       }
-      await open(page, "Формы и рамка");
-      await pick(page, "Форма контура", "Круги");
+      await open(page, "Форма и рамка");
+      await pick(page, "Форма рамок маркеров", "Круги");
       await settleLayout(page);
       assert.equal(
         await page.getByRole("radiogroup").locator('[data-slot="indicator"]:visible').count(),
@@ -237,7 +259,7 @@ for (const [width, height] of [
         "Card pickers do not render a second radio indicator over the thumbnail",
       );
       const images = await page
-        .getByRole("radiogroup", { name: "Форма контура", exact: true })
+        .getByRole("radiogroup", { name: "Форма рамок маркеров", exact: true })
         .locator("img")
         .all();
       for (const image of images) {
@@ -295,7 +317,7 @@ for (const width of [1280, 390]) {
         assert.equal(
           await page
             .locator('[aria-label="Предпросмотр"]')
-            .getByRole("slider", { name: "Разрешение PNG", exact: true })
+            .getByRole("slider", { name: "Размер PNG", exact: true })
             .count(),
           1,
         );
@@ -314,8 +336,8 @@ for (const width of [1280, 390]) {
         const text = page.getByRole("textbox", { name: /^Текст/ });
         const payload = "  Привет 👋\nВторая строка  ";
         await text.fill(payload);
-        await open(page, "Формы и рамка");
-        await pick(page, "Форма точек", "Мягкие");
+        await open(page, "Форма и рамка");
+        await pick(page, "Форма элементов", "Сглаженные");
         await page.getByRole("tab", { name: "Ссылка", exact: true }).click();
         assert.equal(await url.inputValue(), "https://example.org");
         await page.getByRole("tab", { name: "Текст", exact: true }).click();
@@ -355,7 +377,7 @@ for (const width of [1920, 1440, 768, 390]) {
     try {
       await page.goto(baseUrl);
       await previewOf(page).waitFor();
-      await open(page, "Что будет в QR-коде");
+      await open(page, "Содержимое");
       const closedHeight = await page
         .getByRole("button", { name: "Логотип", exact: true })
         .evaluate((button) => button.closest('[data-slot="item"]').getBoundingClientRect().height);
@@ -368,7 +390,7 @@ for (const width of [1920, 1440, 768, 390]) {
       );
       const tabs = await tabsRoot.boundingBox();
       const content = await page
-        .getByRole("button", { name: "Что будет в QR-коде", exact: true })
+        .getByRole("button", { name: "Содержимое", exact: true })
         .boundingBox();
       assert.ok(tabs.y < content.y);
       if (width >= 1024) {
@@ -377,38 +399,40 @@ for (const width of [1920, 1440, 768, 390]) {
           .boundingBox();
         assert.ok(content.x < preview.x && Math.abs(content.y - preview.y) < 25);
       }
-      await open(page, "Готовый дизайн");
+      await open(page, "Шаблоны");
       assert.equal(
         await page
-          .getByRole("radiogroup", { name: "Готовый дизайн", exact: true })
+          .getByRole("radiogroup", { name: "Шаблоны", exact: true })
           .getByRole("radio")
           .count(),
-        16,
+        20,
       );
       assert.equal(await page.getByText(/ATELIER|COFFEE/).count(), 0);
-      await pick(page, "Готовый дизайн", "Вариант 7");
+      await pick(page, "Шаблоны", "Кофейня");
       if (width === 1920 || width === 390) {
         await settleLayout(page);
         await page
-          .getByRole("heading", { name: "Создайте свой QR-код", exact: true })
+          .getByRole("heading", { name: "Создайте QR-код", exact: true })
           .scrollIntoViewIfNeeded();
         await page.screenshot({ path: `test-results/editor-${width}.png` });
       }
       await open(page, "Цвета");
-      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет элементов #1e40af", exact: true }).click();
       assert.equal(
-        (await page.getByRole("button", { name: "Цвет QR", exact: true }).textContent()).trim(),
+        (
+          await page.getByRole("button", { name: "Цвет элементов", exact: true }).textContent()
+        ).trim(),
         "#1E40AF",
       );
-      await open(page, "Формы и рамка");
-      const group = page.getByRole("radiogroup", { name: "Форма точек", exact: true });
+      await open(page, "Форма и рамка");
+      const group = page.getByRole("radiogroup", { name: "Форма элементов", exact: true });
       assert.equal(await group.getByRole("radio").count(), 10);
       const selected = group.getByRole("radio", { checked: true });
       await selected.focus();
       await selected.press("ArrowRight", { delay: 50 });
       await group.getByRole("radio", { name: "Круги", exact: true, checked: true }).waitFor();
       if (width === 1920) await page.screenshot({ path: "test-results/editor-shapes-1920.png" });
-      await open(page, "Дополнительные настройки");
+      await open(page, "Параметры QR-кода");
       assert.equal(
         await page
           .getByRole("spinbutton", { name: "Плотность кода (версия)", exact: true })
@@ -416,13 +440,13 @@ for (const width of [1920, 1440, 768, 390]) {
         0,
       );
       const help = page.getByRole("button", {
-        name: "Пояснение: Поля вокруг QR, ячейки",
+        name: "Пояснение: Свободное поле, модули",
         exact: true,
       });
       if (width < 1024) await help.tap();
       else await help.focus();
       await page.getByRole("tooltip").waitFor();
-      assert.match(await page.getByRole("tooltip").innerText(), /Минимум — 4 ячейки/);
+      assert.match(await page.getByRole("tooltip").innerText(), /Минимальная ширина — 4 модуля/);
       await help.press("Escape");
       await page.getByRole("tooltip").waitFor({ state: "detached" });
       assert.equal(
@@ -450,68 +474,74 @@ for (const width of [1280, 390]) {
       await page.getByRole("tab", { name: "Текст", exact: true }).click();
       const payload = "  Привет 👋\nQR Studio  ";
       await page.getByRole("textbox", { name: /^Текст/ }).fill(payload);
-      await open(page, "Готовый дизайн");
+      await open(page, "Шаблоны");
       /* oxlint-disable no-await-in-loop -- One page models sequential user choices. */
-      for (let index = 1; index <= 16; index++) {
-        await pick(page, "Готовый дизайн", `Вариант ${index}`);
+      for (const preset of editorPresets) {
+        await pick(page, "Шаблоны", preset.title);
         await previewOf(page).evaluate((image) => image.decode());
       }
       /* oxlint-enable no-await-in-loop */
-      await pick(page, "Готовый дизайн", "Вариант 7");
-      await open(page, "Что будет в QR-коде");
+      await pick(page, "Шаблоны", "Кофейня");
+      await open(page, "Содержимое");
       assert.equal(await page.getByRole("textbox", { name: /^Текст/ }).inputValue(), payload);
       await open(page, "Цвета");
       await select(page, "Цвет или градиент", "Слева направо");
-      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет элементов #1e40af", exact: true }).click();
       assert.equal(
-        await page.getByRole("switch", { name: "Свой цвет контура", exact: true }).isVisible(),
+        await page.getByRole("switch", { name: "Отдельный цвет рамок", exact: true }).isVisible(),
         false,
       );
       await page
         .locator("summary")
-        .filter({ hasText: /^Настроить цвета углов$/ })
+        .filter({ hasText: /^Цвета поисковых маркеров$/ })
         .click();
-      await page.getByRole("switch", { name: "Свой цвет контура", exact: true }).click();
-      await page.getByRole("button", { name: "Цвет контура", exact: true }).click();
-      await page.getByRole("textbox", { name: "Цвет контура (HEX)", exact: true }).fill("#123456");
+      await page.getByRole("switch", { name: "Отдельный цвет рамок", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет рамок маркеров", exact: true }).click();
+      await page
+        .getByRole("textbox", { name: "Цвет рамок маркеров (HEX)", exact: true })
+        .fill("#123456");
       await page.keyboard.press("Escape");
       await page
         .locator("summary")
-        .filter({ hasText: /^Настроить цвета углов$/ })
+        .filter({ hasText: /^Цвета поисковых маркеров$/ })
         .click();
       assert.ok(
         (await svgOf(page)).includes("#123456"),
         "Collapsing advanced colors preserves the design",
       );
       assert.equal(
-        await page.getByRole("switch", { name: "Другой фон вокруг кода", exact: true }).isVisible(),
+        await page
+          .getByRole("switch", { name: "Отдельный фон композиции", exact: true })
+          .isVisible(),
         false,
       );
       await page
         .locator("summary")
-        .filter({ hasText: /^Другие цвета$/ })
+        .filter({ hasText: /^Фон композиции$/ })
         .click();
-      await page.getByRole("switch", { name: "Другой фон вокруг кода", exact: true }).click();
-      await page.getByRole("button", { name: "Фон вокруг кода #faf6ed", exact: true }).click();
+      await page.getByRole("switch", { name: "Отдельный фон композиции", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет фона композиции #faf6ed", exact: true }).click();
       await page
         .locator("summary")
-        .filter({ hasText: /^Другие цвета$/ })
+        .filter({ hasText: /^Фон композиции$/ })
         .click();
-      await open(page, "Формы и рамка");
-      await pick(page, "Форма точек", "Лепестки ↗");
-      await pick(page, "Форма контура", "Мягкие");
-      await pick(page, "Форма центра", "Лепестки");
+      await open(page, "Форма и рамка");
+      await pick(page, "Форма элементов", "Зеркальные лепестки");
+      await pick(page, "Форма рамок маркеров", "Сглаженные");
+      await pick(page, "Форма центров маркеров", "Лепестки");
       await pick(page, "Форма композиции", "Круг");
-      const recommendationButton = page.getByRole("button", { name: "Рекомендации", exact: true });
-      assert.equal(await recommendationButton.getAttribute("aria-expanded"), "false");
-      const recommendations = page.getByRole("list", { name: "Рекомендации", exact: true });
-      assert.equal(await recommendations.count(), 0);
-      await recommendationButton.click();
-      const staticHint = page.getByText("Содержимое скачанного QR-кода изменить нельзя.", {
+      const recommendations = page.getByRole("region", { name: "Рекомендации", exact: true });
+      await recommendations.getByText("Проверьте оформление", { exact: true }).waitFor();
+      assert.equal(
+        await recommendations.getByRole("button").count(),
+        0,
+        "Recommendations are visible without expanding a panel",
+      );
+      const staticHint = page.getByText("После скачивания содержимое QR-кода изменить нельзя.", {
         exact: true,
       });
       assert.ok(
-        (await recommendationButton.boundingBox()).y -
+        (await recommendations.boundingBox()).y -
           ((await staticHint.boundingBox()).y + (await staticHint.boundingBox()).height) <
           28,
         "Recommendations follow export actions without an empty feedback spacer",
@@ -521,13 +551,13 @@ for (const width of [1280, 390]) {
         1,
         "Three styling notices are combined",
       );
-      assert.match(await recommendations.innerText(), /проверьте QR камерой телефона/);
+      assert.match(await recommendations.innerText(), /проверьте QR-код камерой телефона/);
       await select(page, "Рамка", "Пунктирная");
-      await page.getByRole("spinbutton", { name: "Толщина рамки, px", exact: true }).fill("3");
+      await page.getByRole("spinbutton", { name: "Толщина рамки, пкс", exact: true }).fill("3");
       if (width >= 1280) {
         await settleLayout(page);
         const shapePanel = page
-          .getByRole("button", { name: "Формы и рамка", exact: true })
+          .getByRole("button", { name: "Форма и рамка", exact: true })
           .locator('xpath=ancestor::*[@data-slot="item"][1]');
         assert.ok(
           (await shapePanel.boundingBox()).height < 560,
@@ -544,14 +574,17 @@ for (const width of [1280, 390]) {
         ctx.fillRect(4, 4, 16, 8);
         return canvas.toDataURL("image/png").split(",")[1];
       });
-      const file = page.getByLabel("Логотип PNG, JPEG или WebP", { exact: true });
+      const file = page.getByLabel("Файл логотипа", { exact: true });
       await file.setInputFiles({
         name: "logo.png",
         mimeType: "image/png",
         buffer: Buffer.from(png, "base64"),
       });
       await previewOf(page).waitFor();
-      const clear = page.getByRole("switch", { name: "Убрать код под логотипом", exact: true });
+      const clear = page.getByRole("switch", {
+        name: "Очистить область под логотипом",
+        exact: true,
+      });
       await clear.waitFor();
       assert.equal(
         await recommendations.getByRole("listitem").count(),
@@ -560,10 +593,10 @@ for (const width of [1280, 390]) {
       );
       const slider = page.getByRole("slider", { name: "Размер логотипа", exact: true });
       await slider.press("ArrowLeft");
-      assert.equal(await slider.getAttribute("aria-valuenow"), "4.5");
+      assert.equal(await slider.getAttribute("aria-valuenow"), "3.5");
       assert.equal(
         await page
-          .getByRole("spinbutton", { name: "Размер логотипа, ячейки", exact: true })
+          .getByRole("spinbutton", { name: "Ширина логотипа, модули", exact: true })
           .isVisible(),
         false,
       );
@@ -572,10 +605,10 @@ for (const width of [1280, 390]) {
         .locator('xpath=ancestor::*[@data-slot="item"][1]');
       await logoPanel.locator("summary").click();
       const logoWidth = page.getByRole("spinbutton", {
-        name: "Размер логотипа, ячейки",
+        name: "Ширина логотипа, модули",
         exact: true,
       });
-      assert.equal(await logoWidth.inputValue(), "4.5");
+      assert.equal(await logoWidth.inputValue(), "3.5");
       await logoWidth.fill("5");
       assert.equal(await slider.getAttribute("aria-valuenow"), "5");
       await logoPanel.locator("summary").click();
@@ -588,13 +621,13 @@ for (const width of [1280, 390]) {
         ),
       );
       await clear.click();
-      await open(page, "Надписи вокруг QR");
-      const top = page.getByRole("group", { name: "Верхняя надпись", exact: true });
-      const bottom = page.getByRole("group", { name: "Нижняя надпись", exact: true });
+      await open(page, "Подписи");
+      const top = page.getByRole("group", { name: "Подпись сверху", exact: true });
+      const bottom = page.getByRole("group", { name: "Подпись снизу", exact: true });
       assert.equal(await top.getByRole("combobox").count(), 0);
       assert.equal(await bottom.getByRole("combobox").count(), 0);
       await top
-        .getByRole("textbox", { name: "Верхняя надпись: Текст надписи", exact: true })
+        .getByRole("textbox", { name: "Подпись сверху: Текст подписи", exact: true })
         .fill("QR STUDIO");
       assert.equal(
         await bottom.getByRole("combobox").count(),
@@ -602,42 +635,48 @@ for (const width of [1280, 390]) {
         "An empty caption has no formatting controls",
       );
       assert.equal(
-        await top.getByRole("spinbutton", { name: "Между буквами, px", exact: true }).isVisible(),
+        await top
+          .getByRole("spinbutton", { name: "Межбуквенный интервал, пкс", exact: true })
+          .isVisible(),
         false,
       );
       await top.locator("summary").click();
-      await select(top, "Толщина шрифта", "Полужирная", page);
-      await top.getByRole("spinbutton", { name: "Между буквами, px", exact: true }).fill("0.5");
-      await top.getByRole("textbox", { name: /^Верхняя/ }).fill("   ");
+      await select(top, "Насыщенность шрифта", "Полужирная", page);
+      await top
+        .getByRole("spinbutton", { name: "Межбуквенный интервал, пкс", exact: true })
+        .fill("0.5");
+      await top.getByRole("textbox", { name: /^Подпись сверху/ }).fill("   ");
       assert.equal(await top.getByRole("combobox").count(), 0);
       assert.ok(!(await svgOf(page)).includes("<text"), "Whitespace-only drafts are not rendered");
-      await top.getByRole("textbox", { name: /^Верхняя/ }).fill("QR STUDIO");
+      await top.getByRole("textbox", { name: /^Подпись сверху/ }).fill("QR STUDIO");
       await top.locator("summary").click();
       assert.equal(
-        await top.getByRole("spinbutton", { name: "Между буквами, px", exact: true }).inputValue(),
+        await top
+          .getByRole("spinbutton", { name: "Межбуквенный интервал, пкс", exact: true })
+          .inputValue(),
         "0.5",
       );
       assert.match(
-        await top.getByRole("combobox", { name: "Толщина шрифта", exact: true }).innerText(),
+        await top.getByRole("combobox", { name: "Насыщенность шрифта", exact: true }).innerText(),
         /Полужирная/,
       );
       await top.locator("summary").click();
       await bottom
-        .getByRole("textbox", { name: "Нижняя надпись: Текст надписи", exact: true })
+        .getByRole("textbox", { name: "Подпись снизу: Текст подписи", exact: true })
         .fill("SCAN ME");
-      await select(top, "Стиль надписи", "По дуге круга", page);
-      await select(bottom, "Стиль надписи", "По дуге круга", page);
-      await open(page, "Дополнительные настройки");
-      await select(page, "Устойчивость к повреждениям", "H — высокая");
-      const resolution = page.getByRole("slider", { name: "Разрешение PNG", exact: true });
+      await select(top, "Оформление подписи", "По дуге", page);
+      await select(bottom, "Оформление подписи", "По дуге", page);
+      await open(page, "Параметры QR-кода");
+      await select(page, "Коррекция ошибок", "H — высокая");
+      const resolution = page.getByRole("slider", { name: "Размер PNG", exact: true });
       await resolution.press("Home");
       await resolution.press("ArrowRight");
       await resolution.press("ArrowRight");
       assert.match(
-        await page.getByLabel("Размер скачиваемого изображения", { exact: true }).innerText(),
-        /^1024 × \d+ px$/,
+        await page.getByLabel("Размер изображения", { exact: true }).innerText(),
+        /^1024 × \d+ пкс$/,
       );
-      await page.getByRole("spinbutton", { name: "Поля вокруг QR, ячейки", exact: true }).fill("6");
+      await page.getByRole("spinbutton", { name: "Свободное поле, модули", exact: true }).fill("6");
       await previewOf(page).evaluate((image) => image.decode());
       const svgDownload = page.waitForEvent("download");
       await page.getByRole("button", { name: "Скачать SVG", exact: true }).click();
@@ -673,7 +712,7 @@ for (const width of [1280, 390]) {
       });
       await page.getByRole("alert").filter({ hasText: "SVG не поддерживается" }).first().waitFor();
       assert.equal(await previewOf(page).count(), 0);
-      await page.getByRole("button", { name: "Убрать логотип", exact: true }).click();
+      await page.getByRole("button", { name: "Удалить логотип", exact: true }).click();
       await previewOf(page).waitFor();
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
@@ -696,32 +735,32 @@ for (const width of [1280, 390]) {
       /* oxlint-disable no-await-in-loop -- Each draft must be entered and exported before changing tabs. */
       for (const [type, fields, expected] of [
         [
-          "Email",
-          { "Email": "me@example.com", "Тема письма": "Привет & QR" },
+          "Почта",
+          { "Почта": "me@example.com", "Тема письма": "Привет & QR" },
           "mailto:me@example.com?subject=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%26%20QR",
         ],
         ["Телефон", { "Номер телефона": "+7 (999) 123-45-67" }, "tel:+79991234567"],
         [
-          "SMS",
+          "СМС",
           { "Номер телефона": "+79991234567", "Сообщение": "Привет" },
           "sms:+79991234567?body=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
         ],
         [
           "Wi-Fi",
-          { "Название сети (SSID)": "QR;Studio", "Пароль сети": "hello:qr" },
+          { "Имя сети (SSID)": "QR;Studio", "Пароль сети": "hello:qr" },
           "WIFI:T:WPA;S:QR\\;Studio;P:hello\\:qr;H:false;;",
         ],
         [
-          "Контакт",
-          { "Полное имя": "Анна QR", "Email": "anna@example.com" },
+          "Визитка",
+          { "Полное имя": "Анна QR", "Почта": "anna@example.com" },
           "BEGIN:VCARD\r\nVERSION:3.0\r\nN:;Анна QR;;;\r\nFN:Анна QR\r\nEMAIL:anna@example.com\r\nEND:VCARD",
         ],
-        ["Координаты", { Широта: "55.7558", Долгота: "37.6173" }, "geo:55.7558,37.6173"],
+        ["Местоположение", { Широта: "55.7558", Долгота: "37.6173" }, "geo:55.7558,37.6173"],
       ]) {
         await page.getByRole("tab", { name: type, exact: true }).click();
         await previewOf(page).waitFor();
-        if (type === "Email") await page.getByLabel("Сообщение", { exact: true }).fill("");
-        if (type === "Контакт") {
+        if (type === "Почта") await page.getByLabel("Сообщение", { exact: true }).fill("");
+        if (type === "Визитка") {
           await page.getByLabel("Организация", { exact: true }).fill("");
           await page.getByLabel("Номер телефона", { exact: true }).fill("");
         }
@@ -741,20 +780,20 @@ for (const width of [1280, 390]) {
       /* oxlint-enable no-await-in-loop */
       await page.getByRole("textbox", { name: "Широта", exact: true }).fill("91");
       assert.equal(await previewOf(page).count(), 0);
-      await page.getByRole("tab", { name: "Email", exact: true }).click();
+      await page.getByRole("tab", { name: "Почта", exact: true }).click();
       assert.equal(
-        await page.getByRole("textbox", { name: "Email", exact: true }).inputValue(),
+        await page.getByRole("textbox", { name: "Почта", exact: true }).inputValue(),
         "me@example.com",
       );
       await page.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
-      await select(page, "Защита сети", "Без пароля");
+      await select(page, "Тип защиты", "Без пароля");
       assert.equal(await page.getByLabel("Пароль сети", { exact: true }).count(), 0);
-      await select(page, "Защита сети", "WPA / WPA2 / WPA3");
+      await select(page, "Тип защиты", "WPA / WPA2 / WPA3");
       assert.equal(await page.getByLabel("Пароль сети", { exact: true }).inputValue(), "hello:qr");
-      await open(page, "Формы и рамка");
+      await open(page, "Форма и рамка");
       await settleLayout(page);
       const panel = page
-        .getByRole("button", { name: "Формы и рамка", exact: true })
+        .getByRole("button", { name: "Форма и рамка", exact: true })
         .locator('xpath=ancestor::*[@data-slot="item"][1]');
       const content = panel.locator('[data-slot="content"]');
       const padding = await content.evaluate((element) => ({
@@ -764,7 +803,7 @@ for (const width of [1280, 390]) {
       assert.deepEqual(padding, { top: "0px", bottom: "0px" });
       const x = (await panel.boundingBox()).x;
       const panelWidth = (await panel.boundingBox()).width;
-      await page.getByRole("button", { name: "Формы и рамка", exact: true }).click();
+      await page.getByRole("button", { name: "Форма и рамка", exact: true }).click();
       await settleLayout(page);
       assert.ok((await content.boundingBox()) === null || (await content.boundingBox()).height < 1);
       assert.equal((await panel.boundingBox()).x, x);
@@ -791,9 +830,9 @@ for (const width of [1280, 390]) {
         0,
         "No map before selecting coordinates",
       );
-      await page.getByRole("tab", { name: "Email", exact: true }).click();
+      await page.getByRole("tab", { name: "Почта", exact: true }).click();
       await previewOf(page).waitFor();
-      const email = page.getByLabel("Email", { exact: true });
+      const email = page.getByLabel("Почта", { exact: true });
       await email.fill("bad");
       await email.blur();
       await page.getByText("Введите корректный email.", { exact: true }).waitFor();
@@ -801,7 +840,7 @@ for (const width of [1280, 390]) {
       await email.fill("hello@example.com");
       await previewOf(page).waitFor();
       assert.equal(await page.getByText("Введите корректный email.", { exact: true }).count(), 0);
-      await page.getByRole("tab", { name: "Координаты", exact: true }).click();
+      await page.getByRole("tab", { name: "Местоположение", exact: true }).click();
       const map = page.getByRole("region", { name: "Выбор точки на карте", exact: true });
       await map.locator("canvas").waitFor();
       const devtools = await context.newCDPSession(page);
@@ -879,8 +918,8 @@ for (const width of [1280, 390]) {
       );
       const retainedLatitude = await latitude.inputValue();
       const retainedLongitude = await longitude.inputValue();
-      await open(page, "Формы и рамка");
-      await open(page, "Что будет в QR-коде");
+      await open(page, "Форма и рамка");
+      await open(page, "Содержимое");
       assert.equal(await latitude.inputValue(), retainedLatitude);
       assert.equal(await longitude.inputValue(), retainedLongitude);
       assert.equal(await map.locator(".ol-viewport").count(), 1);
@@ -918,8 +957,8 @@ it("keeps coordinate entry working when map tiles cannot load", async () => {
   try {
     await page.goto(baseUrl);
     assert.equal(requests, 0, "No tile requests before opening coordinates");
-    await page.getByRole("tab", { name: "Координаты", exact: true }).click();
-    const failure = page.getByText("Карта недоступна. Координаты можно указать вручную.", {
+    await page.getByRole("tab", { name: "Местоположение", exact: true }).click();
+    const failure = page.getByText("Карта недоступна. Местоположение можно указать вручную.", {
       exact: true,
     });
     await failure.waitFor();
@@ -972,7 +1011,7 @@ for (const width of [1280, 390]) {
     });
     try {
       await page.goto(baseUrl);
-      await page.getByRole("tab", { name: "Координаты", exact: true }).click();
+      await page.getByRole("tab", { name: "Местоположение", exact: true }).click();
       const input = page.getByRole("textbox", { name: "Найти место", exact: true });
       await input.fill("Дворцовая площадь");
       assert.deepEqual(queries, []);
@@ -1034,13 +1073,13 @@ for (const width of [1280, 390]) {
       await previewOf(page).waitFor();
       await page.getByRole("textbox", { name: /^Ссылка/ }).fill("https://example.org/keep");
       await open(page, "Цвета");
-      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
-      await open(page, "Формы и рамка");
-      await pick(page, "Форма точек", "Лепестки ↗");
-      await pick(page, "Форма контура", "Круги");
-      await open(page, "Дополнительные настройки");
-      await select(page, "Устойчивость к повреждениям", "H — высокая");
-      await page.getByRole("spinbutton", { name: "Поля вокруг QR, ячейки", exact: true }).fill("6");
+      await page.getByRole("button", { name: "Цвет элементов #1e40af", exact: true }).click();
+      await open(page, "Форма и рамка");
+      await pick(page, "Форма элементов", "Зеркальные лепестки");
+      await pick(page, "Форма рамок маркеров", "Круги");
+      await open(page, "Параметры QR-кода");
+      await select(page, "Коррекция ошибок", "H — высокая");
+      await page.getByRole("spinbutton", { name: "Свободное поле, модули", exact: true }).fill("6");
       const previous = await readState();
       const initialSvg = await svgOf(page);
       const navigation = page.getByRole("navigation", { name: "Test configurations", exact: true });
@@ -1048,7 +1087,7 @@ for (const width of [1280, 390]) {
       assert.equal(await page.getByRole("tab").count(), 2);
       assert.deepEqual(
         await page.locator('[aria-label="Настройки QR"] [data-slot="trigger"]').allTextContents(),
-        ["Что будет в QR-коде", "Цвета", "Формы и рамка"],
+        ["Содержимое", "Цвета", "Форма и рамка"],
       );
       await previewOf(page).waitFor();
       assert.deepEqual(
@@ -1064,10 +1103,10 @@ for (const width of [1280, 390]) {
       await open(page, "Цвета");
       assert.equal(await page.getByRole("combobox").count(), 0);
       assert.equal(await page.getByText("Цвета углов", { exact: true }).count(), 0);
-      await open(page, "Формы и рамка");
+      await open(page, "Форма и рамка");
       assert.equal(await page.getByRole("radiogroup").count(), 1);
       assert.equal(await page.getByRole("radio").count(), 3);
-      await pick(page, "Форма точек", "Скруглённые");
+      await pick(page, "Форма элементов", "Скруглённые");
       assert.deepEqual((await readState()).design.finder, previous.design.finder);
       assert.deepEqual((await readState()).encoding, previous.encoding);
       await navigation.getByRole("button", { name: "custom", exact: true }).click();
@@ -1076,7 +1115,7 @@ for (const width of [1280, 390]) {
       assert.equal((await readState()).url, "https://example.org/keep");
       assert.deepEqual(
         await page.locator('[aria-label="Настройки QR"] [data-slot="trigger"]').allTextContents(),
-        ["Формы и рамка", "Дополнительные настройки", "Цвета"],
+        ["Форма и рамка", "Параметры QR-кода", "Цвета"],
       );
       assert.equal(await page.getByRole("radio").count(), 1);
       assert.equal(await page.getByRole("radio", { name: "Лепестки", exact: true }).count(), 1);
@@ -1085,10 +1124,10 @@ for (const width of [1280, 390]) {
         await page.getByRole("button", { name: "Рекомендации", exact: true }).count(),
         0,
       );
-      await open(page, "Дополнительные настройки");
+      await open(page, "Параметры QR-кода");
       assert.equal(await page.getByRole("combobox").count(), 0);
       const quietZone = page.getByRole("spinbutton", {
-        name: "Поля вокруг QR, ячейки",
+        name: "Свободное поле, модули",
         exact: true,
       });
       assert.equal(await quietZone.getAttribute("min"), "8");
@@ -1101,18 +1140,20 @@ for (const width of [1280, 390]) {
       );
       await quietZone.fill("8");
       await open(page, "Цвета");
-      const palette = page.getByRole("group", { name: "Цвет QR (HEX)", exact: true });
+      const palette = page.getByRole("group", { name: "Цвет элементов (HEX)", exact: true });
       assert.equal(await palette.getByRole("button").count(), 1);
       assert.equal(
-        await palette.getByRole("button", { name: "Цвет QR #112233", exact: true }).count(),
+        await palette.getByRole("button", { name: "Цвет элементов #112233", exact: true }).count(),
         1,
       );
       assert.equal(
-        (await page.getByRole("button", { name: "Цвет QR", exact: true }).textContent()).trim(),
+        (
+          await page.getByRole("button", { name: "Цвет элементов", exact: true }).textContent()
+        ).trim(),
         "#1E40AF",
         "Changing a palette does not change the current color",
       );
-      const slider = page.getByRole("slider", { name: "Разрешение PNG", exact: true });
+      const slider = page.getByRole("slider", { name: "Размер PNG", exact: true });
       assert.equal(await slider.getAttribute("aria-valuemax"), "1");
       await slider.press("End");
       assert.equal((await readState()).design.size, 1536);
@@ -1160,10 +1201,10 @@ for (const width of [1280, 390]) {
     try {
       await page.goto(baseUrl);
       await open(page, "Цвета");
-      const trigger = page.getByRole("button", { name: "Цвет QR", exact: true });
+      const trigger = page.getByRole("button", { name: "Цвет элементов", exact: true });
       await trigger.focus();
       await trigger.press("Enter");
-      const picker = page.locator('[data-slot="root"][aria-label="Цвет QR"]');
+      const picker = page.locator('[data-slot="root"][aria-label="Цвет элементов"]');
       await picker.waitFor();
       const panel = page.getByRole("dialog");
       await settleLayout(page);
@@ -1184,7 +1225,7 @@ for (const width of [1280, 390]) {
         (previous) => document.querySelector('img[alt="Предпросмотр QR-кода"]')?.src !== previous,
         previousPreview,
       );
-      const hex = page.getByRole("textbox", { name: "Цвет QR (HEX)", exact: true });
+      const hex = page.getByRole("textbox", { name: "Цвет элементов (HEX)", exact: true });
       const picked = await hex.inputValue();
       assert.match(picked, /^#[\da-f]{6}$/i);
       assert.ok((await svgOf(page)).toLowerCase().includes(picked.toLowerCase()));
@@ -1202,7 +1243,7 @@ for (const width of [1280, 390]) {
       await hex.press("Escape");
       await panel.waitFor({ state: "hidden" });
       assert.equal(await trigger.evaluate((element) => element === document.activeElement), true);
-      await page.getByRole("button", { name: "Цвет QR #1e40af", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет элементов #1e40af", exact: true }).click();
       await trigger.click();
       assert.equal(await hex.inputValue(), "#1e40af");
       assert.equal(await page.locator('input[type="color"]').count(), 0);
@@ -1217,21 +1258,6 @@ for (const width of [1280, 390]) {
   it(`keeps themed surfaces distinct and text readable at ${width}px`, async () => {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     const page = await context.newPage();
-    const contrast = (first, second) => {
-      const luminance = (color) => {
-        const channels = color
-          .match(/[\d.]+/g)
-          .slice(0, 3)
-          .map(Number)
-          .map((value) => {
-            const channel = value / 255;
-            return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-          });
-        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-      };
-      const values = [luminance(first), luminance(second)].toSorted((a, b) => a - b);
-      return (values[1] + 0.05) / (values[0] + 0.05);
-    };
     const colors = (locator) =>
       locator.evaluate((element) => {
         const style = getComputedStyle(element);
@@ -1247,7 +1273,7 @@ for (const width of [1280, 390]) {
       const lightInput = await colors(url);
       assert.ok(contrast(lightInput.text, lightInput.background) >= 4.5);
       assert.equal(lightInput.background, (await colors(card)).background);
-      await page.getByRole("tab", { name: "Контакт", exact: true }).click();
+      await page.getByRole("tab", { name: "Визитка", exact: true }).click();
       const contactFields = page.getByRole("textbox");
       assert.equal(await contactFields.count(), 4);
       /* oxlint-disable no-await-in-loop -- Verify each independently labelled contact field. */
@@ -1270,7 +1296,7 @@ for (const width of [1280, 390]) {
       await settleLayout(page);
       await page.screenshot({ path: `test-results/editor-blue-${width}.png`, fullPage: true });
       await page.evaluate(() => document.documentElement.classList.add("dark"));
-      await open(page, "Что будет в QR-коде");
+      await open(page, "Содержимое");
       const darkInput = await colors(url);
       const darkAction = await colors(png);
       assert.ok(contrast(darkInput.text, darkInput.background) >= 4.5);
@@ -1313,15 +1339,18 @@ for (const width of [1280, 390]) {
         "password",
         "Returning to Wi-Fi hides the password",
       );
-      const security = page.getByRole("combobox", { name: "Защита сети", exact: true });
+      await page.getByRole("tab", { name: "Wi-Fi", exact: true, selected: true }).waitFor();
+      await settleLayout(page);
+      const tabBackground = await wifiTab.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      const security = page.getByRole("combobox", { name: "Тип защиты", exact: true });
       await security.click();
       const selected = page.getByRole("option", { name: "WPA / WPA2 / WPA3", exact: true });
       const selectedBackground = await selected.evaluate(
         (element) => getComputedStyle(element, "::before").backgroundColor,
       );
-      const tabBackground = await wifiTab.evaluate(
-        (element) => getComputedStyle(element).backgroundColor,
-      );
+
       assert.equal(
         selectedBackground,
         tabBackground,
@@ -1351,6 +1380,442 @@ for (const width of [1280, 390]) {
       assert.equal(await password.inputValue(), value);
       assert.equal(await password.getAttribute("type"), "password");
       assert.equal(await svgOf(page), original);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`scales QR within square and circular artwork at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    try {
+      await page.goto(baseUrl);
+      await open(page, "Форма и рамка");
+      const slider = page.getByRole("slider", { name: "Размер кода в композиции", exact: true });
+      const svgWidth = async () => Number((await svgOf(page)).match(/viewBox="0 0 ([\d.]+)/)[1]);
+      const initialWidth = await svgWidth();
+      await slider.press("Home");
+      const smallWidth = await svgWidth();
+      assert.ok(smallWidth > initialWidth, "Smaller QR takes a smaller share of the canvas");
+      assert.match(await previewOf(page).getAttribute("src"), /width%3D%22512%22/);
+      await pick(page, "Форма композиции", "Круг");
+      assert.equal(await slider.getAttribute("aria-valuenow"), "40");
+      const smallCircle = await svgWidth();
+      await slider.press("End");
+      assert.ok((await svgWidth()) < smallCircle);
+      const maximum = Number(await slider.getAttribute("aria-valuemax"));
+      assert.ok(maximum > 100, "Allows enlargement beyond the full quiet-zone fit");
+      assert.equal(Number(await slider.getAttribute("aria-valuenow")), maximum);
+      await page
+        .getByText("Масштаб больше 100% сокращает свободное поле", { exact: false })
+        .waitFor();
+      await select(page, "Рамка", "Сплошная");
+      await slider.press("ArrowLeft");
+      const canvasSize = (await svgOf(page)).match(/width="(\d+)"/)[1];
+      assert.equal(canvasSize, "512");
+      await open(page, "Цвета");
+      await page
+        .locator("summary")
+        .filter({ hasText: /^Фон композиции$/ })
+        .click();
+      await page.getByRole("switch", { name: "Отдельный фон композиции", exact: true }).click();
+      await page.getByRole("button", { name: "Цвет фона композиции", exact: true }).click();
+      await page
+        .getByRole("textbox", { name: "Цвет фона композиции (HEX)", exact: true })
+        .fill("#e2e8f0");
+      await page.keyboard.press("Escape");
+      await open(page, "Форма и рамка");
+      assert.ok((await svgOf(page)).includes('clip-path="url(#qr-artwork-clip)"'));
+      await settleLayout(page);
+      await page.screenshot({
+        path: `test-results/editor-scale-circle-${width}.png`,
+        fullPage: true,
+      });
+      const download = page.waitForEvent("download");
+      await page.getByRole("button", { name: "Скачать PNG", exact: true }).click();
+      const bytes = await readFile(await (await download).path());
+      assert.equal(bytes.readUInt32BE(16), 512);
+      const decoded = await readBarcodes(bytes, {
+        formats: ["QRCode"],
+        tryHarder: true,
+        textMode: "Plain",
+      });
+      assert.equal(decoded[0]?.text, "https://example.com");
+      await page.getByRole("button", { name: "Компактный", exact: true }).click();
+      assert.equal(await slider.count(), 0);
+      await page.getByRole("button", { name: "Полный", exact: true }).click();
+      await open(page, "Форма и рамка");
+      assert.equal(Number(await slider.getAttribute("aria-valuenow")), maximum - 1);
+      await pick(page, "Форма композиции", "Квадрат");
+      const squareMaximum = Number(await slider.getAttribute("aria-valuemax"));
+      assert.equal(
+        Number(await slider.getAttribute("aria-valuenow")),
+        Math.min(maximum - 1, squareMaximum),
+      );
+      await open(page, "Содержимое");
+      const url = page.getByRole("textbox", { name: /^Ссылка/ });
+      await url.fill("https://example.com/" + "dense-payload-".repeat(60));
+      await previewOf(page).waitFor();
+      await open(page, "Форма и рамка");
+      assert.ok(Number(await slider.getAttribute("aria-valuemax")) < squareMaximum);
+      assert.ok(Number(await slider.getAttribute("aria-valuenow")) > 100);
+      await slider.press("Home");
+      assert.equal(await slider.getAttribute("aria-valuenow"), "40");
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`prioritizes recommendations and explains PNG size at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    try {
+      await page.goto(`${baseUrl}tests/fixtures/config.html?feedback`);
+      const critical = page.getByRole("alert", {
+        name: "Исправьте перед использованием",
+        exact: true,
+      });
+      const recommendations = page.getByRole("region", { name: "Рекомендации", exact: true });
+      await critical.waitFor();
+      await previewOf(page).evaluate((image) => image.decode());
+      await settleLayout(page);
+      assert.ok(
+        (await critical.boundingBox()).y < (await previewOf(page).boundingBox()).y,
+        "Critical advice precedes the QR and export actions",
+      );
+      assert.match(await critical.innerText(), /не меньше 4 модулей/);
+      assert.equal(await recommendations.getByRole("listitem").count(), 2);
+      assert.equal(await recommendations.getByRole("button").count(), 0);
+      const warning = recommendations.locator('[data-slot="root"][aria-label="Обратите внимание"]');
+      const info = recommendations.locator('[data-slot="root"][aria-label="Проверьте оформление"]');
+      const background = (locator) =>
+        locator.evaluate((element) => getComputedStyle(element).backgroundColor);
+      const criticalBackground = await background(critical);
+      const warningBackground = await background(warning);
+      const infoBackground = await background(info);
+      assert.notEqual(criticalBackground, warningBackground);
+      assert.notEqual(warningBackground, infoBackground);
+      assert.notEqual(criticalBackground, "rgba(0, 0, 0, 0)");
+      const appearances = await Promise.all(
+        [critical, warning, info].map((notice) =>
+          notice.evaluate((element) => {
+            // Composite the translucent alert surface over the white card and normalize CSS colors.
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = 1;
+            const paintContext = canvas.getContext("2d");
+            paintContext.fillStyle = "#ffffff";
+            paintContext.fillRect(0, 0, 1, 1);
+            paintContext.fillStyle = getComputedStyle(element).backgroundColor;
+            paintContext.fillRect(0, 0, 1, 1);
+            const surface = `rgb(${[...paintContext.getImageData(0, 0, 1, 1).data].slice(0, 3).join(",")})`;
+            const text = getComputedStyle(element.querySelector('[data-slot="description"]')).color;
+            return { text, background: surface };
+          }),
+        ),
+      );
+      for (const appearance of appearances) {
+        assert.ok(
+          contrast(appearance.text, appearance.background) >= 4.5,
+          "Alert text remains readable on its tinted surface",
+        );
+      }
+
+      await page.screenshot({
+        path: `test-results/editor-recommendations-${width}.png`,
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Пояснение: Размер PNG", exact: true }).click();
+      const tooltip = page.getByRole("tooltip");
+      await tooltip.waitFor();
+      assert.match(await tooltip.innerText(), /Ширина скачиваемого PNG в пикселях/);
+      assert.match(await tooltip.innerText(), /1024 пкс.*вдвое шире.*512 пкс/);
+      assert.doesNotMatch(
+        await tooltip.innerText(),
+        /Масштаб предпросмотра|подходит для увеличения/,
+      );
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "styling", exact: true }).click();
+      assert.equal(await critical.count(), 0);
+      assert.equal(
+        await recommendations.getByRole("listitem").count(),
+        1,
+        "General styling notices remain combined into one visible message",
+      );
+      await page.getByRole("button", { name: "none", exact: true }).click();
+      assert.equal(await recommendations.count(), 0);
+      await page.getByRole("button", { name: "critical", exact: true }).click();
+      await critical.waitFor();
+      await page.getByRole("button", { name: "toggle recommendations", exact: true }).click();
+      assert.equal(await critical.count(), 0);
+      assert.equal(await recommendations.count(), 0);
+      await previewOf(page).waitFor();
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const width of [1280, 390]) {
+  it(`keeps a selected logo when switching content types at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    await stubMapTiles(page);
+    try {
+      await page.goto(baseUrl);
+      await open(page, "Логотип");
+      await pick(page, "Готовые логотипы", "Telegram");
+      const logoSource = editorLogoPresets.find((item) => item.id === "telegram").dataUri;
+      /* oxlint-disable no-await-in-loop -- Switch live drafts and decode each exported QR with the same logo. */
+      for (const [type, expected] of [
+        ["Ссылка", /^https:\/\/example\.com$/],
+        ["Текст", /^QR Studio$/],
+        ["Почта", /^mailto:hello@example\.com\?/],
+        ["Телефон", /^tel:\+79991234567$/],
+        ["СМС", /^sms:\+79991234567\?/],
+        ["Wi-Fi", /^WIFI:T:WPA;S:QR Studio Guest;/],
+        ["Визитка", /^BEGIN:VCARD\r\nVERSION:3\.0\r\n/],
+        ["Местоположение", /^geo:55\.7558,37\.6173$/],
+      ]) {
+        await page.getByRole("tab", { name: type, exact: true }).click();
+        await previewOf(page).evaluate((image) => image.decode());
+        const svg = await svgOf(page);
+        assert.ok(svg.includes(logoSource), `${type} retains the selected logo`);
+        assert.match(svg, /<image [^>]*width="4"/);
+        const download = page.waitForEvent("download");
+        await page.getByRole("button", { name: "Скачать PNG", exact: true }).click();
+        const decoded = await readBarcodes(await readFile(await (await download).path()), {
+          formats: ["QRCode"],
+          tryHarder: true,
+          textMode: "Plain",
+        });
+        assert.equal(decoded.length, 1);
+        assert.match(decoded[0].text, expected);
+      }
+      /* oxlint-enable no-await-in-loop */
+      await open(page, "Логотип");
+      await page.getByRole("radio", { name: "Telegram", exact: true, checked: true }).waitFor();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`keeps preview and controls stable while replacing a logo at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    try {
+      await page.addInitScript(() => {
+        const decode = HTMLImageElement.prototype.decode;
+        HTMLImageElement.prototype.decode = async function () {
+          await decode.call(this);
+          if (window.holdLogoDecode && this.src.startsWith("data:image/png")) {
+            await new Promise((resolve) => {
+              window.resumeLogoDecode = resolve;
+            });
+          }
+        };
+      });
+      await page.goto(baseUrl);
+      await open(page, "Логотип");
+      await pick(page, "Готовые логотипы", "Telegram");
+      await settleLayout(page);
+      const size = page.getByRole("slider", { name: "Размер логотипа", exact: true });
+      await settleLayout(page);
+      const source = await previewOf(page).getAttribute("src");
+      const measure = () =>
+        page.evaluate(() => {
+          const image = document.querySelector('img[alt="Предпросмотр QR-кода"]');
+          const slider = document.querySelector('[role="slider"][aria-label="Размер логотипа"]');
+          return {
+            imageHeight: image.getBoundingClientRect().height,
+            imageWidth: image.getBoundingClientRect().width,
+            sliderY: slider.getBoundingClientRect().top + window.scrollY,
+            pageHeight: document.documentElement.scrollHeight,
+            recommendations: document.querySelectorAll('section[aria-label="Рекомендации"]').length,
+          };
+        });
+      const initialLayout = await measure();
+      assert.ok(initialLayout.recommendations > 0, "Exercise layout with recommendations");
+      const image = await previewOf(page).elementHandle();
+      const slider = await size.elementHandle();
+      await page.evaluate(() => {
+        window.holdLogoDecode = true;
+      });
+      const gallery = page.getByRole("radiogroup", { name: "Готовые логотипы", exact: true });
+      await gallery
+        .locator('[data-slot="item"]')
+        .filter({
+          has: page.getByRole("radio", { name: "WhatsApp", exact: true }),
+        })
+        .click({ force: true });
+      await page.locator('[aria-busy="true"]').waitFor();
+      assert.ok(await image.evaluate((element) => element.isConnected));
+      assert.ok(await slider.evaluate((element) => element.isConnected));
+      assert.equal(await previewOf(page).getAttribute("src"), source);
+      assert.deepEqual(await measure(), initialLayout);
+      assert.ok(await page.getByRole("button", { name: "Скачать SVG", exact: true }).isDisabled());
+      assert.ok(await page.getByRole("button", { name: "Скачать PNG", exact: true }).isDisabled());
+      assert.ok(
+        await page.getByRole("button", { name: "Проверить считывание", exact: true }).isDisabled(),
+      );
+      await page.evaluate(() => window.resumeLogoDecode());
+      await gallery.getByRole("radio", { name: "WhatsApp", exact: true, checked: true }).waitFor();
+      assert.deepEqual(await measure(), initialLayout);
+      assert.ok(await page.getByRole("button", { name: "Скачать SVG", exact: true }).isEnabled());
+      assert.ok(
+        (await svgOf(page)).includes(
+          editorLogoPresets.find((item) => item.id === "whatsapp").dataUri,
+        ),
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`chooses, uploads and exports local logo presets at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    try {
+      await page.goto(baseUrl);
+      await open(page, "Логотип");
+      await settleLayout(page);
+      const gallery = page.getByRole("radiogroup", { name: "Готовые логотипы", exact: true });
+      await gallery
+        .getByRole("radio", { name: "Без логотипа", exact: true, checked: true })
+        .waitFor();
+      assert.equal(editorLogoPresets.length, 24);
+      /* oxlint-disable no-await-in-loop -- Exercise real sequential user choices in each category. */
+      for (const group of new Set(editorLogoPresets.map((item) => item.group))) {
+        await page.getByRole("tab", { name: group, exact: true }).click();
+        for (const preset of editorLogoPresets.filter((item) => item.group === group)) {
+          await pick(page, "Готовые логотипы", preset.title);
+          await previewOf(page).evaluate((image) => image.decode());
+          assert.ok((await svgOf(page)).includes(preset.dataUri), `Embeds ${preset.title}`);
+        }
+      }
+      /* oxlint-enable no-await-in-loop */
+      await page.getByRole("tab", { name: "Соцсети и сервисы", exact: true }).click();
+      await pick(page, "Готовые логотипы", "Без логотипа");
+      await gallery
+        .getByRole("radio", { name: "Без логотипа", exact: true })
+        .press("ArrowRight", { delay: 50 });
+      await gallery.getByRole("radio", { name: "Telegram", exact: true, checked: true }).waitFor();
+      const size = page.getByRole("slider", { name: "Размер логотипа", exact: true });
+      await size.press("ArrowLeft");
+      assert.equal(await size.getAttribute("aria-valuenow"), "3.5");
+      const clear = page.getByRole("switch", {
+        name: "Очистить область под логотипом",
+        exact: true,
+      });
+      await clear.click();
+      await pick(page, "Готовые логотипы", "WhatsApp");
+      assert.equal(await size.getAttribute("aria-valuenow"), "3.5");
+      assert.equal(await clear.getAttribute("aria-checked"), "false");
+      await clear.click();
+      const selected = await svgOf(page);
+      const svgDownload = page.waitForEvent("download");
+      await page.getByRole("button", { name: "Скачать SVG", exact: true }).click();
+      assert.equal(await readFile(await (await svgDownload).path(), "utf8"), selected);
+      const pngDownload = page.waitForEvent("download");
+      await page.getByRole("button", { name: "Скачать PNG", exact: true }).click();
+      const bytes = await readFile(await (await pngDownload).path());
+      const decoded = await readBarcodes(bytes, {
+        formats: ["QRCode"],
+        tryHarder: true,
+        textMode: "Plain",
+      });
+      assert.equal(decoded[0]?.text, "https://example.com");
+      const customPng = await page.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 24;
+        const paint = canvas.getContext("2d");
+        paint.fillStyle = "#173d51";
+        paint.fillRect(0, 0, 24, 24);
+        return canvas.toDataURL("image/png").split(",")[1];
+      });
+      await page.getByLabel("Файл логотипа", { exact: true }).setInputFiles({
+        name: "own.png",
+        mimeType: "image/png",
+        buffer: Buffer.from(customPng, "base64"),
+      });
+      await page.getByRole("img", { name: "Свой логотип", exact: true }).waitFor();
+      assert.equal(await gallery.getByRole("radio", { checked: true }).count(), 0);
+      assert.equal(await size.getAttribute("aria-valuenow"), "3.5");
+      await pick(page, "Готовые логотипы", "Telegram");
+      assert.equal(await page.getByRole("img", { name: "Свой логотип", exact: true }).count(), 0);
+      const withLogo = await svgOf(page);
+      await page.getByRole("button", { name: "Компактный", exact: true }).click();
+      assert.equal(await gallery.count(), 0);
+      assert.equal(await svgOf(page), withLogo);
+      await page.getByRole("button", { name: "Полный", exact: true }).click();
+      await open(page, "Логотип");
+      await gallery.getByRole("radio", { name: "Telegram", exact: true, checked: true }).waitFor();
+      await settleLayout(page);
+      await page.screenshot({
+        path: `test-results/editor-logo-presets-${width}.png`,
+        fullPage: true,
+      });
+      await pick(page, "Готовые логотипы", "Без логотипа");
+      assert.ok(!(await svgOf(page)).includes("<image"));
+      assert.equal(await size.count(), 0);
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`supports a host logo catalog without upload and rejects invalid images at ${width}px`, async () => {
+    const context = await browser.newContext({ viewport: { width, height: 1000 } });
+    const page = await context.newPage();
+    const remoteRequests = [];
+    page.on("request", (request) => {
+      if (request.url().includes("unavailable.invalid")) remoteRequests.push(request.url());
+    });
+    try {
+      await page.goto(`${baseUrl}tests/fixtures/config.html`);
+      await page.getByRole("button", { name: "logoOnly", exact: true }).click();
+      const gallery = page.getByRole("radiogroup", { name: "Готовые логотипы", exact: true });
+      await gallery.waitFor();
+      assert.equal(await page.getByLabel("Файл логотипа", { exact: true }).count(), 0);
+      assert.equal(await gallery.getByRole("radio").count(), 3);
+      await pick(page, "Готовые логотипы", "WhatsApp");
+      const embedded = await svgOf(page);
+      await page.getByRole("button", { name: "withoutCatalog", exact: true }).click();
+      assert.equal(await gallery.count(), 0);
+      assert.equal(await svgOf(page), embedded, "Changing the catalog keeps the embedded image");
+      await page.getByRole("button", { name: "badLogo", exact: true }).click();
+      await gallery
+        .locator('[data-slot="item"]')
+        .filter({ has: page.getByRole("radio", { name: "Некорректный логотип", exact: true }) })
+        .click();
+      await page
+        .getByText("Выберите PNG, JPEG или WebP. SVG не поддерживается.", { exact: true })
+        .first()
+        .waitFor();
+      assert.equal(await previewOf(page).count(), 0);
+      assert.ok(
+        (await page
+          .getByText("Выберите PNG, JPEG или WebP. SVG не поддерживается.", { exact: true })
+          .count()) > 0,
+      );
+      assert.ok(await page.getByRole("button", { name: "Скачать PNG", exact: true }).isDisabled());
+      await gallery
+        .locator('[data-slot="item"]')
+        .filter({ has: page.getByRole("radio", { name: "Повреждённый логотип", exact: true }) })
+        .click();
+      await page
+        .getByText("Не удалось прочитать изображение. Выберите другой файл.", { exact: true })
+        .first()
+        .waitFor();
+      assert.equal(await previewOf(page).count(), 0);
+      assert.deepEqual(remoteRequests, []);
+      await page.getByRole("button", { name: "logoOnly", exact: true }).click();
+      await pick(page, "Готовые логотипы", "Telegram");
+      await previewOf(page).waitFor();
+      await pick(page, "Готовые логотипы", "Без логотипа");
+      assert.ok(!(await svgOf(page)).includes("<image"));
     } finally {
       await context.close();
     }

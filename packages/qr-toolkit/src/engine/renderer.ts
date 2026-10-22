@@ -54,11 +54,15 @@ interface NormalizedLogo {
   readonly widthModules: number;
   readonly paddingModules: number;
   readonly clearBackground: boolean;
+  readonly x: number;
+  readonly y: number;
 }
 
 interface LogoBounds {
-  readonly start: number;
-  readonly end: number;
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
 }
 
 interface NormalizedForeground {
@@ -145,7 +149,7 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
     throw new QrError("INVALID_COLOR", { target: "artworkBackground" });
   }
   const normalizedForeground = normalizeForeground(foreground, layout.qrOrigin, matrix.size);
-  const normalizedLogo = logo === undefined ? undefined : normalizeLogo(logo, matrix.size);
+  const normalizedLogo = logo === undefined ? undefined : normalizeLogo(logo, matrix);
   const normalizedFinder = normalizeQrFinder(options.finder);
 
   if (
@@ -163,12 +167,12 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
     moduleShape,
     finderShape,
     !!normalizedFinder,
-    normalizedLogo?.clearBackground ? getLogoBounds(matrix.size, normalizedLogo) : undefined,
+    normalizedLogo?.clearBackground ? getLogoBounds(normalizedLogo) : undefined,
   );
   const finderMarkup = normalizedFinder
     ? renderQrFinders(matrix, qrOrigin, normalizedFinder, normalizedForeground.fill)
     : "";
-  const logoMarkup = normalizedLogo ? renderLogo(matrix, normalizedLogo, qrOrigin) : "";
+  const logoMarkup = normalizedLogo ? renderLogo(normalizedLogo, qrOrigin) : "";
   const captionMarkup = layout.captions
     .map((caption) => renderCaption(caption, layout, background, normalizedForeground))
     .join("");
@@ -196,9 +200,18 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
       ? `<circle ${circleGeometry} r="${formatNumber(extent / 2)}" fill="${artworkBackground}"/>`
       : `<rect width="${formatNumber(extent)}" height="${formatNumber(height)}" fill="${artworkBackground}"/>`;
   const quietExtent = matrix.size + quietZone * 2;
+  // Only the backing is clipped; every encoded module remains intact inside the artwork.
+  const clipBackground = layout.quietZoneClipped && artworkBackground !== background;
+  const clipDefinition = clipBackground
+    ? `<clipPath id="qr-artwork-clip">${
+        layout.shape === "circle"
+          ? `<circle ${circleGeometry} r="${formatNumber(extent / 2)}"/>`
+          : `<rect y="${formatNumber(topHeight)}" width="${formatNumber(extent)}" height="${formatNumber(extent)}"/>`
+      }</clipPath>`
+    : "";
   const quietBackgroundMarkup =
     artworkBackground !== background
-      ? `<rect x="${formatNumber(qrOrigin - quietZone)}" y="${formatNumber(topHeight + qrOrigin - quietZone)}" width="${quietExtent}" height="${quietExtent}" fill="${background}"/>`
+      ? `<rect x="${formatNumber(qrOrigin - quietZone)}" y="${formatNumber(topHeight + qrOrigin - quietZone)}" width="${quietExtent}" height="${quietExtent}" fill="${background}"${clipBackground ? ' clip-path="url(#qr-artwork-clip)"' : ""}/>`
       : "";
   const artworkMarkup =
     moduleMarkup.replaceAll("__QR_FOREGROUND__", normalizedForeground.fill) +
@@ -208,7 +221,9 @@ export function renderQrSvg(matrix: QrMatrix, options: RenderQrSvgOptions = {}):
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${formatNumber(outputHeight)}" viewBox="0 0 ${formatNumber(extent)} ${formatNumber(height)}">` +
-    (gradientDefinition ? `<defs>${gradientDefinition}</defs>` : "") +
+    (gradientDefinition || clipDefinition
+      ? `<defs>${gradientDefinition}${clipDefinition}</defs>`
+      : "") +
     backgroundMarkup +
     quietBackgroundMarkup +
     (topHeight
@@ -290,7 +305,8 @@ function normalizeForeground(
   };
 }
 
-function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo {
+function normalizeLogo(logo: QrLogoOptions, matrix: QrMatrix): NormalizedLogo {
+  const matrixSize = matrix.size;
   if (!logo || typeof logo !== "object") {
     throw new QrError("INVALID_LOGO_OPTIONS", {});
   }
@@ -319,12 +335,53 @@ function normalizeLogo(logo: QrLogoOptions, matrixSize: number): NormalizedLogo 
     throw new QrError("INVALID_LOGO_SIZE", { matrixSize });
   }
 
-  return {
+  return positionLogo(matrix, {
     dataUri: logo.dataUri,
     widthModules: logo.widthModules,
     paddingModules,
     clearBackground: logo.clearBackground ?? true,
-  };
+    x: (matrixSize - logo.widthModules) / 2,
+    y: (matrixSize - logo.widthModules) / 2,
+  });
+}
+
+/** Prefer the center; move by whole modules only when protected cells occupy it. */
+function positionLogo(matrix: QrMatrix, centered: NormalizedLogo): NormalizedLogo {
+  if (!getNormalizedLogoOverlayDetails(matrix, centered).overlapsFunctionModules) return centered;
+  const bounds = getLogoBounds(centered);
+  // A summed-area table makes each candidate intersection check constant-time.
+  const stride = matrix.size + 1;
+  const protectedCells = new Uint32Array(stride * stride);
+  for (let y = 0; y < matrix.size; y++) {
+    let rowCount = 0;
+    for (let x = 0; x < matrix.size; x++) {
+      rowCount += Number(matrix.functionModules[y]![x]);
+      protectedCells[(y + 1) * stride + x + 1] = protectedCells[y * stride + x + 1]! + rowCount;
+    }
+  }
+  let closest = centered;
+  let distance = Infinity;
+  for (let dy = Math.ceil(-bounds.top); dy <= Math.floor(matrix.size - bounds.bottom); dy++) {
+    for (let dx = Math.ceil(-bounds.left); dx <= Math.floor(matrix.size - bounds.right); dx++) {
+      const nextDistance = dx * dx + dy * dy;
+      if (nextDistance >= distance) continue;
+      const left = Math.floor(bounds.left + dx);
+      const top = Math.floor(bounds.top + dy);
+      const right = Math.ceil(bounds.right + dx);
+      const bottom = Math.ceil(bounds.bottom + dy);
+      const count =
+        protectedCells[bottom * stride + right]! -
+        protectedCells[top * stride + right]! -
+        protectedCells[bottom * stride + left]! +
+        protectedCells[top * stride + left]!;
+      if (count === 0) {
+        closest = { ...centered, x: centered.x + dx, y: centered.y + dy };
+        distance = nextDistance;
+      }
+    }
+  }
+  // Keep the existing error if no placement can preserve all protected cells.
+  return closest;
 }
 
 function renderModules(
@@ -428,22 +485,28 @@ function isFinderModule(x: number, y: number, finderPatterns: QrMatrix["finderPa
   );
 }
 
-function renderLogo(matrix: QrMatrix, logo: NormalizedLogo, origin: number): string {
-  const logoStart = (matrix.size - logo.widthModules) / 2 + origin;
-
-  return `<image x="${formatNumber(logoStart)}" y="${formatNumber(logoStart)}" width="${formatNumber(logo.widthModules)}" height="${formatNumber(logo.widthModules)}" data-qr-logo-clear="${logo.clearBackground}" href="${logo.dataUri}" preserveAspectRatio="xMidYMid meet"/>`;
+function renderLogo(logo: NormalizedLogo, origin: number): string {
+  return `<image x="${formatNumber(logo.x + origin)}" y="${formatNumber(logo.y + origin)}" width="${formatNumber(logo.widthModules)}" height="${formatNumber(logo.widthModules)}" data-qr-logo-clear="${logo.clearBackground}" href="${logo.dataUri}" preserveAspectRatio="xMidYMid meet"/>`;
 }
 
 /** Clear whole cells, so fractional logo dimensions never leave sliced module edges. */
-function getLogoBounds(matrixSize: number, logo: NormalizedLogo): LogoBounds {
-  const extent = logo.widthModules + logo.paddingModules * 2;
-  const start = (matrixSize - extent) / 2;
-  const end = start + extent;
-  return logo.clearBackground ? { start: Math.floor(start), end: Math.ceil(end) } : { start, end };
+function getLogoBounds(logo: NormalizedLogo): LogoBounds {
+  const left = logo.x - logo.paddingModules;
+  const top = logo.y - logo.paddingModules;
+  const right = logo.x + logo.widthModules + logo.paddingModules;
+  const bottom = logo.y + logo.widthModules + logo.paddingModules;
+  return logo.clearBackground
+    ? {
+        left: Math.floor(left),
+        top: Math.floor(top),
+        right: Math.ceil(right),
+        bottom: Math.ceil(bottom),
+      }
+    : { left, top, right, bottom };
 }
 
 function isClearedModule(x: number, y: number, area?: LogoBounds): boolean {
-  return area !== undefined && x >= area.start && x < area.end && y >= area.start && y < area.end;
+  return area !== undefined && x >= area.left && x < area.right && y >= area.top && y < area.bottom;
 }
 
 function renderCaption(
@@ -458,6 +521,8 @@ function renderCaption(
   if (!isOpaqueHexColor(captionBackground)) {
     throw new QrError("INVALID_COLOR", { target: "captionBackground" });
   }
+  // A thick frame can leave no space for an arc caption at a tight zoom.
+  if (caption.fontSize === 0) return "";
   const text = caption.options.text.trim().replace(/\s+/g, " ");
   const { extent, framePadding, topHeight } = layout;
   const availableWidth = extent - framePadding * 2;
@@ -498,17 +563,14 @@ function renderCaption(
 }
 
 export function inspectQrLogoOverlay(matrix: QrMatrix, logo: QrLogoOptions): QrLogoOverlayDetails {
-  return getNormalizedLogoOverlayDetails(matrix, normalizeLogo(logo, matrix.size));
+  return getNormalizedLogoOverlayDetails(matrix, normalizeLogo(logo, matrix));
 }
 
 function getNormalizedLogoOverlayDetails(
   matrix: QrMatrix,
   logo: NormalizedLogo,
 ): QrLogoOverlayDetails {
-  const { start: left, end: right } = getLogoBounds(matrix.size, logo);
-  const clearExtent = right - left;
-  const top = left;
-  const bottom = top + clearExtent;
+  const { left, right, top, bottom } = getLogoBounds(logo);
   let overlapsFunctionModules = false;
 
   for (let y = 0; y < matrix.size; y++) {
@@ -524,7 +586,7 @@ function getNormalizedLogoOverlayDetails(
   }
 
   return {
-    coveragePercent: (clearExtent ** 2 / matrix.size ** 2) * 100,
+    coveragePercent: (((right - left) * (bottom - top)) / matrix.size ** 2) * 100,
     overlapsFunctionModules,
   };
 }

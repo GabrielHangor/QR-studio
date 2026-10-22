@@ -5,13 +5,19 @@ import UFormField from "@nuxt/ui/components/FormField.vue";
 import UInput from "@nuxt/ui/components/Input.vue";
 import USlider from "@nuxt/ui/components/Slider.vue";
 import USwitch from "@nuxt/ui/components/Switch.vue";
+import UTabs from "@nuxt/ui/components/Tabs.vue";
+import { computed, ref, watch } from "vue";
 
 import type { QrEditorConfig, QrEditorControls } from "../../editor/config.js";
+import type { QrLogoPreset } from "../../editor/index.js";
 import type { RenderQrSvgOptions } from "../../engine/types.js";
+import { isQrLogoDataUri } from "../browser.js";
 import type { QrEditorMessages } from "../messages.js";
 import QrFieldHelp from "./QrFieldHelp.vue";
+import QrVisualPicker from "./QrVisualPicker.vue";
 const props = defineProps<{
   design: RenderQrSvgOptions;
+  presets: readonly QrLogoPreset[];
   messages: QrEditorMessages;
   config: QrEditorConfig;
   controls: readonly QrEditorControls["logo"][];
@@ -21,8 +27,53 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:design": [value: RenderQrSvgOptions];
   "upload": [value: File];
+  "preset": [value: QrLogoPreset];
   "remove": [];
 }>();
+const selected = computed(() =>
+  props.presets.find((preset) => preset.dataUri === props.design.logo?.dataUri),
+);
+const category = ref("");
+const groups = computed(() =>
+  [...new Set(props.presets.map((preset) => preset.group ?? ""))].map((value) => ({
+    value,
+    label: value || props.messages.logoPresets,
+  })),
+);
+const activeGroup = computed({
+  get: () =>
+    groups.value.some((group) => group.value === category.value)
+      ? category.value
+      : (groups.value[0]?.value ?? ""),
+  set: (value: string | number) => {
+    category.value = String(value);
+  },
+});
+watch(
+  selected,
+  (preset) => {
+    if (preset) category.value = preset.group ?? "";
+  },
+  { immediate: true },
+);
+const items = computed(() => [
+  { value: "none", label: props.messages.noLogo },
+  ...props.presets
+    .filter((preset) => (preset.group ?? "") === activeGroup.value)
+    .map((preset) => ({
+      value: `preset:${preset.id}`,
+      label: preset.title,
+      source: isQrLogoDataUri(preset.dataUri) ? preset.dataUri : undefined,
+    })),
+]);
+function choose(value: string) {
+  if (value === "none") {
+    emit("remove");
+    return;
+  }
+  const preset = props.presets.find((item) => `preset:${item.id}` === value);
+  if (preset) emit("preset", preset);
+}
 function patchLogo(value: Partial<NonNullable<RenderQrSvgOptions["logo"]>>) {
   if (props.design.logo) {
     emit("update:design", { ...props.design, logo: { ...props.design.logo, ...value } });
@@ -36,8 +87,39 @@ function upload(event: Event) {
 }
 </script>
 <template>
-  <div class="space-y-4 pb-4">
-    <p v-if="!design.logo && !busy && !issue" class="text-sm text-muted">{{ messages.noLogo }}</p>
+  <div class="@container space-y-4 pb-4">
+    <UFormField v-if="controls.includes('presets') && presets.length" :label="messages.logoPresets">
+      <div class="space-y-3">
+        <UTabs
+          v-if="groups.length > 1"
+          v-model="activeGroup"
+          :items="groups"
+          :content="false"
+          :aria-label="messages.logoPresetGroups"
+        />
+        <QrVisualPicker
+          :label="messages.logoPresets"
+          :items="items"
+          :model-value="design.logo ? (selected ? `preset:${selected.id}` : undefined) : 'none'"
+          @update:model-value="choose"
+        />
+      </div>
+    </UFormField>
+    <div v-if="design.logo && !selected" class="flex items-center gap-3 text-sm text-muted">
+      <img
+        v-if="isQrLogoDataUri(design.logo.dataUri)"
+        :src="design.logo.dataUri"
+        :alt="messages.customLogo"
+        class="size-12 rounded-md bg-default object-contain p-1 ring ring-default"
+      />
+      <span>{{ messages.customLogo }}</span>
+    </div>
+    <p
+      v-if="!design.logo && !busy && !issue && (!controls.includes('presets') || !presets.length)"
+      class="text-sm text-muted"
+    >
+      {{ messages.noLogo }}
+    </p>
     <UFormField
       v-if="controls.includes('upload')"
       :label="messages.logoFile"

@@ -218,3 +218,157 @@ describe("artwork geometry", () => {
     ).toThrow(QrError);
   });
 });
+
+describe("QR scale within artwork", () => {
+  it.each(["square", "circle"] as const)(
+    "centers scaled QR and preserves its quiet zone in %s artwork",
+    (shape) => {
+      for (const version of [1, 7, 40]) {
+        const matrix = encodeQr("QR", { version });
+        const before = JSON.stringify(matrix);
+        const widths = [];
+        for (const codeScale of [40, 70, 100]) {
+          const options: RenderQrSvgOptions = {
+            shape,
+            codeScale,
+            size: 512,
+            quietZone: 6,
+            background: "#ffffff",
+            artworkBackground: "#eaf0fc",
+            frame: { widthPx: 4 },
+          };
+          const svg = renderQrSvg(matrix, options);
+          const { width, height } = viewBox(svg);
+          const quiet =
+            /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="#ffffff"/.exec(
+              svg,
+            )!;
+          const [x, y, side] = quiet.slice(1).map(Number) as [number, number, number];
+          const analysis = analyzeQrDesign(matrix, options);
+          expect(x).toBeCloseTo(y, 3);
+          expect(x + side / 2).toBeCloseTo(width / 2, 3);
+          expect(y + side / 2).toBeCloseTo(height / 2, 3);
+          expect(side).toBe(matrix.size + 12);
+          expect(svg).toContain('width="512" height="512"');
+          expect(analysis.modulePitchPx).toBeCloseTo(512 / width, 3);
+          expect(analysis.codeScale).toBe(codeScale);
+          const frameStroke = 4 / analysis.modulePitchPx;
+          const distance =
+            shape === "circle"
+              ? Math.hypot(width / 2 - x, height / 2 - y)
+              : Math.max(width / 2 - x, height / 2 - y);
+          expect(distance).toBeLessThanOrEqual(width / 2 - frameStroke + 0.001);
+          widths.push(matrix.size * analysis.modulePitchPx);
+        }
+        expect(widths[0]).toBeLessThan(widths[1]!);
+        expect(widths[1]).toBeLessThan(widths[2]!);
+        expect(JSON.stringify(matrix)).toBe(before);
+      }
+    },
+  );
+
+  it("keeps legacy output until a scale is chosen and allows removing decorative frame spacing", () => {
+    const matrix = encodeQr("QR");
+    const options: RenderQrSvgOptions = { shape: "circle", frame: { widthPx: 2 } };
+    const baseline = analyzeQrDesign(matrix, options);
+    expect(baseline.codeScale).toBeLessThan(100);
+    expect(renderQrSvg(matrix, { ...options, codeScale: baseline.codeScale })).toBe(
+      renderQrSvg(matrix, options),
+    );
+    expect(analyzeQrDesign(matrix, { ...options, codeScale: 100 }).modulePitchPx).toBeGreaterThan(
+      baseline.modulePitchPx,
+    );
+  });
+
+  it.each(["square", "circle"] as const)(
+    "zooms past 100% without cropping encoded cells in %s artwork",
+    (shape) => {
+      for (const version of [1, 7, 40]) {
+        for (const frame of ["none", "outline", { widthPx: 8 }] as const) {
+          const matrix = encodeQr("QR", { version });
+          const options: RenderQrSvgOptions = {
+            shape,
+            frame,
+            size: 512,
+            background: "#ffffff",
+            artworkBackground: "#eaf0fc",
+          };
+          const baseline = analyzeQrDesign(matrix, { ...options, codeScale: 100 });
+          const requested = { ...options, codeScale: 10_000 };
+          const analysis = analyzeQrDesign(matrix, requested);
+          const svg = renderQrSvg(matrix, requested);
+          const { width } = viewBox(svg);
+          let stroke = 0;
+          if (frame === "outline") stroke = 1;
+          if (typeof frame === "object") stroke = 8 / analysis.modulePitchPx;
+          const cornerDistance = (matrix.size / 2) * (shape === "circle" ? Math.SQRT2 : 1);
+          expect(cornerDistance).toBeLessThan(width / 2 - stroke);
+          expect(analysis.maximumCodeScale).toBeGreaterThan(100);
+          expect(analysis.codeScale).toBe(analysis.maximumCodeScale);
+          expect(analysis.modulePitchPx).toBeGreaterThan(baseline.modulePitchPx);
+          expect(analysis.diagnostics).toContainEqual({
+            code: "QUIET_ZONE_CLIPPED",
+            severity: "warning",
+            params: {},
+          });
+          expect(baseline.diagnostics).not.toContainEqual(
+            expect.objectContaining({ code: "QUIET_ZONE_CLIPPED" }),
+          );
+          // The clip applies to the light backing only, not the module paths or markers.
+          expect(svg).toContain('<clipPath id="qr-artwork-clip">');
+          expect(svg).toMatch(/<rect[^>]+fill="#ffffff" clip-path="url\(#qr-artwork-clip\)"/);
+          expect(svg).not.toMatch(/<(?:g|path)[^>]+clip-path=/);
+          expect(renderQrSvg(matrix, { ...options, codeScale: analysis.maximumCodeScale })).toBe(
+            svg,
+          );
+        }
+      }
+    },
+  );
+
+  it("caps stored zoom against new content density and keeps arc captions finite", () => {
+    const sparse = encodeQr("QR", { version: 1 });
+    const dense = encodeQr("QR", { version: 40 });
+    const options: RenderQrSvgOptions = { shape: "circle", codeScale: 130 };
+    expect(analyzeQrDesign(sparse, options).codeScale).toBe(130);
+    const limited = analyzeQrDesign(dense, options);
+    expect(limited.codeScale).toBeLessThan(130);
+    expect(limited.codeScale).toBe(limited.maximumCodeScale);
+    expect(options.codeScale).toBe(130);
+    for (const quietZone of [4, 24]) {
+      const svg = renderQrSvg(sparse, {
+        ...options,
+        quietZone,
+        codeScale: 10_000,
+        caption: [
+          { text: "SCAN", style: "arc", position: "top" },
+          { text: "DETAILS", style: "arc", position: "bottom" },
+        ],
+      });
+      expect(svg).not.toMatch(/NaN|Infinity|font-size="-/);
+      expect(svg).toContain("<textPath");
+    }
+  });
+
+  it("does not emit invalid arc geometry when a thick frame leaves no lettering space", () => {
+    const svg = renderQrSvg(encodeQr("QR"), {
+      shape: "circle",
+      codeScale: 10_000,
+      frame: { widthPx: 120 },
+      caption: { text: "SCAN", style: "arc" },
+    });
+    expect(svg).not.toMatch(/NaN|Infinity|font-size="-/);
+  });
+
+  it.each([0, -1, NaN, Infinity])(
+    "rejects invalid scale %s in renderer and analysis",
+    (codeScale) => {
+      const matrix = encodeQr("QR");
+      for (const action of [renderQrSvg, analyzeQrDesign]) {
+        expect(() => action(matrix, { codeScale })).toThrow(
+          expect.objectContaining({ code: "INVALID_CODE_SCALE" }),
+        );
+      }
+    },
+  );
+});

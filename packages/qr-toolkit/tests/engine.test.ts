@@ -295,13 +295,13 @@ describe("SVG contract", () => {
     expect(svg).toMatch(/height="\d+\.\d+"/);
   });
 
-  it("rejects a logo knockout that reaches function modules", () => {
+  it("rejects a logo knockout when no placement avoids function modules", () => {
     const matrix = encodeQr("logo", { version: 1 });
     expect(() =>
       renderQrSvg(matrix, {
         logo: {
           dataUri: "data:image/png;base64,aGVsbG8=",
-          widthModules: 6,
+          widthModules: 20,
           paddingModules: 0.5,
         },
       }),
@@ -369,7 +369,7 @@ describe("design diagnostics", () => {
       },
       logo: {
         dataUri: "data:image/png;base64,aGVsbG8=",
-        widthModules: 6,
+        widthModules: 20,
         paddingModules: 0.5,
       },
     });

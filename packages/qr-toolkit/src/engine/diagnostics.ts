@@ -101,7 +101,13 @@ export function analyzeQrDesign(
   if (!Number.isSafeInteger(outputSize) || outputSize < 1) {
     throw new QrError("INVALID_OUTPUT_SIZE", { minimum: 1 });
   }
-  const { modulePitchPx } = getQrArtworkLayout(matrix.size, renderOptions);
+  const { modulePitchPx, codeScale, maximumCodeScale, quietZoneClipped } = getQrArtworkLayout(
+    matrix.size,
+    renderOptions,
+  );
+  if (quietZoneClipped) {
+    diagnostics.push({ code: "QUIET_ZONE_CLIPPED", severity: "warning", params: {} });
+  }
   if (renderOptions.moduleShape !== undefined && !isQrModuleShape(renderOptions.moduleShape)) {
     throw new QrError("INVALID_MODULE_SHAPE", { target: "modules" });
   }
@@ -221,7 +227,14 @@ export function analyzeQrDesign(
     }
   }
 
-  return { contrastRatio, modulePitchPx, logoCoveragePercent, diagnostics };
+  return {
+    contrastRatio,
+    modulePitchPx,
+    codeScale,
+    maximumCodeScale,
+    logoCoveragePercent,
+    diagnostics,
+  };
 }
 
 function validateGradient(gradient: QrLinearGradient): void {

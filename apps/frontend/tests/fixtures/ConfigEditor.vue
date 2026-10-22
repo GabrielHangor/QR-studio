@@ -10,6 +10,8 @@ import {
 } from "@qr-studio/toolkit/ui";
 import { computed, ref } from "vue";
 
+import { editorLogoPresets } from "../../src/logo-presets.js";
+
 const state = ref(createQrEditorState());
 const mode = ref("full");
 const customConfig = {
@@ -32,11 +34,34 @@ const noMapConfig = {
   contentTypes: ["location"],
   sections: [{ id: "content", controls: [] }],
 } as const satisfies QrEditorConfig;
+const logoConfig = {
+  ...fullEditorConfig,
+  contentTypes: ["url"],
+  initialSection: "logo",
+  sections: [{ id: "logo", controls: ["presets", "remove", "size"] }],
+} as const satisfies QrEditorConfig;
+const logoPresets = computed(() => {
+  if (mode.value === "withoutCatalog") return [];
+  if (mode.value === "badLogo") {
+    return [
+      {
+        id: "invalid",
+        title: "Некорректный логотип",
+        dataUri: "https://unavailable.invalid/logo.svg",
+      },
+      { id: "broken", title: "Повреждённый логотип", dataUri: "data:image/png;base64,AAAA" },
+    ];
+  }
+  return editorLogoPresets.slice(0, 2);
+});
 const configurations: Record<string, QrEditorConfig> = {
   full: fullEditorConfig,
   compact: compactEditorConfig,
   custom: customConfig,
   noMap: noMapConfig,
+  logoOnly: logoConfig,
+  withoutCatalog: logoConfig,
+  badLogo: logoConfig,
 };
 const config = computed(() => configurations[mode.value]!);
 </script>
@@ -44,9 +69,17 @@ const config = computed(() => configurations[mode.value]!);
 <template>
   <UApp :locale="ru">
     <main class="mx-auto max-w-7xl space-y-4 p-4">
-      <nav aria-label="Test configurations" class="flex gap-4">
+      <nav aria-label="Test configurations" class="flex flex-wrap gap-4">
         <button
-          v-for="name in ['full', 'compact', 'custom', 'noMap']"
+          v-for="name in [
+            'full',
+            'compact',
+            'custom',
+            'noMap',
+            'logoOnly',
+            'withoutCatalog',
+            'badLogo',
+          ]"
           :key="name"
           type="button"
           @click="mode = name"
@@ -54,7 +87,7 @@ const config = computed(() => configurations[mode.value]!);
           {{ name }}
         </button>
       </nav>
-      <QrEditor v-model="state" :config="config" />
+      <QrEditor v-model="state" :config="config" :logo-presets="logoPresets" />
       <output aria-label="Test editor state" class="block break-all text-xs">
         {{ JSON.stringify(state) }}
       </output>

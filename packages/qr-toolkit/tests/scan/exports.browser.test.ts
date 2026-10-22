@@ -78,7 +78,28 @@ describe("real SVG/PNG exports decoded independently by ZXing", () => {
       const source = await rasterizeSvg(svg);
       expect(source.width).toBe(design.size ?? 512);
       const expectedCornerAlpha = design.shape === "circle" ? 0 : 255;
-      expect(source.getContext("2d")!.getImageData(0, 0, 1, 1).data[3]).toBe(expectedCornerAlpha);
+      const probes = [{ x: 0, y: 0, alpha: expectedCornerAlpha }];
+      if (
+        design.shape === "circle" &&
+        (design.codeScale ?? 100) > 100 &&
+        design.artworkBackground !== undefined &&
+        design.artworkBackground !== design.background
+      ) {
+        const document = new DOMParser().parseFromString(svg, "image/svg+xml");
+        const clipCircle = document.querySelector("#qr-artwork-clip circle")!;
+        const analysis = analyzeQrDesign(matrix, design);
+        const radius = Number(clipCircle.getAttribute("r"));
+        const cy = Number(clipCircle.getAttribute("cy"));
+        const halfBacking = (matrix.size + (design.quietZone ?? 4) * 2) / 2;
+        const offset = Math.min(halfBacking, radius) - 0.25;
+        const x = Math.round((radius - offset) * analysis.modulePitchPx);
+        const y = Math.round((cy - offset) * analysis.modulePitchPx);
+        // This point is inside the original square backing and outside the circular artwork.
+        probes.push({ x, y, alpha: 0 });
+      }
+      for (const { x, y, alpha } of probes) {
+        expect(source.getContext("2d")!.getImageData(x, y, 1, 1).data[3]).toBe(alpha);
+      }
       png = await encodeImage(source);
       image = await scanImage(png, scenario.effect);
       result.rasterMs = performance.now() - rasterStart;

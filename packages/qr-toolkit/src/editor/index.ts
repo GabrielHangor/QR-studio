@@ -83,6 +83,16 @@ export function resolveQrEditorStateContent(state: QrEditorState): QrEditorConte
     : resolveQrStructuredContent(type, state.contentDrafts?.[type]);
 }
 
+/** Local raster logo catalog owned and localized by the host application. */
+export interface QrLogoPreset {
+  readonly id: string;
+  readonly title: string;
+  /** Base64 PNG, JPEG or WebP data URI; SVG and remote URLs are not accepted. */
+  readonly dataUri: string;
+  /** Optional category label; entries and categories retain catalog order. */
+  readonly group?: string;
+}
+
 /** Catalogs are supplied by the host; presets never replace content or encoding. */
 export interface QrDesignPreset {
   readonly id: string;

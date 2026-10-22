@@ -16,6 +16,42 @@ const logo: QrLogoOptions = {
 };
 
 describe("expanded editor rendering", () => {
+  it.each(Array.from({ length: 40 }, (_, index) => index + 1))(
+    "places the default logo without covering protected cells in version %i",
+    (version) => {
+      const encoded = encodeQr("QR", { version, errorCorrectionLevel: "M" });
+      const original = JSON.stringify(encoded);
+      for (const clearBackground of [true, false]) {
+        const design = { logo: { ...logo, widthModules: 4, paddingModules: 0.5, clearBackground } };
+        const svg = renderQrSvg(encoded, design);
+        const image = svg.match(/<image x="([\d.]+)" y="([\d.]+)" width="([\d.]+)"/)!;
+        const x = Number(image[1]) - 4;
+        const y = Number(image[2]) - 4;
+        const padding = clearBackground ? 0.5 : 0;
+        const left = Math.floor(x - padding);
+        const top = Math.floor(y - padding);
+        const right = Math.ceil(x + 4 + padding);
+        const bottom = Math.ceil(y + 4 + padding);
+        expect(Number(image[3])).toBe(4);
+        expect(left).toBeGreaterThanOrEqual(0);
+        expect(top).toBeGreaterThanOrEqual(0);
+        expect(right).toBeLessThanOrEqual(encoded.size);
+        expect(bottom).toBeLessThanOrEqual(encoded.size);
+        const covered = encoded.functionModules
+          .slice(top, bottom)
+          .some((row) => row.slice(left, right).some(Boolean));
+        expect(covered).toBe(false);
+        expect(
+          analyzeQrDesign(encoded, design).diagnostics.some(
+            (item) => item.code === "LOGO_OVERLAPS_FUNCTION_MODULES",
+          ),
+        ).toBe(false);
+        expect(renderQrSvg(encoded, design)).toBe(svg);
+      }
+      expect(JSON.stringify(encoded)).toBe(original);
+    },
+  );
+
   it("clears logo cells by default and can keep the QR under transparent image areas", () => {
     const original = renderQrSvg(matrix, { logo });
     const cleared = renderQrSvg(matrix, { logo: { ...logo, clearBackground: true } });

@@ -30,6 +30,7 @@ export interface QrErrorParams {
   INVALID_LOGO_SIZE: { matrixSize: number };
   LOGO_OVERLAPS_FUNCTION_MODULES: {};
   INVALID_ARTWORK_SHAPE: {};
+  INVALID_CODE_SCALE: {};
   INVALID_CAPTION_TEXT: {};
   INVALID_CAPTION_POSITION: {};
   DUPLICATE_CAPTION_POSITION: { position: "top" | "bottom" };
@@ -52,6 +53,7 @@ export type QrErrorCode = keyof QrErrorParams;
 /** Machine-readable diagnostics use the same convention as thrown errors. */
 export interface QrDiagnosticParams {
   QUIET_ZONE_TOO_SMALL: { minimum: number };
+  QUIET_ZONE_CLIPPED: {};
   CONTRAST_BELOW_THRESHOLD: { target: QrForegroundTarget; actual: number; minimum: number };
   MODULE_PITCH_BELOW_THRESHOLD: { actual: number; minimum: number };
   FOREGROUND_NOT_DARKER: { target: QrForegroundTarget };

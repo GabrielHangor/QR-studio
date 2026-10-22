@@ -31,6 +31,9 @@ const ARC_ENDPOINT_PADDING_EM = 1;
 /** A bounded binary search resolves font size well below SVG's coordinate precision. */
 const ARC_FIT_ITERATIONS = 24;
 
+/** Leave a small gap between the encoded square and the artwork/frame at maximum zoom. */
+const CODE_EDGE_CLEARANCE_MODULES = 0.5;
+
 export interface QrCaptionLayout {
   readonly options: QrCaptionOptions;
   readonly position: "top" | "bottom";
@@ -53,7 +56,10 @@ function fitArcCaption(
     (Math.max(0, glyphCount - 1) * caption.letterSpacing) / caption.fontSize;
   const protectedHalfExtent = quietHalfExtent + ARC_QUIET_ZONE_GAP_MODULES;
   let lower = 0;
-  let upper = Math.min(caption.fontSize, (outerRadius - protectedHalfExtent) / ARC_GLYPH_HEIGHT_EM);
+  let upper = Math.max(
+    0,
+    Math.min(caption.fontSize, (outerRadius - protectedHalfExtent) / ARC_GLYPH_HEIGHT_EM),
+  );
 
   for (let iteration = 0; iteration < ARC_FIT_ITERATIONS; iteration++) {
     const fontSize = (lower + upper) / 2;
@@ -90,6 +96,12 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
     throw new QrError("INVALID_ARTWORK_SHAPE", {});
   }
 
+  if (
+    options.codeScale !== undefined &&
+    (!Number.isFinite(options.codeScale) || options.codeScale <= 0)
+  ) {
+    throw new QrError("INVALID_CODE_SCALE", {});
+  }
   const quietExtent = matrixSize + quietZone * 2;
   const baseFramePadding = frame.style !== "none" ? QR_FRAME_PADDING_MODULES : 0;
   if (!Number.isSafeInteger(quietExtent + baseFramePadding * 2)) {
@@ -149,12 +161,27 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
     };
   });
 
-  // A circle must enclose the entire quiet-zone square, including all four corners.
+  // 100% encloses the entire quiet-zone square, including all four corners.
   const frameWidthPx = frame.style !== "none" ? (frame.widthPx ?? 0) : 0;
   // A pixel stroke reserves its full thickness on each side, without touching the quiet zone.
-  const extent =
-    (quietExtent * (shape === "circle" ? Math.SQRT2 : 1) + baseFramePadding * 2) /
-    (1 - (frameWidthPx * 2) / size);
+  const strokeSpace = 1 - (frameWidthPx * 2) / size;
+  const protectedExtent = quietExtent * (shape === "circle" ? Math.SQRT2 : 1);
+  // Legacy module strokes still need a module of clearance on each side.
+  const minimumPadding =
+    frame.style !== "none" && frame.widthPx === undefined ? baseFramePadding : 0;
+  const minimumExtent = (protectedExtent + minimumPadding * 2) / strokeSpace;
+  const legacyExtent = (protectedExtent + baseFramePadding * 2) / strokeSpace;
+  const codeExtent = matrixSize * (shape === "circle" ? Math.SQRT2 : 1);
+  const tightExtent =
+    (codeExtent + CODE_EDGE_CLEARANCE_MODULES * 2 + minimumPadding * 2) / strokeSpace;
+  const maximumCodeScale = Math.max(100, Math.floor((minimumExtent * 100) / tightExtent));
+  // A stored zoom remains usable when content, shape or frame changes its geometric limit.
+  const codeScale = Math.min(
+    options.codeScale ?? (minimumExtent * 100) / legacyExtent,
+    maximumCodeScale,
+  );
+  const extent = options.codeScale === undefined ? legacyExtent : (minimumExtent * 100) / codeScale;
+  const quietZoneClipped = codeScale > 100;
   if (!Number.isFinite(extent) || extent > Number.MAX_SAFE_INTEGER) {
     throw new QrError("SVG_DIMENSIONS_TOO_LARGE", {});
   }
@@ -175,7 +202,11 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
       letterSpacing: caption.letterSpacing / modulePitchPx,
     };
     return caption.style === "arc"
-      ? fitArcCaption(layout, extent / 2 - framePadding, quietExtent / 2)
+      ? fitArcCaption(
+          layout,
+          extent / 2 - framePadding,
+          (quietZoneClipped ? Math.min(quietExtent, extent / Math.SQRT2) : quietExtent) / 2,
+        )
       : layout;
   });
   const captionInset = shape === "square" ? frameStrokeWidth : 0;
@@ -202,6 +233,9 @@ export function getQrArtworkLayout(matrixSize: number, options: RenderQrSvgOptio
     captionInset,
     qrOrigin: (extent - matrixSize) / 2,
     modulePitchPx,
+    codeScale,
+    maximumCodeScale,
+    quietZoneClipped,
     captions: captionLayouts,
   };
 }

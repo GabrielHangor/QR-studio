@@ -20,6 +20,7 @@ const items = computed(() =>
     source: qrDesignThumbnail(preset.design),
   })),
 );
+const selectedPreset = computed(() => props.presets.find((preset) => preset.id === selected.value));
 const selected = computed(() => {
   const source = qrDesignThumbnail(props.design);
   return source ? items.value.find((item) => item.source === source)?.value : undefined;
@@ -36,7 +37,9 @@ function choose(id: string) {
     :items="items"
     :model-value="selected"
     large
-    hide-labels
     @update:model-value="choose"
   />
+  <p v-if="selectedPreset?.description" class="mt-3 text-sm text-muted">
+    {{ selectedPreset.description }}
+  </p>
 </template>

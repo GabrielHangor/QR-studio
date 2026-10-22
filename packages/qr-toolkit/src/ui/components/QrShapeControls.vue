@@ -11,6 +11,8 @@ import QrVisualPicker from "./QrVisualPicker.vue";
 
 const props = defineProps<{
   design: RenderQrSvgOptions;
+  codeScale?: number;
+  maximumCodeScale?: number;
   messages: QrEditorMessages;
   config: QrEditorConfig;
   controls: readonly QrEditorControls["shapes"][];
@@ -49,10 +51,13 @@ const modules = computed(() =>
       @update:design="emit('update:design', $event)"
     />
     <QrArtworkControls
+      :code-scale="codeScale"
+      :maximum-code-scale="maximumCodeScale"
       v-if="
         controls.includes('artworkShape') ||
         controls.includes('frame') ||
-        controls.includes('frameWidth')
+        controls.includes('frameWidth') ||
+        controls.includes('codeScale')
       "
       :config="config"
       :controls="controls"
