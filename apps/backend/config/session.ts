@@ -12,7 +12,7 @@ const sessionConfig = defineConfig({
   /**
    * Cookie name storing the session identifier.
    */
-  cookieName: "adonis-session",
+  cookieName: "qr-studio-session",
 
   /**
    * When set to true, the session id cookie will be deleted
@@ -64,11 +64,6 @@ const sessionConfig = defineConfig({
    * list of available stores and their config.
    */
   stores: {
-    /**
-     * Store session data inside encrypted cookies.
-     */
-    cookie: stores.cookie(),
-
     /**
      * Store session data inside the configured database.
      */

@@ -21,6 +21,24 @@ pnpm dev
 Версия Node закреплена в `.nvmrc`, pnpm — в `packageManager` корневого `package.json`.
 `pnpm dev` запускает `apps/frontend`; изменения toolkit подхватываются через HMR.
 
+## Backend
+
+Базовая конфигурация и cookie-авторизация — в
+[архитектуре](docs/architecture.md#целевая-архитектура-backend).
+Для локального запуска нужны Docker и файл `apps/backend/.env`:
+
+```sh
+cp apps/backend/.env.example apps/backend/.env
+pnpm --filter backend exec node ace generate:key
+docker compose --env-file apps/backend/.env up -d --wait postgres
+pnpm --filter backend exec node ace migration:run
+pnpm --filter backend dev
+```
+
+При существующем `.env` сохраните `APP_KEY` и перенесите новые настройки из `.env.example`.
+Compose поднимает только локальный PostgreSQL; backend запускается на хосте.
+Для собственного PostgreSQL задайте подключение в `.env` и пропустите команду Compose.
+
 ## Проверки
 
 | Команда из корня                    | Назначение                                                      |
@@ -37,6 +55,17 @@ pnpm dev
 `format`, `format:check` и `typecheck`. Перед первой проверкой типов сгенерируйте
 файлы Adonis: `pnpm --filter backend exec node ace codegen`. Правила и исключения описаны в
 [архитектуре](docs/architecture.md#целевая-архитектура-backend).
+
+Backend проверяется на отдельной PostgreSQL БД с именем, оканчивающимся на `_test`.
+Скопируйте `apps/backend/.env.test.example` в `apps/backend/.env.test` и создайте
+указанную БД (для локального Compose):
+
+```sh
+docker compose --env-file apps/backend/.env exec postgres sh -c 'createdb -U "$POSTGRES_USER" qr_studio_test'
+pnpm --filter backend test
+```
+
+Функциональные тесты применяют и откатывают миграции только в тестовой БД.
 
 Для браузерных тестов один раз установите Chromium:
 `pnpm --filter @qr-studio/toolkit test:scan:install`.

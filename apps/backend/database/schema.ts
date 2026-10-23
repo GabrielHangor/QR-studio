@@ -4,58 +4,35 @@
  * Run "node ace migration:run" command to re-generate this file
  */
 
-import { BaseModel, column } from "@adonisjs/lucid/orm";
-import { DateTime } from "luxon";
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { DateTime } from 'luxon'
 
-export class AuthAccessTokenSchema extends BaseModel {
-  static $columns = [
-    "abilities",
-    "createdAt",
-    "expiresAt",
-    "hash",
-    "id",
-    "lastUsedAt",
-    "name",
-    "tokenableId",
-    "type",
-    "updatedAt",
-  ] as const;
-  $columns = AuthAccessTokenSchema.$columns;
+export class SessionSchema extends BaseModel {
+  static $columns = ['data', 'expiresAt', 'id', 'userId'] as const
+  $columns = SessionSchema.$columns
   @column()
-  declare abilities: string;
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime | null;
+  declare data: string
   @column.dateTime()
-  declare expiresAt: DateTime | null;
-  @column()
-  declare hash: string;
+  declare expiresAt: DateTime
   @column({ isPrimary: true })
-  declare id: number;
-  @column.dateTime()
-  declare lastUsedAt: DateTime | null;
+  declare id: string
   @column()
-  declare name: string | null;
-  @column()
-  declare tokenableId: number;
-  @column()
-  declare type: string;
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare userId: string | null
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ["createdAt", "email", "fullName", "id", "password", "updatedAt"] as const;
-  $columns = UserSchema.$columns;
+  static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
+  $columns = UserSchema.$columns
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare email: string;
+  declare email: string
   @column()
-  declare fullName: string | null;
+  declare fullName: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column({ serializeAs: null })
-  declare password: string;
+  declare password: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
 }

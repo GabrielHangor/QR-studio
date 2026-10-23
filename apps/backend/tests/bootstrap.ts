@@ -8,6 +8,8 @@ import { assert } from "@japa/assert";
 import { pluginAdonisJS } from "@japa/plugin-adonisjs";
 import type { Config } from "@japa/runner/types";
 
+import env from "#start/env";
+
 import type { Registry } from "../.adonisjs/client/registry/schema.d.ts";
 
 /**
@@ -52,6 +54,12 @@ export const runnerHooks: Required<Pick<Config, "setup" | "teardown">> = {
  */
 export const configureSuite: Config["configureSuite"] = (suite) => {
   if (["browser", "functional", "e2e"].includes(suite.name)) {
+    suite.setup(() => {
+      if (!env.get("DB_DATABASE").endsWith("_test")) {
+        throw new Error("Functional tests require a dedicated PostgreSQL database ending in _test");
+      }
+      return testUtils.db().migrate();
+    });
     return suite.setup(() => testUtils.httpServer().start());
   }
 };
