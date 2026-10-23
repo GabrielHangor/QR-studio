@@ -2,9 +2,17 @@ import { belongsTo } from "@adonisjs/lucid/orm";
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 import { AuditLogSchema } from "#database/schema";
-import User from "#models/user";
+import UserModel from "#models/user";
+
+export enum AuditLogTargetType {
+  User = "user",
+  QrCode = "qr_code",
+  Complaint = "complaint",
+}
 
 export default class AuditLog extends AuditLogSchema {
-  @belongsTo(() => User, { foreignKey: "actorUserId" })
-  declare actor: BelongsTo<typeof User> | null;
+  declare targetType: AuditLogTargetType;
+
+  @belongsTo(() => UserModel, { foreignKey: "actorUserId" })
+  declare actor: BelongsTo<typeof UserModel> | null;
 }

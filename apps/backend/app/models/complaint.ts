@@ -5,7 +5,22 @@ import { ComplaintSchema } from "#database/schema";
 import QrCode from "#models/qr_code";
 import User from "#models/user";
 
+export enum ComplaintKind {
+  Report = "report",
+  Appeal = "appeal",
+}
+
+export enum ComplaintStatus {
+  Open = "open",
+  InReview = "in_review",
+  Resolved = "resolved",
+  Dismissed = "dismissed",
+}
+
 export default class Complaint extends ComplaintSchema {
+  declare kind: ComplaintKind;
+  declare status: ComplaintStatus;
+
   @belongsTo(() => QrCode)
   declare qrCode: BelongsTo<typeof QrCode>;
 

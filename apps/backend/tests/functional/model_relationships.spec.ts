@@ -4,13 +4,19 @@ import testUtils from "@adonisjs/core/services/test_utils";
 import { test } from "@japa/runner";
 import { DateTime } from "luxon";
 
-import BackgroundJob from "#models/background_job";
-import QrBlock from "#models/qr_block";
+import { AccountActionTokenPurpose } from "#models/account_action_token";
+import { AssetMediaType } from "#models/asset";
+import { AuditLogTargetType } from "#models/audit_log";
+import BackgroundJob, { BackgroundJobStatus } from "#models/background_job";
+import { ComplaintKind, ComplaintStatus } from "#models/complaint";
+import { LinkCheckStatus, LinkCheckTrigger } from "#models/link_check";
+import QrBlock, { QrBlockKind } from "#models/qr_block";
 import QrCode from "#models/qr_code";
+import { QrDestinationStatus } from "#models/qr_destination";
 import RedirectEvent from "#models/redirect_event";
 import Session from "#models/session";
 import ShortCode from "#models/short_code";
-import User from "#models/user";
+import User, { UserRole } from "#models/user";
 
 function account() {
   return User.create({ email: `${randomUUID()}@example.test`, password: "test-password-123" });
@@ -21,7 +27,7 @@ async function qrGraph() {
   const campaign = await user.related("campaigns").create({ name: "Campaign" });
   const logo = await user.related("assets").create({
     storageKey: `logos/${randomUUID()}.png`,
-    mediaType: "image/png",
+    mediaType: AssetMediaType.Png,
     byteSize: 1024,
     width: 32,
     height: 32,
@@ -40,7 +46,7 @@ async function qrGraph() {
   });
   const destination = await qr.related("destinations").create({
     url: "HTTPS://example.test/path",
-    status: "approved",
+    status: QrDestinationStatus.Approved,
     activatedAt: DateTime.utc(),
   });
   return { user, campaign, logo, reservation, qr, destination };
@@ -70,6 +76,7 @@ test.group("Lucid model relationships", (group) => {
       )
       .firstOrFail();
 
+    assert.equal(loaded.role, UserRole.User);
     assert.equal(loaded.assets[0].id, logo.id);
     assert.equal(loaded.designPresets[0].id, preset.id);
     assert.equal(loaded.designPresets[0].logoAsset?.id, logo.id);
@@ -99,28 +106,28 @@ test.group("Lucid model relationships", (group) => {
     const actor = await account();
     const check = await destination.related("linkChecks").create({
       qrCodeId: qr.id,
-      trigger: "manual",
-      status: "unsafe",
+      trigger: LinkCheckTrigger.Manual,
+      status: LinkCheckStatus.Unsafe,
       checkedAt: DateTime.utc(),
     });
     const block = await qr.related("blocks").create({
-      kind: "threat",
+      kind: QrBlockKind.Threat,
       linkCheckId: check.id,
       createdByUserId: actor.id,
       reason: "Test threat",
     });
     const complaint = await qr.related("complaints").create({
-      kind: "report",
+      kind: ComplaintKind.Report,
       reason: "Test report",
       reporterUserId: actor.id,
       resolvedByUserId: actor.id,
-      status: "resolved",
+      status: ComplaintStatus.Resolved,
       resolution: "Reviewed",
       resolvedAt: DateTime.utc(),
     });
     const audit = await actor.related("auditLogs").create({
       action: "complaint.resolve",
-      targetType: "complaint",
+      targetType: AuditLogTargetType.Complaint,
       targetId: complaint.id,
       reason: "Reviewed",
       metadata: {},
@@ -132,7 +139,7 @@ test.group("Lucid model relationships", (group) => {
       reason: "Test extension",
     });
     const token = await user.related("accountActionTokens").create({
-      purpose: "email_verification",
+      purpose: AccountActionTokenPurpose.EmailVerification,
       tokenHash: "a".repeat(64),
       email: user.email,
       expiresAt: DateTime.utc().plus({ hours: 1 }),
@@ -205,7 +212,7 @@ test.group("Lucid model relationships", (group) => {
     assert.equal(loadedJob.qrCode?.id, qr.id);
     assert.equal(loadedJob.notification?.backgroundJobs[0].id, job.id);
     assert.deepEqual(loadedJob.payload, { notificationId: notification.id });
-    assert.equal(loadedJob.status, "pending");
+    assert.equal(loadedJob.status, BackgroundJobStatus.Pending);
     const loadedEvent = await RedirectEvent.query()
       .where("id", String(event.id))
       .preload("user")

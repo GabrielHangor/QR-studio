@@ -6,7 +6,14 @@ import LinkCheck from "#models/link_check";
 import QrCode from "#models/qr_code";
 import User from "#models/user";
 
+export enum QrBlockKind {
+  Manual = "manual",
+  Threat = "threat",
+}
+
 export default class QrBlock extends QrBlockSchema {
+  declare kind: QrBlockKind;
+
   @belongsTo(() => QrCode)
   declare qrCode: BelongsTo<typeof QrCode>;
 

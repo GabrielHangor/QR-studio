@@ -6,7 +6,16 @@ import BackgroundJob from "#models/background_job";
 import QrCode from "#models/qr_code";
 import User from "#models/user";
 
+export enum NotificationDeliveryStatus {
+  Pending = "pending",
+  Sent = "sent",
+  Failed = "failed",
+  Cancelled = "cancelled",
+}
+
 export default class NotificationDelivery extends NotificationDeliverySchema {
+  declare status: NotificationDeliveryStatus;
+
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>;
 

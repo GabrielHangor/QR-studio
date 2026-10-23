@@ -6,7 +6,23 @@ import QrBlock from "#models/qr_block";
 import QrCode from "#models/qr_code";
 import QrDestination from "#models/qr_destination";
 
+export enum LinkCheckTrigger {
+  Initial = "initial",
+  Periodic = "periodic",
+  Manual = "manual",
+}
+
+export enum LinkCheckStatus {
+  Pending = "pending",
+  Safe = "safe",
+  Unsafe = "unsafe",
+  Error = "error",
+}
+
 export default class LinkCheck extends LinkCheckSchema {
+  declare trigger: LinkCheckTrigger;
+  declare status: LinkCheckStatus;
+
   @belongsTo(() => QrCode)
   declare qrCode: BelongsTo<typeof QrCode>;
 

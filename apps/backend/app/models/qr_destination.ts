@@ -6,7 +6,16 @@ import LinkCheck from "#models/link_check";
 import QrCode from "#models/qr_code";
 import RedirectEvent from "#models/redirect_event";
 
+export enum QrDestinationStatus {
+  Pending = "pending",
+  Approved = "approved",
+  Rejected = "rejected",
+  Cancelled = "cancelled",
+}
+
 export default class QrDestination extends QrDestinationSchema {
+  declare status: QrDestinationStatus;
+
   @belongsTo(() => QrCode)
   declare qrCode: BelongsTo<typeof QrCode>;
 

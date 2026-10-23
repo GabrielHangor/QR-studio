@@ -18,7 +18,14 @@ import QrCode from "#models/qr_code";
 import RedirectEvent from "#models/redirect_event";
 import TrialExtension from "#models/trial_extension";
 
+export enum UserRole {
+  User = "user",
+  Admin = "admin",
+}
+
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
+  declare role: UserRole;
+
   @hasMany(() => AccountActionToken)
   declare accountActionTokens: HasMany<typeof AccountActionToken>;
 
