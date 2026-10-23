@@ -12,28 +12,27 @@ import router from "@adonisjs/core/services/router";
 import { controllers } from "#generated/controllers";
 import { middleware } from "#start/kernel";
 
-router.get("/", () => {
-  return { hello: "world" };
-});
-
 router
   .group(() => {
     router
       .group(() => {
         router.get("csrf", [controllers.Sessions, "create"]).as("csrf");
-        router.post("signup", [controllers.NewAccount, "store"]);
-        router.post("login", [controllers.Sessions, "store"]);
+        router.post("signup", [controllers.NewAccount, "store"]).as("signup");
+        router.post("login", [controllers.Sessions, "store"]).as("login");
       })
       .prefix("auth")
       .as("auth");
 
     router
       .group(() => {
-        router.get("profile", [controllers.Profile, "show"]);
-        router.post("logout", [controllers.Sessions, "destroy"]);
+        router
+          .get("profile", [controllers.Profile, "show"])
+          .as("profile")
+          .use(middleware.accountAccess());
+        router.post("logout", [controllers.Sessions, "destroy"]).as("logout");
       })
       .prefix("account")
-      .as("profile")
+      .as("account")
       .use(middleware.auth());
   })
   .prefix("/api/v1");

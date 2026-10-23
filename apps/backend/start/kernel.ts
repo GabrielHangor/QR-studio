@@ -33,6 +33,7 @@ server.use([
  * requests with a registered route.
  */
 router.use([
+  () => import("#middleware/no_store_middleware"),
   () => import("@adonisjs/core/bodyparser_middleware"),
   () => import("@adonisjs/session/session_middleware"),
   () => import("@adonisjs/shield/shield_middleware"),
@@ -45,5 +46,6 @@ router.use([
  * the routes or the routes group.
  */
 export const middleware = router.named({
+  accountAccess: () => import("#middleware/account_access_middleware"),
   auth: () => import("#middleware/auth_middleware"),
 });

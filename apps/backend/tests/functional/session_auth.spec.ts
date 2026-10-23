@@ -1,49 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-import { configProvider } from "@adonisjs/core";
-import app from "@adonisjs/core/services/app";
 import testUtils from "@adonisjs/core/services/test_utils";
 import db from "@adonisjs/lucid/services/db";
-import type { ResolvedSessionConfig } from "@adonisjs/session/types";
 import { test } from "@japa/runner";
 
-import sessionConfig from "#config/session";
 import User from "#models/user";
 import env from "#start/env";
+import { browser, sessionCookie } from "#tests/helpers/browser";
 
-const sessionCookie = (await configProvider.resolve<ResolvedSessionConfig>(app, sessionConfig))!
-  .cookieName;
 const password = "test-password-123";
-
-/** Sends the real cookies received over HTTP, without Japa's synthetic session helpers. */
-function browser() {
-  const cookies = new Map<string, string>();
-  return {
-    cookies,
-    async request(path: string, body?: Record<string, unknown>, headers?: Record<string, string>) {
-      const response = await fetch(`http://${env.get("HOST")}:${env.get("PORT")}/api/v1${path}`, {
-        method: body ? "POST" : "GET",
-        redirect: "manual",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Cookie": [...cookies].map(([name, value]) => `${name}=${value}`).join("; "),
-          ...(body && cookies.has("XSRF-TOKEN")
-            ? { "X-XSRF-TOKEN": cookies.get("XSRF-TOKEN")! }
-            : {}),
-          ...headers,
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      for (const cookie of response.headers.getSetCookie()) {
-        const pair = cookie.split(";", 1)[0]!;
-        const separator = pair.indexOf("=");
-        cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
-      }
-      return response;
-    },
-  };
-}
 
 async function createUser() {
   return User.create({ fullName: "Test User", email: `${randomUUID()}@example.test`, password });
@@ -55,6 +20,7 @@ test.group("Cookie session authentication", (group) => {
   test("requires a session for the profile", async ({ assert }) => {
     const response = await browser().request("/account/profile");
     assert.equal(response.status, 401);
+    assert.equal(response.headers.get("cache-control"), "no-store");
   });
 
   test("issues host-only session and XSRF cookies", async ({ assert }) => {
@@ -100,7 +66,7 @@ test.group("Cookie session authentication", (group) => {
     const authenticatedCookie = client.cookies.get(sessionCookie)!;
 
     const logout = await client.request("/account/logout", {});
-    assert.equal(logout.status, 200);
+    assert.equal(logout.status, 204);
     assert.equal((await client.request("/account/profile")).status, 401);
 
     const replay = browser();
@@ -128,7 +94,7 @@ test.group("Cookie session authentication", (group) => {
       password,
       passwordConfirmation: password,
     });
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 201);
     const body = (await response.json()) as { data: { user: { email: string } } };
     assert.equal(body.data.user.email, email);
     assert.notProperty(body.data, "token");
@@ -153,6 +119,7 @@ test.group("Cookie session authentication", (group) => {
     await client.request("/auth/csrf");
     const response = await client.request("/auth/signup", { email: "invalid" });
     assert.equal(response.status, 422);
+    assert.equal(response.headers.get("cache-control"), "no-store");
     assert.equal((await client.request("/account/profile")).status, 401);
   });
 
@@ -160,6 +127,7 @@ test.group("Cookie session authentication", (group) => {
     test(`rejects a missing CSRF token on ${path}`, async ({ assert }) => {
       const response = await browser().request(path, {});
       assert.equal(response.status, 403);
+      assert.equal(response.headers.get("cache-control"), "no-store");
       const body = (await response.json()) as { errors: { code: string }[] };
       assert.equal(body.errors[0]!.code, "E_BAD_CSRF_TOKEN");
     });

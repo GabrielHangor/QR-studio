@@ -1,6 +1,11 @@
+import { errors as authErrors } from "@adonisjs/auth";
 import { type HttpContext, ExceptionHandler } from "@adonisjs/core/http";
 import app from "@adonisjs/core/services/app";
-import { errors } from "@adonisjs/shield";
+import { errors as shieldErrors } from "@adonisjs/shield";
+import { errors as validationErrors } from "@vinejs/vine";
+import type { SimpleError } from "@vinejs/vine/types";
+
+import AccountUnavailableException from "#exceptions/account_unavailable_exception";
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -14,7 +19,17 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
-    if (error instanceof errors.E_BAD_CSRF_TOKEN) {
+    if (error instanceof validationErrors.E_VALIDATION_ERROR) {
+      return ctx.response.status(error.status).send({
+        errors: error.messages.map((message: SimpleError) => ({ code: error.code, ...message })),
+      });
+    }
+    if (
+      error instanceof shieldErrors.E_BAD_CSRF_TOKEN ||
+      error instanceof authErrors.E_INVALID_CREDENTIALS ||
+      error instanceof authErrors.E_UNAUTHORIZED_ACCESS ||
+      error instanceof AccountUnavailableException
+    ) {
       return ctx.response.status(error.status).send({
         errors: [{ code: error.code, message: error.message }],
       });

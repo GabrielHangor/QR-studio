@@ -1,7 +1,8 @@
 import { withAuthFinder } from "@adonisjs/auth/mixins/lucid";
 import { compose } from "@adonisjs/core/helpers";
 import hash from "@adonisjs/core/services/hash";
-import { hasMany } from "@adonisjs/lucid/orm";
+import { beforeSave, hasMany } from "@adonisjs/lucid/orm";
+import type { LucidModel } from "@adonisjs/lucid/types/model";
 import type { HasMany } from "@adonisjs/lucid/types/relations";
 
 import { UserSchema } from "#database/schema";
@@ -25,6 +26,27 @@ export enum UserRole {
 
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   declare role: UserRole;
+
+  @beforeSave()
+  static normalizeEmail(user: User) {
+    if (user.$dirty.email !== undefined) {
+      user.email = user.email.trim().toLowerCase();
+    }
+  }
+
+  static findForAuth<T extends LucidModel>(this: T, uids: string[], value: string) {
+    return this.query()
+      .where((query) => {
+        for (const uid of uids) {
+          if (uid === "email") {
+            query.orWhereRaw("lower(btrim(??)) = lower(btrim(?))", [uid, value]);
+          } else {
+            query.orWhere(uid, value);
+          }
+        }
+      })
+      .first();
+  }
 
   @hasMany(() => AccountActionToken)
   declare accountActionTokens: HasMany<typeof AccountActionToken>;

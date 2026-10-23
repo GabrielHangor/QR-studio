@@ -12,6 +12,8 @@ const bodyParserConfig = defineConfig({
    * content-type parser.
    */
   form: {
+    // Vine controls normalization; passwords must retain their exact value.
+    trimWhitespaces: false,
     /**
      * Normalize empty string values to null.
      */
@@ -27,6 +29,7 @@ const bodyParserConfig = defineConfig({
    * Config for the JSON parser.
    */
   json: {
+    trimWhitespaces: false,
     /**
      * Normalize empty string values to null.
      */
@@ -48,6 +51,7 @@ const bodyParserConfig = defineConfig({
    * File uploads are handled by the multipart parser.
    */
   multipart: {
+    trimWhitespaces: false,
     /**
      * Automatically process uploaded files into the system tmp directory.
      */
