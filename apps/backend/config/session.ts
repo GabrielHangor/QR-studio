@@ -12,7 +12,7 @@ const sessionConfig = defineConfig({
   /**
    * Cookie name storing the session identifier.
    */
-  cookieName: "qr-studio-session",
+  cookieName: "qr-adions-session",
 
   /**
    * When set to true, the session id cookie will be deleted

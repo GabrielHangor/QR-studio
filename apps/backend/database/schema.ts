@@ -43,7 +43,7 @@ export class AssetSchema extends BaseModel {
   declare id: string
   @column()
   declare mediaType: string
-  @column()
+  @column({ columnName: 'sha256' })
   declare sha256: string
   @column()
   declare storageKey: string

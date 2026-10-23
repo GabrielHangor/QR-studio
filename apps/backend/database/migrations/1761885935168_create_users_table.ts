@@ -9,7 +9,11 @@ export default class extends BaseSchema {
       table.string("password").notNullable();
       table.timestamp("created_at", { useTz: true }).notNullable();
       table.timestamp("updated_at", { useTz: true });
-      table.string("role", 20).notNullable().defaultTo("user");
+      table
+        .string("role", 20)
+        .notNullable()
+        .defaultTo("user")
+        .checkIn(["user", "admin"], "users_role_check");
       table.string("timezone", 64).notNullable().defaultTo("Europe/Moscow");
       table.timestamp("email_verified_at", { useTz: true });
       table.timestamp("trial_started_at", { useTz: true });
@@ -18,7 +22,6 @@ export default class extends BaseSchema {
       table.text("block_reason");
       table.timestamp("deletion_requested_at", { useTz: true });
       table.timestamp("delete_after", { useTz: true }).index();
-      table.check("role IN ('user', 'admin')", [], "users_role_check");
       table.check(
         "(trial_started_at IS NULL AND trial_ends_at IS NULL) OR (trial_started_at IS NOT NULL AND trial_ends_at IS NOT NULL AND trial_ends_at >= trial_started_at)",
         [],
@@ -34,13 +37,14 @@ export default class extends BaseSchema {
         [],
         "users_block_reason_check",
       );
+      table.unique([this.raw("lower(btrim(email))")], {
+        indexName: "users_email_identity_unique",
+        useConstraint: false,
+      });
+      table.index(["trial_ends_at"], "users_trial_expiry_index", {
+        predicate: this.knex().whereNotNull("trial_ends_at"),
+      });
     });
-    this.schema.raw(
-      "CREATE UNIQUE INDEX users_email_identity_unique ON users (lower(btrim(email)))",
-    );
-    this.schema.raw(
-      "CREATE INDEX users_trial_expiry_index ON users (trial_ends_at) WHERE trial_ends_at IS NOT NULL",
-    );
   }
 
   async down() {

@@ -5,20 +5,21 @@ export default class extends BaseSchema {
     this.schema.createTable("account_action_tokens", (table) => {
       table.uuid("id").primary().defaultTo(this.raw("gen_random_uuid()"));
       table.integer("user_id").notNullable().references("users.id").onDelete("CASCADE");
-      table.string("purpose", 32).notNullable();
-      table.string("token_hash", 64).notNullable().unique();
+      table
+        .string("purpose", 32)
+        .notNullable()
+        .checkIn(["email_verification", "password_reset"], "account_tokens_purpose_check");
+      table
+        .string("token_hash", 64)
+        .notNullable()
+        .unique()
+        .checkRegex("^[0-9a-f]{64}$", "account_tokens_hash_check");
       table.string("email", 254).notNullable();
       table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(this.now());
       table.timestamp("expires_at", { useTz: true }).notNullable().index();
       table.timestamp("consumed_at", { useTz: true });
       table.timestamp("revoked_at", { useTz: true });
       table.index(["user_id", "purpose"]);
-      table.check(
-        "purpose IN ('email_verification', 'password_reset')",
-        [],
-        "account_tokens_purpose_check",
-      );
-      table.check("token_hash ~ '^[0-9a-f]{64}$'", [], "account_tokens_hash_check");
       table.check("expires_at > created_at", [], "account_tokens_expiry_check");
       table.check("consumed_at IS NULL OR revoked_at IS NULL", [], "account_tokens_terminal_check");
     });

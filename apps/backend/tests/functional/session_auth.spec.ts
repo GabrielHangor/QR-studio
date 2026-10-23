@@ -1,13 +1,18 @@
 import { randomUUID } from "node:crypto";
 
+import { configProvider } from "@adonisjs/core";
+import app from "@adonisjs/core/services/app";
 import testUtils from "@adonisjs/core/services/test_utils";
 import db from "@adonisjs/lucid/services/db";
+import type { ResolvedSessionConfig } from "@adonisjs/session/types";
 import { test } from "@japa/runner";
 
+import sessionConfig from "#config/session";
 import User from "#models/user";
 import env from "#start/env";
 
-const sessionCookie = "qr-studio-session";
+const sessionCookie = (await configProvider.resolve<ResolvedSessionConfig>(app, sessionConfig))!
+  .cookieName;
 const password = "test-password-123";
 
 /** Sends the real cookies received over HTTP, without Japa's synthetic session helpers. */
@@ -60,7 +65,10 @@ test.group("Cookie session authentication", (group) => {
     const cookie = response.headers
       .getSetCookie()
       .find((value) => value.startsWith(`${sessionCookie}=`));
-    assert.isDefined(cookie);
+    assert.isDefined(
+      cookie,
+      `Expected ${sessionCookie}; received cookie names: ${[...client.cookies.keys()].join(", ")}`,
+    );
     assert.include(cookie!, "HttpOnly");
     assert.include(cookie!, "SameSite=Lax");
     assert.notMatch(cookie!, /Domain=/i);
