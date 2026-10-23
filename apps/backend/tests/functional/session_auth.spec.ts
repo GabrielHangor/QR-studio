@@ -88,6 +88,7 @@ test.group("Cookie session authentication", (group) => {
     const profile = await client.request("/account/profile");
     assert.equal(profile.status, 200);
     assert.equal(((await profile.json()) as { data: { id: number } }).data.id, user.id);
+    assert.lengthOf(await db.from("sessions").where("user_id", String(user.id)), 1);
     const authenticatedCookie = client.cookies.get(sessionCookie)!;
 
     const logout = await client.request("/account/logout", {});

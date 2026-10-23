@@ -10,11 +10,12 @@ export default class SessionsController {
     return response.noContent();
   }
 
-  async store({ request, auth, serialize }: HttpContext) {
+  async store({ request, auth, session, serialize }: HttpContext) {
     const { email, password } = await request.validateUsing(loginValidator);
 
     const user = await User.verifyCredentials(email, password);
     await auth.use("web").login(user);
+    await session.tag(String(user.id));
 
     return serialize({
       user: UserTransformer.transform(user),

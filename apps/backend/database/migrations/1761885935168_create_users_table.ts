@@ -1,21 +1,49 @@
 import { BaseSchema } from "@adonisjs/lucid/schema";
 
 export default class extends BaseSchema {
-  protected tableName = "users";
-
   async up() {
-    this.schema.createTable(this.tableName, (table) => {
+    this.schema.createTable("users", (table) => {
       table.increments("id").notNullable();
       table.string("full_name").nullable();
       table.string("email", 254).notNullable().unique();
       table.string("password").notNullable();
-
-      table.timestamp("created_at").notNullable();
-      table.timestamp("updated_at").nullable();
+      table.timestamp("created_at", { useTz: true }).notNullable();
+      table.timestamp("updated_at", { useTz: true });
+      table.string("role", 20).notNullable().defaultTo("user");
+      table.string("timezone", 64).notNullable().defaultTo("Europe/Moscow");
+      table.timestamp("email_verified_at", { useTz: true });
+      table.timestamp("trial_started_at", { useTz: true });
+      table.timestamp("trial_ends_at", { useTz: true });
+      table.timestamp("blocked_at", { useTz: true });
+      table.text("block_reason");
+      table.timestamp("deletion_requested_at", { useTz: true });
+      table.timestamp("delete_after", { useTz: true }).index();
+      table.check("role IN ('user', 'admin')", [], "users_role_check");
+      table.check(
+        "(trial_started_at IS NULL AND trial_ends_at IS NULL) OR (trial_started_at IS NOT NULL AND trial_ends_at IS NOT NULL AND trial_ends_at >= trial_started_at)",
+        [],
+        "users_trial_dates_check",
+      );
+      table.check(
+        "(deletion_requested_at IS NULL AND delete_after IS NULL) OR (deletion_requested_at IS NOT NULL AND delete_after IS NOT NULL AND delete_after >= deletion_requested_at)",
+        [],
+        "users_deletion_dates_check",
+      );
+      table.check(
+        "(blocked_at IS NULL AND block_reason IS NULL) OR (blocked_at IS NOT NULL AND length(btrim(block_reason)) > 0 AND block_reason IS NOT NULL)",
+        [],
+        "users_block_reason_check",
+      );
     });
+    this.schema.raw(
+      "CREATE UNIQUE INDEX users_email_identity_unique ON users (lower(btrim(email)))",
+    );
+    this.schema.raw(
+      "CREATE INDEX users_trial_expiry_index ON users (trial_ends_at) WHERE trial_ends_at IS NOT NULL",
+    );
   }
 
   async down() {
-    this.schema.dropTable(this.tableName);
+    this.schema.dropTable("users");
   }
 }

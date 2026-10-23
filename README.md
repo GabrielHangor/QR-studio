@@ -47,6 +47,7 @@ Compose поднимает только локальный PostgreSQL; backend �
 | `pnpm format:check` / `pnpm format` | Проверить / применить форматирование                            |
 | `pnpm typecheck`                    | TypeScript и Vue-шаблоны                                        |
 | `pnpm test`                         | Тесты пакетов и приложений                                      |
+| `pnpm test:backend`                 | Backend-тесты с временным PostgreSQL в Docker                   |
 | `pnpm test:scan`                    | SVG → PNG в Chromium → независимый ZXing WASM decoder           |
 | `pnpm test:ui`                      | Действия в редакторе на desktop/mobile, экспорт и декодирование |
 | `pnpm build`                        | Сборка toolkit, frontend и backend                              |
@@ -56,16 +57,23 @@ Compose поднимает только локальный PostgreSQL; backend �
 файлы Adonis: `pnpm --filter backend exec node ace codegen`. Правила и исключения описаны в
 [архитектуре](docs/architecture.md#целевая-архитектура-backend).
 
-Backend проверяется на отдельной PostgreSQL БД с именем, оканчивающимся на `_test`.
-Скопируйте `apps/backend/.env.test.example` в `apps/backend/.env.test` и создайте
-указанную БД (для локального Compose):
+Для backend-тестов нужны запущенный Docker и Bash (macOS/Linux):
 
 ```sh
-docker compose --env-file apps/backend/.env exec postgres sh -c 'createdb -U "$POSTGRES_USER" qr_studio_test'
-pnpm --filter backend test
+pnpm test:backend
+# Один файл:
+pnpm test:backend --files=session_auth
 ```
 
-Функциональные тесты применяют и откатывают миграции только в тестовой БД.
+Команда поднимает отдельный PostgreSQL с данными в tmpfs, ждёт готовности,
+выбирает свободные порты и запускает Japa. После успеха, ошибки или Ctrl+C
+контейнер удаляется. Тестовое окружение задаётся процессу: `.env` и `.env.test`
+для этой команды не нужны. Код завершения тестов передаётся вызывающей команде.
+При первом запуске Docker скачает образ PostgreSQL.
+
+`pnpm --filter backend test` остаётся прямым запуском Japa для своей тестовой БД:
+настройте её через `.env.test` по `.env.test.example`. Имя БД должно оканчиваться
+на `_test`; функциональные тесты применяют и откатывают в ней миграции.
 
 Для браузерных тестов один раз установите Chromium:
 `pnpm --filter @qr-studio/toolkit test:scan:install`.
@@ -80,6 +88,7 @@ UI-тесты поднимают собственный локальный се�
 - [Продукт](docs/product.md) — границы релизов, требования и приёмка.
 - [План MVP](docs/mvp-plan.md) — последовательность реализации и вопросы технической проработки.
 - [Архитектура](docs/architecture.md) — пакеты, интеграция UI и технические решения.
+- [Модель данных](docs/data-model.md) — схема MVP, связи и ограничения PostgreSQL.
 - [Toolkit](packages/qr-toolkit/README.md) — API и подключение редактора.
 - [Тема](packages/theme/README.md) — токены QR Studio и адаптер Nuxt UI.
 - [Правила работы](AGENTS.md).

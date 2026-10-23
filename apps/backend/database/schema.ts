@@ -7,6 +7,345 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class AccountActionTokenSchema extends BaseModel {
+  static $columns = ['consumedAt', 'createdAt', 'email', 'expiresAt', 'id', 'purpose', 'revokedAt', 'tokenHash', 'userId'] as const
+  $columns = AccountActionTokenSchema.$columns
+  @column.dateTime()
+  declare consumedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare email: string
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare purpose: string
+  @column.dateTime()
+  declare revokedAt: DateTime | null
+  @column()
+  declare tokenHash: string
+  @column()
+  declare userId: number
+}
+
+export class AssetSchema extends BaseModel {
+  static $columns = ['byteSize', 'createdAt', 'height', 'id', 'mediaType', 'sha256', 'storageKey', 'userId', 'width'] as const
+  $columns = AssetSchema.$columns
+  @column()
+  declare byteSize: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare height: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare mediaType: string
+  @column()
+  declare sha256: string
+  @column()
+  declare storageKey: string
+  @column()
+  declare userId: number
+  @column()
+  declare width: number
+}
+
+export class AuditLogSchema extends BaseModel {
+  static $columns = ['action', 'actorUserId', 'createdAt', 'id', 'metadata', 'reason', 'targetId', 'targetType'] as const
+  $columns = AuditLogSchema.$columns
+  @column()
+  declare action: string
+  @column()
+  declare actorUserId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare metadata: any
+  @column()
+  declare reason: string
+  @column()
+  declare targetId: string
+  @column()
+  declare targetType: string
+}
+
+export class BackgroundJobSchema extends BaseModel {
+  static $columns = ['attempts', 'availableAt', 'createdAt', 'deduplicationKey', 'finishedAt', 'handler', 'id', 'lastErrorCode', 'leaseExpiresAt', 'lockedBy', 'maxAttempts', 'notificationId', 'payload', 'qrCodeId', 'status', 'updatedAt', 'userId'] as const
+  $columns = BackgroundJobSchema.$columns
+  @column()
+  declare attempts: number
+  @column.dateTime()
+  declare availableAt: DateTime
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deduplicationKey: string | null
+  @column.dateTime()
+  declare finishedAt: DateTime | null
+  @column()
+  declare handler: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare lastErrorCode: string | null
+  @column.dateTime()
+  declare leaseExpiresAt: DateTime | null
+  @column()
+  declare lockedBy: string | null
+  @column()
+  declare maxAttempts: number
+  @column()
+  declare notificationId: string | null
+  @column()
+  declare payload: any
+  @column()
+  declare qrCodeId: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number | null
+}
+
+export class CampaignSchema extends BaseModel {
+  static $columns = ['archivedAt', 'createdAt', 'id', 'name', 'updatedAt', 'userId'] as const
+  $columns = CampaignSchema.$columns
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number
+}
+
+export class ComplaintSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'kind', 'qrCodeId', 'reason', 'reporterUserId', 'resolution', 'resolvedAt', 'resolvedByUserId', 'status', 'updatedAt'] as const
+  $columns = ComplaintSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare kind: string
+  @column()
+  declare qrCodeId: string
+  @column()
+  declare reason: string
+  @column()
+  declare reporterUserId: number | null
+  @column()
+  declare resolution: string | null
+  @column.dateTime()
+  declare resolvedAt: DateTime | null
+  @column()
+  declare resolvedByUserId: number | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class DesignPresetSchema extends BaseModel {
+  static $columns = ['createdAt', 'design', 'designVersion', 'id', 'logoAssetId', 'name', 'updatedAt', 'userId'] as const
+  $columns = DesignPresetSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare design: any
+  @column()
+  declare designVersion: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare logoAssetId: string | null
+  @column()
+  declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number
+}
+
+export class LinkCheckSchema extends BaseModel {
+  static $columns = ['checkedAt', 'createdAt', 'destinationId', 'id', 'provider', 'qrCodeId', 'resultCode', 'status', 'trigger'] as const
+  $columns = LinkCheckSchema.$columns
+  @column.dateTime()
+  declare checkedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare destinationId: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare provider: string | null
+  @column()
+  declare qrCodeId: string
+  @column()
+  declare resultCode: string | null
+  @column()
+  declare status: string
+  @column()
+  declare trigger: string
+}
+
+export class NotificationDeliverySchema extends BaseModel {
+  static $columns = ['createdAt', 'deduplicationKey', 'encryptedPayload', 'id', 'kind', 'lastErrorCode', 'providerMessageId', 'qrCodeId', 'recipient', 'sentAt', 'status', 'updatedAt', 'userId'] as const
+  $columns = NotificationDeliverySchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deduplicationKey: string
+  @column()
+  declare encryptedPayload: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare kind: string
+  @column()
+  declare lastErrorCode: string | null
+  @column()
+  declare providerMessageId: string | null
+  @column()
+  declare qrCodeId: string | null
+  @column()
+  declare recipient: string
+  @column.dateTime()
+  declare sentAt: DateTime | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number
+}
+
+export class QrBlockSchema extends BaseModel {
+  static $columns = ['createdAt', 'createdByUserId', 'id', 'kind', 'linkCheckId', 'qrCodeId', 'reason', 'releaseReason', 'releasedAt', 'releasedByUserId'] as const
+  $columns = QrBlockSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare kind: string
+  @column()
+  declare linkCheckId: string | null
+  @column()
+  declare qrCodeId: string
+  @column()
+  declare reason: string
+  @column()
+  declare releaseReason: string | null
+  @column.dateTime()
+  declare releasedAt: DateTime | null
+  @column()
+  declare releasedByUserId: number | null
+}
+
+export class QrCodeSchema extends BaseModel {
+  static $columns = ['campaignId', 'createdAt', 'deletedAt', 'design', 'designVersion', 'encoding', 'id', 'logoAssetId', 'name', 'pausedAt', 'purgeAfter', 'shortCode', 'updatedAt', 'userId'] as const
+  $columns = QrCodeSchema.$columns
+  @column()
+  declare campaignId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare deletedAt: DateTime | null
+  @column()
+  declare design: any
+  @column()
+  declare designVersion: number
+  @column()
+  declare encoding: any
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare logoAssetId: string | null
+  @column()
+  declare name: string
+  @column.dateTime()
+  declare pausedAt: DateTime | null
+  @column.dateTime()
+  declare purgeAfter: DateTime | null
+  @column()
+  declare shortCode: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number
+}
+
+export class QrDestinationSchema extends BaseModel {
+  static $columns = ['activatedAt', 'createdAt', 'id', 'qrCodeId', 'retiredAt', 'status', 'url'] as const
+  $columns = QrDestinationSchema.$columns
+  @column.dateTime()
+  declare activatedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare qrCodeId: string
+  @column.dateTime()
+  declare retiredAt: DateTime | null
+  @column()
+  declare status: string
+  @column()
+  declare url: string
+}
+
+export class RedirectEventSchema extends BaseModel {
+  static $columns = ['browserName', 'campaignId', 'city', 'countryCode', 'destinationId', 'deviceType', 'id', 'isBot', 'latitude', 'longitude', 'occurredAt', 'osName', 'qrCodeId', 'region', 'userId', 'visitorKey'] as const
+  $columns = RedirectEventSchema.$columns
+  @column()
+  declare browserName: string | null
+  @column()
+  declare campaignId: string | null
+  @column()
+  declare city: string | null
+  @column()
+  declare countryCode: string | null
+  @column()
+  declare destinationId: string
+  @column()
+  declare deviceType: string | null
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare isBot: boolean | null
+  @column()
+  declare latitude: string | null
+  @column()
+  declare longitude: string | null
+  @column.dateTime()
+  declare occurredAt: DateTime
+  @column()
+  declare osName: string | null
+  @column()
+  declare qrCodeId: string
+  @column()
+  declare region: string | null
+  @column()
+  declare userId: number
+  @column()
+  declare visitorKey: string | null
+}
+
 export class SessionSchema extends BaseModel {
   static $columns = ['data', 'expiresAt', 'id', 'userId'] as const
   $columns = SessionSchema.$columns
@@ -20,19 +359,67 @@ export class SessionSchema extends BaseModel {
   declare userId: string | null
 }
 
-export class UserSchema extends BaseModel {
-  static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
-  $columns = UserSchema.$columns
+export class ShortCodeSchema extends BaseModel {
+  static $columns = ['code', 'createdAt', 'qrCodeId'] as const
+  $columns = ShortCodeSchema.$columns
+  @column({ isPrimary: true })
+  declare code: string
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
+  declare qrCodeId: string
+}
+
+export class TrialExtensionSchema extends BaseModel {
+  static $columns = ['actorUserId', 'createdAt', 'id', 'newEndsAt', 'previousEndsAt', 'reason', 'userId'] as const
+  $columns = TrialExtensionSchema.$columns
+  @column()
+  declare actorUserId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare newEndsAt: DateTime
+  @column.dateTime()
+  declare previousEndsAt: DateTime
+  @column()
+  declare reason: string
+  @column()
+  declare userId: number
+}
+
+export class UserSchema extends BaseModel {
+  static $columns = ['blockReason', 'blockedAt', 'createdAt', 'deleteAfter', 'deletionRequestedAt', 'email', 'emailVerifiedAt', 'fullName', 'id', 'password', 'role', 'timezone', 'trialEndsAt', 'trialStartedAt', 'updatedAt'] as const
+  $columns = UserSchema.$columns
+  @column()
+  declare blockReason: string | null
+  @column.dateTime()
+  declare blockedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare deleteAfter: DateTime | null
+  @column.dateTime()
+  declare deletionRequestedAt: DateTime | null
+  @column()
   declare email: string
+  @column.dateTime()
+  declare emailVerifiedAt: DateTime | null
   @column()
   declare fullName: string | null
   @column({ isPrimary: true })
   declare id: number
   @column({ serializeAs: null })
   declare password: string
+  @column()
+  declare role: string
+  @column()
+  declare timezone: string
+  @column.dateTime()
+  declare trialEndsAt: DateTime | null
+  @column.dateTime()
+  declare trialStartedAt: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

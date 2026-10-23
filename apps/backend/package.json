@@ -33,6 +33,7 @@
     "build": "node ace build",
     "dev": "node ace serve --hmr",
     "test": "node ace test",
+    "test:docker": "bash scripts/test_docker.sh",
     "lint": "oxlint --deny-warnings",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
