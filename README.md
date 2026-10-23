@@ -2,7 +2,8 @@
 
 Веб-редактор оформленных QR-кодов. Работают headless engine, общий Vue editor
 и приложение для ручной проверки с переключателем полной и компактной конфигураций.
-Публичный лендинг, аккаунты, динамические ссылки и аналитика ещё не реализованы.
+Добавлен стартовый backend; его состояние — в [архитектуре](docs/architecture.md#целевая-архитектура-backend).
+Публичный лендинг, продуктовые сценарии аккаунтов, динамические ссылки и аналитика ещё не реализованы.
 
 Следующий MVP — кабинет с пробным доступом к динамическим QR, библиотекой дизайнов,
 кампаниями и расширенной аналитикой, без платежей.
@@ -27,10 +28,15 @@ pnpm dev
 | `pnpm lint`                         | Oxlint, предупреждения считаются ошибками                       |
 | `pnpm format:check` / `pnpm format` | Проверить / применить форматирование                            |
 | `pnpm typecheck`                    | TypeScript и Vue-шаблоны                                        |
-| `pnpm test`                         | Модульные тесты engine/editor                                   |
+| `pnpm test`                         | Тесты пакетов и приложений                                      |
 | `pnpm test:scan`                    | SVG → PNG в Chromium → независимый ZXing WASM decoder           |
 | `pnpm test:ui`                      | Действия в редакторе на desktop/mobile, экспорт и декодирование |
-| `pnpm build`                        | Сборка пакета и frontend                                        |
+| `pnpm build`                        | Сборка toolkit, frontend и backend                              |
+
+Для проверок только backend используйте `pnpm --filter backend lint`, `lint:fix`,
+`format`, `format:check` и `typecheck`. Перед первой проверкой типов сгенерируйте
+файлы Adonis: `pnpm --filter backend exec node ace codegen`. Правила и исключения описаны в
+[архитектуре](docs/architecture.md#целевая-архитектура-backend).
 
 Для браузерных тестов один раз установите Chromium:
 `pnpm --filter @qr-studio/toolkit test:scan:install`.

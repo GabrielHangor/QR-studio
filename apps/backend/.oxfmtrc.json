@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "semi": true,
+  "quoteProps": "consistent",
+  "htmlWhitespaceSensitivity": "ignore",
+  "sortImports": true,
+  "ignorePatterns": [
+    "node_modules/**",
+    "build/**",
+    ".adonisjs/**",
+    "database/schema.ts",
+    "coverage/**",
+    "tmp/**",
+    "public/assets/**"
+  ]
+}

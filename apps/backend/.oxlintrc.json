@@ -1,0 +1,89 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "oxc", "unicorn", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "no-nested-ternary": "error",
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "no-debugger": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "curly": ["error", "multi-line"],
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": true
+      }
+    ],
+    "no-lonely-if": "error",
+    "no-useless-return": "error",
+    "no-useless-rename": "error",
+    "no-duplicate-imports": [
+      "error",
+      {
+        "allowSeparateTypeImports": true
+      }
+    ],
+    "object-shorthand": ["error", "properties"],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "separate-type-imports",
+        "disallowTypeAnnotations": false
+      }
+    ],
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-inferrable-types": [
+      "error",
+      {
+        "ignoreParameters": true,
+        "ignoreProperties": true
+      }
+    ],
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/consistent-function-scoping": "off",
+    "no-shadow": [
+      "warn",
+      {
+        "allow": ["_"],
+        "ignoreOnInitialization": true
+      }
+    ],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "snakeCase"
+      }
+    ],
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["reflect-metadata", "@poppinss/ts-exec"]
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "node_modules/**",
+    "build/**",
+    ".adonisjs/**",
+    "database/schema.ts",
+    "coverage/**",
+    "tmp/**",
+    "public/assets/**"
+  ],
+  "env": {
+    "browser": false,
+    "node": true
+  }
+}

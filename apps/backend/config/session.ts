@@ -1,6 +1,7 @@
-import env from '#start/env'
-import app from '@adonisjs/core/services/app'
-import { defineConfig, stores } from '@adonisjs/session'
+import app from "@adonisjs/core/services/app";
+import { defineConfig, stores } from "@adonisjs/session";
+
+import env from "#start/env";
 
 const sessionConfig = defineConfig({
   /**
@@ -11,7 +12,7 @@ const sessionConfig = defineConfig({
   /**
    * Cookie name storing the session identifier.
    */
-  cookieName: 'adonis-session',
+  cookieName: "adonis-session",
 
   /**
    * When set to true, the session id cookie will be deleted
@@ -23,7 +24,7 @@ const sessionConfig = defineConfig({
    * Define how long to keep the session data alive without
    * any activity.
    */
-  age: '2h',
+  age: "2h",
 
   /**
    * Configuration for session cookie and the
@@ -33,7 +34,7 @@ const sessionConfig = defineConfig({
     /**
      * Restrict the cookie to a URL path. '/' means all routes.
      */
-    path: '/',
+    path: "/",
 
     /**
      * Prevent JavaScript access to the cookie in the browser.
@@ -48,7 +49,7 @@ const sessionConfig = defineConfig({
     /**
      * Cross-site policy for cookie sending.
      */
-    sameSite: 'lax',
+    sameSite: "lax",
   },
 
   /**
@@ -56,7 +57,7 @@ const sessionConfig = defineConfig({
    * variable in order to infer the store name without any
    * errors.
    */
-  store: env.get('SESSION_DRIVER'),
+  store: env.get("SESSION_DRIVER"),
 
   /**
    * List of configured stores. Refer documentation to see
@@ -73,6 +74,6 @@ const sessionConfig = defineConfig({
      */
     database: stores.database(),
   },
-})
+});
 
-export default sessionConfig
+export default sessionConfig;
