@@ -30,29 +30,6 @@ export class AccountActionTokenSchema extends BaseModel {
   declare userId: number
 }
 
-export class AssetSchema extends BaseModel {
-  static $columns = ['byteSize', 'createdAt', 'height', 'id', 'mediaType', 'sha256', 'storageKey', 'userId', 'width'] as const
-  $columns = AssetSchema.$columns
-  @column()
-  declare byteSize: bigint | number
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare height: number
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare mediaType: string
-  @column({ columnName: 'sha256' })
-  declare sha256: string
-  @column()
-  declare storageKey: string
-  @column()
-  declare userId: number
-  @column()
-  declare width: number
-}
-
 export class AuditLogSchema extends BaseModel {
   static $columns = ['action', 'actorUserId', 'createdAt', 'id', 'metadata', 'reason', 'targetId', 'targetType'] as const
   $columns = AuditLogSchema.$columns
@@ -113,23 +90,6 @@ export class BackgroundJobSchema extends BaseModel {
   declare userId: number | null
 }
 
-export class CampaignSchema extends BaseModel {
-  static $columns = ['archivedAt', 'createdAt', 'id', 'name', 'updatedAt', 'userId'] as const
-  $columns = CampaignSchema.$columns
-  @column.dateTime()
-  declare archivedAt: DateTime | null
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare name: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime
-  @column()
-  declare userId: number
-}
-
 export class ComplaintSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'kind', 'qrCodeId', 'reason', 'reporterUserId', 'resolution', 'resolvedAt', 'resolvedByUserId', 'status', 'updatedAt'] as const
   $columns = ComplaintSchema.$columns
@@ -158,7 +118,7 @@ export class ComplaintSchema extends BaseModel {
 }
 
 export class DesignPresetSchema extends BaseModel {
-  static $columns = ['createdAt', 'design', 'designVersion', 'id', 'logoAssetId', 'name', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'design', 'designVersion', 'id', 'name', 'updatedAt', 'userId'] as const
   $columns = DesignPresetSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -168,8 +128,6 @@ export class DesignPresetSchema extends BaseModel {
   declare designVersion: number
   @column({ isPrimary: true })
   declare id: string
-  @column()
-  declare logoAssetId: string | null
   @column()
   declare name: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -232,6 +190,23 @@ export class NotificationDeliverySchema extends BaseModel {
   declare userId: number
 }
 
+export class PaywallIntentSchema extends BaseModel {
+  static $columns = ['createdAt', 'currency', 'id', 'option', 'priceMinor', 'userId'] as const
+  $columns = PaywallIntentSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare currency: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare option: string
+  @column()
+  declare priceMinor: number
+  @column()
+  declare userId: number
+}
+
 export class QrBlockSchema extends BaseModel {
   static $columns = ['createdAt', 'createdByUserId', 'id', 'kind', 'linkCheckId', 'qrCodeId', 'reason', 'releaseReason', 'releasedAt', 'releasedByUserId'] as const
   $columns = QrBlockSchema.$columns
@@ -258,10 +233,8 @@ export class QrBlockSchema extends BaseModel {
 }
 
 export class QrCodeSchema extends BaseModel {
-  static $columns = ['campaignId', 'createdAt', 'deletedAt', 'design', 'designVersion', 'encoding', 'id', 'logoAssetId', 'name', 'pausedAt', 'purgeAfter', 'shortCode', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'deletedAt', 'design', 'designVersion', 'encoding', 'id', 'name', 'pausedAt', 'shortCode', 'updatedAt', 'userId'] as const
   $columns = QrCodeSchema.$columns
-  @column()
-  declare campaignId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column.dateTime()
@@ -275,13 +248,9 @@ export class QrCodeSchema extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
   @column()
-  declare logoAssetId: string | null
-  @column()
   declare name: string
   @column.dateTime()
   declare pausedAt: DateTime | null
-  @column.dateTime()
-  declare purgeAfter: DateTime | null
   @column()
   declare shortCode: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -309,13 +278,36 @@ export class QrDestinationSchema extends BaseModel {
   declare url: string
 }
 
+export class QrLogoSchema extends BaseModel {
+  static $columns = ['byteSize', 'createdAt', 'height', 'mediaType', 'qrCodeId', 'sha256', 'storageKey', 'updatedAt', 'userId', 'width'] as const
+  $columns = QrLogoSchema.$columns
+  @column()
+  declare byteSize: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare height: number
+  @column()
+  declare mediaType: string
+  @column({ isPrimary: true })
+  declare qrCodeId: string
+  @column({ columnName: 'sha256' })
+  declare sha256: string
+  @column()
+  declare storageKey: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: number
+  @column()
+  declare width: number
+}
+
 export class RedirectEventSchema extends BaseModel {
-  static $columns = ['browserName', 'campaignId', 'city', 'countryCode', 'destinationId', 'deviceType', 'id', 'isBot', 'latitude', 'longitude', 'occurredAt', 'osName', 'qrCodeId', 'region', 'userId', 'visitorKey'] as const
+  static $columns = ['aggregatedAt', 'city', 'countryCode', 'destinationId', 'deviceType', 'id', 'isBot', 'occurredAt', 'osName', 'qrCodeId', 'userId'] as const
   $columns = RedirectEventSchema.$columns
-  @column()
-  declare browserName: string | null
-  @column()
-  declare campaignId: string | null
+  @column.dateTime()
+  declare aggregatedAt: DateTime | null
   @column()
   declare city: string | null
   @column()
@@ -327,11 +319,7 @@ export class RedirectEventSchema extends BaseModel {
   @column({ isPrimary: true })
   declare id: bigint | number
   @column()
-  declare isBot: boolean | null
-  @column()
-  declare latitude: string | null
-  @column()
-  declare longitude: string | null
+  declare isBot: boolean
   @column.dateTime()
   declare occurredAt: DateTime
   @column()
@@ -339,11 +327,30 @@ export class RedirectEventSchema extends BaseModel {
   @column()
   declare qrCodeId: string
   @column()
-  declare region: string | null
+  declare userId: number
+}
+
+export class RedirectHourlyStatSchema extends BaseModel {
+  static $columns = ['bucketStart', 'city', 'countryCode', 'deviceType', 'id', 'osName', 'qrCodeId', 'redirects', 'userId'] as const
+  $columns = RedirectHourlyStatSchema.$columns
+  @column.dateTime()
+  declare bucketStart: DateTime
+  @column()
+  declare city: string | null
+  @column()
+  declare countryCode: string | null
+  @column()
+  declare deviceType: string | null
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare osName: string | null
+  @column()
+  declare qrCodeId: string
+  @column()
+  declare redirects: number
   @column()
   declare userId: number
-  @column()
-  declare visitorKey: string | null
 }
 
 export class SessionSchema extends BaseModel {
@@ -370,6 +377,25 @@ export class ShortCodeSchema extends BaseModel {
   declare qrCodeId: string
 }
 
+export class TrialApplicationSchema extends BaseModel {
+  static $columns = ['createdAt', 'decidedAt', 'decidedByUserId', 'id', 'purpose', 'status', 'userId'] as const
+  $columns = TrialApplicationSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare decidedAt: DateTime | null
+  @column()
+  declare decidedByUserId: number | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare purpose: string
+  @column()
+  declare status: string
+  @column()
+  declare userId: number
+}
+
 export class TrialExtensionSchema extends BaseModel {
   static $columns = ['actorUserId', 'createdAt', 'id', 'newEndsAt', 'previousEndsAt', 'reason', 'userId'] as const
   $columns = TrialExtensionSchema.$columns
@@ -390,7 +416,7 @@ export class TrialExtensionSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['blockReason', 'blockedAt', 'createdAt', 'deleteAfter', 'deletionRequestedAt', 'email', 'emailVerifiedAt', 'fullName', 'id', 'password', 'role', 'timezone', 'trialEndsAt', 'trialStartedAt', 'updatedAt'] as const
+  static $columns = ['blockReason', 'blockedAt', 'createdAt', 'deleteAfter', 'deletionRequestedAt', 'email', 'emailVerifiedAt', 'fullName', 'id', 'lastLoginAt', 'password', 'role', 'timezone', 'trialEndsAt', 'trialStartedAt', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column()
   declare blockReason: string | null
@@ -410,6 +436,8 @@ export class UserSchema extends BaseModel {
   declare fullName: string | null
   @column({ isPrimary: true })
   declare id: number
+  @column.dateTime()
+  declare lastLoginAt: DateTime | null
   @column({ serializeAs: null })
   declare password: string
   @column()

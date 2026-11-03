@@ -100,7 +100,7 @@ export default class extends BaseSchema {
       table
         .string("target_type", 20)
         .notNullable()
-        .checkIn(["user", "qr_code", "complaint"], "audit_logs_target_check");
+        .checkIn(["user", "qr_code", "complaint", "trial_application"], "audit_logs_target_check");
       // Opaque IDs remain useful after the target is deleted; no copied names, URLs or emails.
       table.string("target_id", 64).notNullable();
       table.text("reason").notNullable();

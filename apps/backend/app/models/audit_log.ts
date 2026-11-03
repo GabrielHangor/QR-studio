@@ -8,6 +8,7 @@ export enum AuditLogTargetType {
   User = "user",
   QrCode = "qr_code",
   Complaint = "complaint",
+  TrialApplication = "trial_application",
 }
 
 export default class AuditLog extends AuditLogSchema {

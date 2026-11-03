@@ -1,16 +1,16 @@
-import { belongsTo, hasMany } from "@adonisjs/lucid/orm";
-import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import { belongsTo, hasMany, hasOne } from "@adonisjs/lucid/orm";
+import type { BelongsTo, HasMany, HasOne } from "@adonisjs/lucid/types/relations";
 
 import { QrCodeSchema } from "#database/schema";
-import Asset from "#models/asset";
 import BackgroundJob from "#models/background_job";
-import Campaign from "#models/campaign";
 import Complaint from "#models/complaint";
 import LinkCheck from "#models/link_check";
 import NotificationDelivery from "#models/notification_delivery";
 import QrBlock from "#models/qr_block";
 import QrDestination from "#models/qr_destination";
+import QrLogo from "#models/qr_logo";
 import RedirectEvent from "#models/redirect_event";
+import RedirectHourlyStat from "#models/redirect_hourly_stat";
 import ShortCode from "#models/short_code";
 import User from "#models/user";
 
@@ -18,14 +18,11 @@ export default class QrCode extends QrCodeSchema {
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>;
 
-  @belongsTo(() => Campaign)
-  declare campaign: BelongsTo<typeof Campaign> | null;
-
-  @belongsTo(() => Asset, { foreignKey: "logoAssetId" })
-  declare logoAsset: BelongsTo<typeof Asset> | null;
-
   @belongsTo(() => ShortCode, { foreignKey: "shortCode", localKey: "code" })
   declare reservation: BelongsTo<typeof ShortCode>;
+
+  @hasOne(() => QrLogo)
+  declare logo: HasOne<typeof QrLogo> | null;
 
   @hasMany(() => QrDestination)
   declare destinations: HasMany<typeof QrDestination>;
@@ -41,6 +38,9 @@ export default class QrCode extends QrCodeSchema {
 
   @hasMany(() => RedirectEvent)
   declare redirectEvents: HasMany<typeof RedirectEvent>;
+
+  @hasMany(() => RedirectHourlyStat)
+  declare hourlyStats: HasMany<typeof RedirectHourlyStat>;
 
   @hasMany(() => NotificationDelivery)
   declare notificationDeliveries: HasMany<typeof NotificationDelivery>;

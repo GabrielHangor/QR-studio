@@ -30,41 +30,44 @@ export default class extends BaseSchema {
         .references(["code", "qr_code_id"])
         .inTable("short_codes");
       table.string("name", 200).notNullable();
-      table.uuid("campaign_id");
-      table.uuid("logo_asset_id");
       table.integer("design_version").notNullable().checkPositive("qr_codes_design_version_check");
       table.jsonb("design").notNullable();
       table.jsonb("encoding").notNullable();
       table.timestamp("paused_at", { useTz: true });
       table.timestamp("deleted_at", { useTz: true });
-      table.timestamp("purge_after", { useTz: true }).index();
       table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(this.now());
       table.timestamp("updated_at", { useTz: true }).notNullable().defaultTo(this.now());
       table.unique(["user_id", "id"]);
-      table
-        .foreign(["user_id", "campaign_id"], "qr_campaign_owner_fk")
-        .references(["user_id", "id"])
-        .inTable("campaigns")
-        .onDelete("NO ACTION");
-      table
-        .foreign(["user_id", "logo_asset_id"], "qr_logo_owner_fk")
-        .references(["user_id", "id"])
-        .inTable("assets")
-        .onDelete("NO ACTION");
       table.index(["user_id", "deleted_at", "created_at"]);
-      table.index("campaign_id");
-      table.index("logo_asset_id");
       table.check("length(btrim(name)) > 0", [], "qr_codes_name_check");
       table.check(
         "jsonb_typeof(design) = 'object' AND jsonb_typeof(encoding) = 'object'",
         [],
         "qr_codes_design_check",
       );
-      table.check(
-        "(deleted_at IS NULL AND purge_after IS NULL) OR (deleted_at IS NOT NULL AND purge_after IS NOT NULL AND purge_after >= deleted_at)",
-        [],
-        "qr_codes_deletion_dates_check",
-      );
+    });
+
+    // Personal logo of a dynamic QR; deleted together with the QR.
+    this.schema.createTable("qr_logos", (table) => {
+      table.uuid("qr_code_id").primary();
+      table.integer("user_id").notNullable().references("users.id").onDelete("CASCADE");
+      table
+        .foreign(["user_id", "qr_code_id"], "qr_logos_qr_owner_fk")
+        .references(["user_id", "id"])
+        .inTable("qr_codes")
+        .onDelete("CASCADE");
+      table.text("storage_key").notNullable().unique();
+      table
+        .string("media_type", 32)
+        .notNullable()
+        .checkIn(["image/png", "image/jpeg", "image/webp"], "qr_logos_media_type_check");
+      table.bigInteger("byte_size").notNullable().checkPositive("qr_logos_byte_size_check");
+      table.integer("width").notNullable().checkPositive("qr_logos_width_check");
+      table.integer("height").notNullable().checkPositive("qr_logos_height_check");
+      table.string("sha256", 64).notNullable().checkRegex("^[0-9a-f]{64}$", "qr_logos_hash_check");
+      table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(this.now());
+      table.timestamp("updated_at", { useTz: true }).notNullable().defaultTo(this.now());
+      table.check("length(btrim(storage_key)) > 0", [], "qr_logos_storage_key_check");
     });
 
     this.schema.createTable("qr_destinations", (table) => {
@@ -108,6 +111,7 @@ export default class extends BaseSchema {
   }
 
   async down() {
+    this.schema.dropTable("qr_logos");
     this.schema.dropTable("qr_destinations");
     this.schema.dropTable("qr_codes");
     this.schema.dropTable("short_codes");

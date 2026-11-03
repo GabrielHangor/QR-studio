@@ -5,17 +5,20 @@ import { test } from "@japa/runner";
 import { DateTime } from "luxon";
 
 import { AccountActionTokenPurpose } from "#models/account_action_token";
-import { AssetMediaType } from "#models/asset";
 import { AuditLogTargetType } from "#models/audit_log";
 import BackgroundJob, { BackgroundJobStatus } from "#models/background_job";
 import { ComplaintKind, ComplaintStatus } from "#models/complaint";
 import { LinkCheckStatus, LinkCheckTrigger } from "#models/link_check";
+import { PaywallOption } from "#models/paywall_intent";
 import QrBlock, { QrBlockKind } from "#models/qr_block";
 import QrCode from "#models/qr_code";
 import { QrDestinationStatus } from "#models/qr_destination";
+import { QrLogoMediaType } from "#models/qr_logo";
 import RedirectEvent from "#models/redirect_event";
+import RedirectHourlyStat from "#models/redirect_hourly_stat";
 import Session from "#models/session";
 import ShortCode from "#models/short_code";
+import { TrialApplicationStatus } from "#models/trial_application";
 import User, { UserRole } from "#models/user";
 
 function account() {
@@ -24,66 +27,57 @@ function account() {
 
 async function qrGraph() {
   const user = await account();
-  const campaign = await user.related("campaigns").create({ name: "Campaign" });
-  const logo = await user.related("assets").create({
-    storageKey: `logos/${randomUUID()}.png`,
-    mediaType: AssetMediaType.Png,
-    byteSize: 1024,
-    width: 32,
-    height: 32,
-    sha256: "a".repeat(64),
-  });
   const reservation = await ShortCode.create({ code: randomUUID(), qrCodeId: randomUUID() });
   const qr = await user.related("qrCodes").create({
     id: reservation.qrCodeId,
     shortCode: reservation.code,
     name: "QR",
-    campaignId: campaign.id,
-    logoAssetId: logo.id,
     designVersion: 1,
     design: { color: "#000000" },
     encoding: {},
+  });
+  const logo = await qr.related("logo").create({
+    userId: user.id,
+    storageKey: `logos/${randomUUID()}.png`,
+    mediaType: QrLogoMediaType.Png,
+    byteSize: 1024,
+    width: 32,
+    height: 32,
+    sha256: "a".repeat(64),
   });
   const destination = await qr.related("destinations").create({
     url: "HTTPS://example.test/path",
     status: QrDestinationStatus.Approved,
     activatedAt: DateTime.utc(),
   });
-  return { user, campaign, logo, reservation, qr, destination };
+  return { user, logo, reservation, qr, destination };
 }
 
 test.group("Lucid model relationships", (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction());
 
-  test("creates owned resources and preloads the library, QR and short-code reservation", async ({
+  test("creates owned resources and preloads the library, QR logo and short-code reservation", async ({
     assert,
   }) => {
-    const { user, campaign, logo, reservation, qr, destination } = await qrGraph();
+    const { user, logo, reservation, qr, destination } = await qrGraph();
     const otherUser = await account();
     const preset = await user.related("designPresets").create({
       name: "Preset",
       designVersion: 1,
       design: { color: "#123456" },
-      logoAssetId: logo.id,
     });
     const loaded = await User.query()
       .where("id", user.id)
-      .preload("assets")
-      .preload("designPresets", (query) => query.preload("logoAsset"))
-      .preload("campaigns", (query) => query.preload("qrCodes"))
+      .preload("designPresets")
       .preload("qrCodes", (query) =>
-        query.preload("user").preload("campaign").preload("logoAsset").preload("destinations"),
+        query.preload("user").preload("logo").preload("destinations").preload("hourlyStats"),
       )
       .firstOrFail();
 
     assert.equal(loaded.role, UserRole.User);
-    assert.equal(loaded.assets[0].id, logo.id);
     assert.equal(loaded.designPresets[0].id, preset.id);
-    assert.equal(loaded.designPresets[0].logoAsset?.id, logo.id);
-    assert.equal(loaded.campaigns[0].qrCodes[0].id, qr.id);
     assert.equal(loaded.qrCodes[0].user.id, user.id);
-    assert.equal(loaded.qrCodes[0].campaign?.id, campaign.id);
-    assert.equal(loaded.qrCodes[0].logoAsset?.id, logo.id);
+    assert.equal(loaded.qrCodes[0].logo?.qrCodeId, logo.qrCodeId);
     assert.equal(loaded.qrCodes[0].destinations[0].id, destination.id);
     assert.deepEqual(loaded.qrCodes[0].design, { color: "#000000" });
     assert.isTrue(loaded.qrCodes[0].createdAt.isValid);
@@ -93,13 +87,13 @@ test.group("Lucid model relationships", (group) => {
     await reserved.load("qrCode", (query) => query.preload("reservation"));
     assert.equal(reserved.qrCode?.id, qr.id);
     assert.equal(reserved.qrCode?.reservation.code, reservation.code);
-    await logo.load("designPresets");
-    await logo.load("qrCodes");
-    assert.equal(logo.designPresets[0].id, preset.id);
-    assert.equal(logo.qrCodes[0].id, qr.id);
+    await logo.load("qrCode");
+    assert.equal(logo.qrCode.id, qr.id);
+    await logo.load("user");
+    assert.equal(logo.user.id, user.id);
   });
 
-  test("loads moderation and account actions, retaining history after the actor is deleted", async ({
+  test("loads moderation, account actions and paywall intents, retaining history after the actor is deleted", async ({
     assert,
   }) => {
     const { user, qr, destination } = await qrGraph();
@@ -138,6 +132,17 @@ test.group("Lucid model relationships", (group) => {
       newEndsAt: DateTime.utc().plus({ days: 60 }),
       reason: "Test extension",
     });
+    const application = await user.related("trialApplications").create({
+      purpose: "Dynamic QR for a menu",
+      status: TrialApplicationStatus.Approved,
+      decidedAt: DateTime.utc(),
+      decidedByUserId: actor.id,
+    });
+    const paywallIntent = await user.related("paywallIntents").create({
+      option: PaywallOption.OneTime,
+      priceMinor: 99000,
+      currency: "RUB",
+    });
     const token = await user.related("accountActionTokens").create({
       purpose: AccountActionTokenPurpose.EmailVerification,
       tokenHash: "a".repeat(64),
@@ -160,6 +165,13 @@ test.group("Lucid model relationships", (group) => {
     assert.equal(actor.authoredTrialExtensions[0].id, extension.id);
     await token.load("user");
     assert.equal(token.user.id, user.id);
+    await user.load("trialApplications");
+    assert.equal(user.trialApplications[0].id, application.id);
+    await application.load("decidedBy");
+    assert.equal(application.decidedBy?.id, actor.id);
+    await user.load("paywallIntents");
+    assert.equal(user.paywallIntents[0].id, paywallIntent.id);
+    assert.equal(user.paywallIntents[0].option, PaywallOption.OneTime);
 
     await actor.delete();
     const orphanedBlock = await QrBlock.query()
@@ -174,20 +186,28 @@ test.group("Lucid model relationships", (group) => {
     await audit.load("actor");
     assert.isNull(audit.actor);
     assert.equal(audit.targetId, complaint.id);
+    await application.refresh();
+    await application.load("decidedBy");
+    assert.isNull(application.decidedBy);
   });
 
-  test("loads analytics and background work, then keeps only the reservation after QR cleanup", async ({
+  test("loads hourly stats and background work, then keeps only the reservation after QR cleanup", async ({
     assert,
   }) => {
-    const { user, campaign, qr, destination, reservation } = await qrGraph();
+    const { user, qr, destination, reservation } = await qrGraph();
     const event = await destination.related("redirectEvents").create({
       userId: user.id,
       qrCodeId: qr.id,
-      campaignId: campaign.id,
-      visitorKey: "b".repeat(64),
       countryCode: "RU",
-      latitude: "55.750000",
-      longitude: "37.620000",
+    });
+    const hourly = await qr.related("hourlyStats").create({
+      userId: user.id,
+      bucketStart: DateTime.utc(2026, 11, 3, 10),
+      countryCode: "RU",
+      city: null,
+      deviceType: null,
+      osName: null,
+      redirects: 3,
     });
     const notification = await user.related("notificationDeliveries").create({
       qrCodeId: qr.id,
@@ -217,13 +237,20 @@ test.group("Lucid model relationships", (group) => {
       .where("id", String(event.id))
       .preload("user")
       .preload("qrCode")
-      .preload("campaign")
       .preload("destination")
       .firstOrFail();
     assert.equal(loadedEvent.user.id, user.id);
     assert.equal(loadedEvent.qrCode.id, qr.id);
-    assert.equal(loadedEvent.campaign?.id, campaign.id);
     assert.equal(loadedEvent.destination.id, destination.id);
+    assert.isFalse(loadedEvent.isBot);
+    const loadedHourly = await RedirectHourlyStat.query()
+      .where("id", String(hourly.id))
+      .preload("user")
+      .preload("qrCode")
+      .firstOrFail();
+    assert.equal(loadedHourly.user.id, user.id);
+    assert.equal(loadedHourly.qrCode.id, qr.id);
+    assert.equal(loadedHourly.redirects, 3);
     const session = await Session.create({
       id: randomUUID(),
       userId: String(user.id),
@@ -234,6 +261,7 @@ test.group("Lucid model relationships", (group) => {
 
     await qr.delete();
     assert.isNull(await RedirectEvent.find(event.id));
+    assert.isNull(await RedirectHourlyStat.find(hourly.id));
     assert.isNull(await BackgroundJob.find(job.id));
     await reservation.refresh();
     await reservation.load("qrCode");

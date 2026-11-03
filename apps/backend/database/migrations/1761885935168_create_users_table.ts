@@ -16,6 +16,7 @@ export default class extends BaseSchema {
         .checkIn(["user", "admin"], "users_role_check");
       table.string("timezone", 64).notNullable().defaultTo("Europe/Moscow");
       table.timestamp("email_verified_at", { useTz: true });
+      table.timestamp("last_login_at", { useTz: true });
       table.timestamp("trial_started_at", { useTz: true });
       table.timestamp("trial_ends_at", { useTz: true });
       table.timestamp("blocked_at", { useTz: true });
@@ -45,6 +46,11 @@ export default class extends BaseSchema {
         predicate: this.knex().whereNotNull("trial_ends_at"),
       });
     });
+
+    // Inactivity is measured from the last login, or from registration if the user never logged in.
+    this.schema.raw(
+      "CREATE INDEX users_inactivity_index ON users ((COALESCE(last_login_at, created_at)))",
+    );
   }
 
   async down() {

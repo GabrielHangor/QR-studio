@@ -15,25 +15,22 @@ async function owner() {
   });
 }
 
-async function campaign(userId: number) {
-  const id = randomUUID();
-  await db.table("campaigns").insert({ id, user_id: userId, name: "Campaign" });
-  return id;
-}
-
-async function asset(userId: number) {
-  const id = randomUUID();
-  await db.table("assets").insert({
-    id,
+function logoValues(userId: number, qrId: string) {
+  return {
+    qr_code_id: qrId,
     user_id: userId,
-    storage_key: `logos/${id}.png`,
+    storage_key: `logos/${qrId}.png`,
     media_type: "image/png",
     byte_size: 1024,
     width: 32,
     height: 32,
     sha256: "a".repeat(64),
-  });
-  return id;
+  };
+}
+
+async function logo(userId: number, qrId: string) {
+  await db.table("qr_logos").insert(logoValues(userId, qrId));
+  return qrId;
 }
 
 async function qr(userId: number, extra: Record<string, unknown> = {}) {
@@ -89,6 +86,27 @@ async function delivery(userId: number, extra: Record<string, unknown> = {}) {
   return id;
 }
 
+async function application(userId: number, extra: Record<string, unknown> = {}) {
+  const id = randomUUID();
+  await db.table("trial_applications").insert({
+    id,
+    user_id: userId,
+    purpose: "Dynamic QR for a menu",
+    ...extra,
+  });
+  return id;
+}
+
+const upsertHourlyStat = `
+  INSERT INTO redirect_hourly_stats
+    (user_id, qr_code_id, bucket_start, country_code, city, device_type, os_name, redirects)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT (qr_code_id, bucket_start, country_code, city, device_type, os_name)
+  DO UPDATE SET redirects = redirect_hourly_stats.redirects + EXCLUDED.redirects
+`;
+
+const bucket = "2026-11-03T10:00:00.000Z";
+
 // A rejected PostgreSQL statement aborts its transaction; isolate it in a savepoint.
 function rejectedWrite(operation: (trx: TransactionClientContract) => Promise<unknown>) {
   return db.transaction(operation);
@@ -103,6 +121,7 @@ test.group("MVP data constraints", (group) => {
     assert.equal(row.role, "user");
     assert.equal(row.timezone, "Europe/Moscow");
     assert.isNull(row.trial_started_at);
+    assert.isNull(row.last_login_at);
   });
 
   test("prevents duplicate email identities regardless of case and boundary spaces", async ({
@@ -199,58 +218,164 @@ test.group("MVP data constraints", (group) => {
     );
   });
 
-  test("prevents presets and QR codes from using another owner's logo or campaign", async ({
+  test("allows one active trial application per account and a new one after rejection", async ({
     assert,
   }) => {
-    const first = await owner();
-    const second = await owner();
-    const logo = await asset(second.id);
-    const otherCampaign = await campaign(second.id);
+    const user = await owner();
+    await application(user.id);
     await assert.rejects(
       () =>
         rejectedWrite((trx) =>
-          trx.table("design_presets").insert({
-            user_id: first.id,
-            name: "Invalid",
-            design_version: 1,
-            design: {},
-            logo_asset_id: logo,
+          trx.table("trial_applications").insert({
+            user_id: user.id,
+            purpose: "Second request",
+            status: "waitlisted",
+            decided_at: new Date(),
           }),
         ),
-      /presets_logo_owner_fk/,
+      /trial_applications_one_active/,
     );
-    const code = await qr(first.id);
+    const rejected = await db.from("trial_applications").where("user_id", user.id).firstOrFail();
+    await db
+      .from("trial_applications")
+      .where("id", rejected.id)
+      .update({ status: "rejected", decided_at: new Date() });
+    await application(user.id);
+    assert.lengthOf(await db.from("trial_applications").where("user_id", user.id), 2);
+  });
+
+  test("requires decision timestamps exactly for decided trial applications", async ({
+    assert,
+  }) => {
+    const user = await owner();
     await assert.rejects(
       () =>
         rejectedWrite((trx) =>
-          trx.from("qr_codes").where("id", code.id).update({ logo_asset_id: logo }),
+          trx.table("trial_applications").insert({
+            user_id: user.id,
+            purpose: "Approved without decision",
+            status: "approved",
+          }),
         ),
-      /qr_logo_owner_fk/,
+      /trial_applications_decision_check/,
     );
     await assert.rejects(
       () =>
         rejectedWrite((trx) =>
-          trx.from("qr_codes").where("id", code.id).update({ campaign_id: otherCampaign }),
+          trx.table("trial_applications").insert({
+            user_id: user.id,
+            purpose: "Pending with decision",
+            decided_at: new Date(),
+          }),
         ),
-      /qr_campaign_owner_fk/,
+      /trial_applications_decision_check/,
+    );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("trial_applications").insert({
+            user_id: user.id,
+            purpose: "   ",
+          }),
+        ),
+      /trial_applications_purpose_check/,
     );
   });
 
-  test("keeps referenced logos even when their QR is in the trash", async ({ assert }) => {
+  test("validates paywall intent option, price and currency", async ({ assert }) => {
     const user = await owner();
-    const logo = await asset(user.id);
-    const code = await qr(user.id, {
-      logo_asset_id: logo,
-      deleted_at: new Date(),
-      purge_after: new Date(Date.now() + 60_000),
-    });
     await assert.rejects(
-      () => rejectedWrite((trx) => trx.from("assets").where("id", logo).delete()),
-      /qr_logo_owner_fk/,
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("paywall_intents").insert({
+            user_id: user.id,
+            option: "free",
+            price_minor: 0,
+            currency: "RUB",
+          }),
+        ),
+      /paywall_intents_option_check/,
     );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("paywall_intents").insert({
+            user_id: user.id,
+            option: "subscription",
+            price_minor: 0,
+            currency: "rub",
+          }),
+        ),
+      /paywall_intents_currency_check/,
+    );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("paywall_intents").insert({
+            user_id: user.id,
+            option: "one_time",
+            price_minor: -1,
+            currency: "RUB",
+          }),
+        ),
+      /paywall_intents_price_check/,
+    );
+    await db.table("paywall_intents").insert({
+      user_id: user.id,
+      option: "one_time",
+      price_minor: 99000,
+      currency: "RUB",
+    });
+    assert.lengthOf(await db.from("paywall_intents").where("user_id", user.id), 1);
+  });
+
+  test("prevents QR logos from belonging to another owner's QR", async ({ assert }) => {
+    const first = await owner();
+    const second = await owner();
+    const code = await qr(first.id);
+    await assert.rejects(
+      () => rejectedWrite((trx) => trx.table("qr_logos").insert(logoValues(second.id, code.id))),
+      /qr_logos_qr_owner_fk/,
+    );
+  });
+
+  test("keeps a QR logo while the QR is in the trash and removes it with the QR", async ({
+    assert,
+  }) => {
+    const user = await owner();
+    const code = await qr(user.id, { deleted_at: new Date() });
+    await logo(user.id, code.id);
+    assert.exists(await db.from("qr_logos").where("qr_code_id", code.id).first());
     await db.from("qr_codes").where("id", code.id).delete();
-    await db.from("assets").where("id", logo).delete();
-    assert.isNull(await db.from("assets").where("id", logo).first());
+    assert.isNull(await db.from("qr_logos").where("qr_code_id", code.id).first());
+  });
+
+  test("validates QR logo media type, size and checksum", async ({ assert }) => {
+    const user = await owner();
+    const code = await qr(user.id);
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx
+            .table("qr_logos")
+            .insert({ ...logoValues(user.id, code.id), media_type: "image/gif" }),
+        ),
+      /qr_logos_media_type_check/,
+    );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("qr_logos").insert({ ...logoValues(user.id, code.id), byte_size: 0 }),
+        ),
+      /qr_logos_byte_size_check/,
+    );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("qr_logos").insert({ ...logoValues(user.id, code.id), sha256: "A".repeat(64) }),
+        ),
+      /qr_logos_hash_check/,
+    );
   });
 
   test("preserves short code reservations and refuses reissue, mutation or deletion", async ({
@@ -326,27 +451,66 @@ test.group("MVP data constraints", (group) => {
     );
   });
 
-  test("keeps event campaign history when a QR moves and the old campaign is archived", async ({
+  test("keeps redirect events as a buffer without visitor or campaign columns", async ({
     assert,
   }) => {
     const user = await owner();
-    const first = await campaign(user.id);
-    const second = await campaign(user.id);
-    const code = await qr(user.id, { campaign_id: first });
+    const code = await qr(user.id);
     const target = await destination(code.id, { status: "approved", activated_at: new Date() });
-    await event(user.id, code.id, target, { campaign_id: first });
-    await db.from("qr_codes").where("id", code.id).update({ campaign_id: second });
-    await db.from("campaigns").where("id", first).update({ archived_at: new Date() });
-    await event(user.id, code.id, target, { campaign_id: second });
-    const events = await db.from("redirect_events").where("qr_code_id", code.id).orderBy("id");
-    assert.deepEqual(
-      events.map((row) => row.campaign_id),
-      [first, second],
-    );
+    await event(user.id, code.id, target, { country_code: "RU", device_type: "mobile" });
+    const row = await db.from("redirect_events").where("qr_code_id", code.id).firstOrFail();
+    assert.isFalse(row.is_bot);
+    assert.isNull(row.aggregated_at);
+    const columns = (
+      await db
+        .from("information_schema.columns")
+        .where({ table_schema: "public", table_name: "redirect_events" })
+        .select("column_name")
+    ).map((column) => column.column_name);
+    assert.notInclude(columns, "visitor_key");
+    assert.notInclude(columns, "campaign_id");
+    assert.notInclude(columns, "latitude");
+    assert.notInclude(columns, "browser_name");
+    assert.include(columns, "aggregated_at");
+  });
+
+  test("merges hourly stats with identical dimensions, including NULL, into one row", async ({
+    assert,
+  }) => {
+    const user = await owner();
+    const code = await qr(user.id);
+    await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, null, null, null, null, 2]);
+    await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, null, null, null, null, 3]);
+    await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, "RU", null, null, null, 1]);
+    const rows = await db.from("redirect_hourly_stats").where("qr_code_id", code.id).orderBy("id");
+    assert.lengthOf(rows, 2);
+    assert.equal(rows[0].redirects, 5);
+    assert.equal(rows[1].country_code, "RU");
+  });
+
+  test("rejects hourly buckets that are not aligned to the hour", async ({ assert }) => {
+    const user = await owner();
+    const code = await qr(user.id);
     await assert.rejects(
-      () => rejectedWrite((trx) => trx.from("campaigns").where("id", first).delete()),
-      /events_campaign_owner_fk/,
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("redirect_hourly_stats").insert({
+            user_id: user.id,
+            qr_code_id: code.id,
+            bucket_start: "2026-11-03T10:30:00.000Z",
+            redirects: 1,
+          }),
+        ),
+      /hourly_stats_bucket_check/,
     );
+  });
+
+  test("removes hourly stats with their QR", async ({ assert }) => {
+    const user = await owner();
+    const code = await qr(user.id);
+    await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, null, null, null, null, 4]);
+    await db.from("qr_codes").where("id", code.id).delete();
+    assert.isEmpty(await db.from("redirect_hourly_stats").where("qr_code_id", code.id));
   });
 
   test("rejects events with a foreign owner or another QR's destination", async ({ assert }) => {
@@ -380,7 +544,6 @@ test.group("MVP data constraints", (group) => {
     const code = await qr(user.id, {
       paused_at: new Date(),
       deleted_at: new Date(),
-      purge_after: new Date(Date.now() + 60_000),
     });
     await db.table("qr_blocks").insert([
       { qr_code_id: code.id, kind: "manual", reason: "Manual test block" },
@@ -466,19 +629,18 @@ test.group("MVP data constraints", (group) => {
     );
   });
 
-  test("erases QR-dependent history and work while preserving a preset logo and reservation", async ({
+  test("erases QR-dependent history and work while preserving a preset and reservation", async ({
     assert,
   }) => {
     const user = await owner();
-    const logo = await asset(user.id);
     await db.table("design_presets").insert({
       user_id: user.id,
       name: "Preset",
       design_version: 1,
       design: {},
-      logo_asset_id: logo,
     });
-    const code = await qr(user.id, { logo_asset_id: logo });
+    const code = await qr(user.id);
+    await logo(user.id, code.id);
     const target = await destination(code.id, { status: "approved", activated_at: new Date() });
     const check = randomUUID();
     await db.table("link_checks").insert({
@@ -494,6 +656,7 @@ test.group("MVP data constraints", (group) => {
       .insert({ qr_code_id: code.id, link_check_id: check, kind: "threat", reason: "Test block" });
     await db.table("complaints").insert({ qr_code_id: code.id, reason: "Test complaint" });
     await event(user.id, code.id, target);
+    await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, null, null, null, null, 1]);
     const notification = await delivery(user.id, { qr_code_id: code.id });
     await db.table("background_jobs").insert({
       user_id: user.id,
@@ -507,9 +670,11 @@ test.group("MVP data constraints", (group) => {
     assert.isEmpty(await db.from("qr_blocks").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("complaints").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("redirect_events").where("qr_code_id", code.id));
+    assert.isEmpty(await db.from("redirect_hourly_stats").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("notification_deliveries").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("background_jobs").where("qr_code_id", code.id));
-    assert.exists(await db.from("assets").where("id", logo).first());
+    assert.isNull(await db.from("qr_logos").where("qr_code_id", code.id).first());
+    assert.exists(await db.from("design_presets").where("user_id", user.id).first());
     assert.exists(await db.from("short_codes").where("code", code.code).first());
   });
 
@@ -517,17 +682,15 @@ test.group("MVP data constraints", (group) => {
     assert,
   }) => {
     const user = await owner();
-    const logo = await asset(user.id);
-    const groupId = await campaign(user.id);
-    const code = await qr(user.id, { logo_asset_id: logo, campaign_id: groupId });
+    const code = await qr(user.id);
+    await logo(user.id, code.id);
     const target = await destination(code.id);
-    await event(user.id, code.id, target, { campaign_id: groupId });
+    await event(user.id, code.id, target);
     await db.table("design_presets").insert({
       user_id: user.id,
       name: "Preset",
       design_version: 1,
       design: {},
-      logo_asset_id: logo,
     });
     await db.table("audit_logs").insert({
       actor_user_id: user.id,
@@ -540,7 +703,7 @@ test.group("MVP data constraints", (group) => {
     await db.from("design_presets").where("user_id", user.id).delete();
     await db.from("users").where("id", user.id).delete();
     assert.isNull(await db.from("qr_codes").where("id", code.id).first());
-    assert.isNull(await db.from("assets").where("id", logo).first());
+    assert.isNull(await db.from("qr_logos").where("qr_code_id", code.id).first());
     assert.exists(await db.from("short_codes").where("code", code.code).first());
     const audit = await db.from("audit_logs").where("target_id", code.id).firstOrFail();
     assert.isNull(audit.actor_user_id);

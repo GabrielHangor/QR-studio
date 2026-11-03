@@ -7,16 +7,17 @@ import type { HasMany } from "@adonisjs/lucid/types/relations";
 
 import { UserSchema } from "#database/schema";
 import AccountActionToken from "#models/account_action_token";
-import Asset from "#models/asset";
 import AuditLog from "#models/audit_log";
 import BackgroundJob from "#models/background_job";
-import Campaign from "#models/campaign";
 import Complaint from "#models/complaint";
 import DesignPreset from "#models/design_preset";
 import NotificationDelivery from "#models/notification_delivery";
+import PaywallIntent from "#models/paywall_intent";
 import QrBlock from "#models/qr_block";
 import QrCode from "#models/qr_code";
 import RedirectEvent from "#models/redirect_event";
+import RedirectHourlyStat from "#models/redirect_hourly_stat";
+import TrialApplication from "#models/trial_application";
 import TrialExtension from "#models/trial_extension";
 
 export enum UserRole {
@@ -57,11 +58,11 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   @hasMany(() => TrialExtension, { foreignKey: "actorUserId" })
   declare authoredTrialExtensions: HasMany<typeof TrialExtension>;
 
-  @hasMany(() => Asset)
-  declare assets: HasMany<typeof Asset>;
+  @hasMany(() => TrialApplication)
+  declare trialApplications: HasMany<typeof TrialApplication>;
 
-  @hasMany(() => Campaign)
-  declare campaigns: HasMany<typeof Campaign>;
+  @hasMany(() => PaywallIntent)
+  declare paywallIntents: HasMany<typeof PaywallIntent>;
 
   @hasMany(() => DesignPreset)
   declare designPresets: HasMany<typeof DesignPreset>;
@@ -71,6 +72,9 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
 
   @hasMany(() => RedirectEvent)
   declare redirectEvents: HasMany<typeof RedirectEvent>;
+
+  @hasMany(() => RedirectHourlyStat)
+  declare redirectHourlyStats: HasMany<typeof RedirectHourlyStat>;
 
   @hasMany(() => NotificationDelivery)
   declare notificationDeliveries: HasMany<typeof NotificationDelivery>;

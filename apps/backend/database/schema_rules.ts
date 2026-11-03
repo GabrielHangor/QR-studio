@@ -2,7 +2,7 @@ import type { SchemaRules } from "@adonisjs/lucid/types/schema_generator";
 
 export default {
   tables: {
-    assets: {
+    qr_logos: {
       columns: {
         sha256: {
           tsType: "string",
