@@ -2,7 +2,7 @@
 
 @theme {
   --font-sans: var(--studio-font-sans);
-  --font-serif: "Inter Variable", serif;
+  --font-serif: "Inter", serif;
 }
 
 @layer base {

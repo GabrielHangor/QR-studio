@@ -44,7 +44,7 @@ Vue и Nuxt UI — optional peers, обязательные для UI-потре
 ## Интеграция frontend
 
 Frontend владеет Nuxt UI Vite/runtime plugin, одним `UApp` и импортом глобального CSS в `main.ts`.
-Общая [тема QR Studio](../packages/theme/README.md) использует локальные Manrope и Remix Icons.
+Общая [тема QR Studio](../packages/theme/README.md) использует шрифт Inter с Google Fonts и Remix Icons.
 Vite компилирует UI toolkit из исходников; `resolve.dedupe` объединяет Vue/Nuxt UI,
 `scanPackages` и Tailwind `@source` охватывают toolkit.
 Vite-конфигурация импортирует тему по относительному пути: так её TypeScript входит
@@ -69,6 +69,7 @@ API-ключ не нужен; атрибуция обязательна, пре�
 отменённые/устаревшие ответы игнорируются. Другой провайдер задаётся через `locationSearch`.
 Публичные серверы не имеют SLA; генерация QR не отправляет им payload или логотип,
 но карта загружает тайлы, а поиск отправляет введённое название места.
+Шрифт Inter загружается с `fonts.googleapis.com` и `fonts.gstatic.com`: браузер посетителя обращается к Google (передаёт IP), payload и логотип при этом не передаются.
 
 [Патч OpenLayers](../patches/ol@10.11.0.patch) разрешает пассивный wheel-listener через
 `wheelListenerPassive: true` при `mouseWheelZoom: false`, чтобы колесо прокручивало страницу.

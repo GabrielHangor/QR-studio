@@ -353,10 +353,6 @@ importers:
         version: 3.1.5(@types/emscripten@1.41.6)
 
   packages/theme:
-    dependencies:
-      '@fontsource-variable/inter':
-        specifier: 5.3.0
-        version: 5.3.0
     devDependencies:
       oxfmt:
         specifier: 0.73.0
@@ -905,9 +901,6 @@ packages:
     resolution: {integrity: sha512-043dyEKD9TDSfz080YH2vobubgg+NIo/9Fw4RAl7sEMpD8Am1DNrrSTl/GpMBjyGHoD/FbJY2QLawY+HSQsEIA==}
     peerDependencies:
       vue: '>=3.3.0'
-
-  '@fontsource-variable/inter@5.3.0':
-    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
 
   '@iconify-json/ri@1.2.10':
     resolution: {integrity: sha512-WWMhoncVVM+Xmu9T5fgu2lhYRrKTEWhKk3Com0KiM111EeEsRLiASjpsFKnC/SrB6covhUp95r2mH8tGxhgd5Q==}
@@ -5066,8 +5059,6 @@ snapshots:
       '@floating-ui/dom': 1.8.0
       '@floating-ui/utils': 0.2.12
       vue: 3.5.44(typescript@6.0.3)
-
-  '@fontsource-variable/inter@5.3.0': {}
 
   '@iconify-json/ri@1.2.10':
     dependencies:

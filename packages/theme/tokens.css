@@ -1,7 +1,6 @@
 /* Portable tokens: font and radius only; colors follow the Nuxt UI preset (nuxt-ui.css). */
-@import "@fontsource-variable/inter";
 
 :root {
-  --studio-font-sans: "Inter Variable", sans-serif;
+  --studio-font-sans: "Inter", sans-serif;
   --studio-radius: 0.5rem;
 }

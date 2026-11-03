@@ -170,6 +170,9 @@ for (const width of [1280, 390]) {
         ) {
           return route.continue();
         }
+        if (route.request().url().startsWith("https://fonts.googleapis.com/")) {
+          return route.fulfill({ contentType: "text/css", body: "" });
+        }
         external.push(route.request().url());
         return route.abort();
       });
