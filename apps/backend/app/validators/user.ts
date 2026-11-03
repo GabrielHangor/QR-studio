@@ -4,7 +4,7 @@ import vine from "@vinejs/vine";
  * Shared rules for email and password.
  */
 const email = () => vine.string().trim().toLowerCase().email().maxLength(254);
-const password = () => vine.string().minLength(8).maxLength(32);
+const password = () => vine.string().minLength(8).maxLength(128);
 
 /**
  * Validator to use when performing self-signup
@@ -12,11 +12,7 @@ const password = () => vine.string().minLength(8).maxLength(32);
 export const signupValidator = vine.create({
   fullName: vine.string().trim().minLength(1).maxLength(255).nullable().optional(),
   email: email().unique(async (db, value) => {
-    const existing = await db
-      .from("users")
-      .select("id")
-      .whereRaw("lower(btrim(email)) = ?", [value])
-      .first();
+    const existing = await db.from("users").select("id").where("email", value).first();
     return !existing;
   }),
   password: password(),
@@ -29,5 +25,5 @@ export const signupValidator = vine.create({
  */
 export const loginValidator = vine.create({
   email: email(),
-  password: vine.string(),
+  password: vine.string().maxLength(128),
 });

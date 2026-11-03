@@ -38,10 +38,8 @@ export default class extends BaseSchema {
         [],
         "users_block_reason_check",
       );
-      table.unique([this.raw("lower(btrim(email))")], {
-        indexName: "users_email_identity_unique",
-        useConstraint: false,
-      });
+      table.check("email = lower(btrim(email))", [], "users_email_normalized_check");
+      table.check("full_name IS NULL OR length(btrim(full_name)) > 0", [], "users_full_name_check");
       table.index(["trial_ends_at"], "users_trial_expiry_index", {
         predicate: this.knex().whereNotNull("trial_ends_at"),
       });

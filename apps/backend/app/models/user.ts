@@ -40,7 +40,7 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
       .where((query) => {
         for (const uid of uids) {
           if (uid === "email") {
-            query.orWhereRaw("lower(btrim(??)) = lower(btrim(?))", [uid, value]);
+            query.orWhere(uid, value.trim().toLowerCase());
           } else {
             query.orWhere(uid, value);
           }

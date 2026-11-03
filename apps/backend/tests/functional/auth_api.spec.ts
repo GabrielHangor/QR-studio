@@ -82,6 +82,18 @@ test.group("Account API", (group) => {
     assert.equal((await client.request("/account/profile")).status, 200);
   });
 
+  test("accepts a 128-character password at registration", async ({ assert }) => {
+    const client = browser();
+    await client.request("/auth/csrf");
+    const longPassword = "p".repeat(128);
+    const response = await client.request("/auth/signup", {
+      email: `${randomUUID()}@example.test`,
+      password: longPassword,
+      passwordConfirmation: longPassword,
+    });
+    assert.equal(response.status, 201);
+  });
+
   test("allows registration without a name and leaves password whitespace unchanged", async ({
     assert,
   }) => {
@@ -110,15 +122,11 @@ test.group("Account API", (group) => {
     assert.equal(user.email, `changed-${id}@example.test`);
   });
 
-  test("finds an existing identity regardless of stored email case and boundary spaces", async ({
+  test("finds an existing identity regardless of input email case and boundary spaces", async ({
     assert,
   }) => {
     const user = await createUser();
     const canonicalEmail = user.email;
-    await db
-      .from("users")
-      .where("id", user.id)
-      .update({ email: ` ${canonicalEmail.toUpperCase()} ` });
     const client = browser();
     await client.request("/auth/csrf");
     const response = await client.request("/auth/login", {
@@ -133,10 +141,6 @@ test.group("Account API", (group) => {
     assert,
   }) => {
     const user = await createUser();
-    await db
-      .from("users")
-      .where("id", user.id)
-      .update({ email: ` ${user.email.toUpperCase()} ` });
     const client = browser();
     await client.request("/auth/csrf");
     const response = await client.request("/auth/signup", {
@@ -161,6 +165,11 @@ test.group("Account API", (group) => {
     {
       name: "short password",
       body: { password: "short", passwordConfirmation: "short" },
+      field: "password",
+    },
+    {
+      name: "oversized password",
+      body: { password: "a".repeat(129), passwordConfirmation: "a".repeat(129) },
       field: "password",
     },
     {

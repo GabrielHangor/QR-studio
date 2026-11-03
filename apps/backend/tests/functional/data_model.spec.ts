@@ -124,9 +124,7 @@ test.group("MVP data constraints", (group) => {
     assert.isNull(row.last_login_at);
   });
 
-  test("prevents duplicate email identities regardless of case and boundary spaces", async ({
-    assert,
-  }) => {
+  test("stores only normalized email addresses", async ({ assert }) => {
     const user = await owner();
     await assert.rejects(
       () =>
@@ -137,8 +135,68 @@ test.group("MVP data constraints", (group) => {
             created_at: new Date(),
           }),
         ),
-      /users_email_identity_unique/,
+      /users_email_normalized_check/,
     );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.from("users").where("id", user.id).update({ email: "Mixed@Example.test" }),
+        ),
+      /users_email_normalized_check/,
+    );
+  });
+
+  test("prevents duplicate normalized email addresses", async ({ assert }) => {
+    const user = await owner();
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) =>
+          trx.table("users").insert({
+            email: user.email,
+            password: "unused",
+            created_at: new Date(),
+          }),
+        ),
+      /users_email_unique/,
+    );
+  });
+
+  test("normalizes email on model save", async ({ assert }) => {
+    const user = await User.create({
+      email: " Foo@Example.COM ",
+      fullName: "Test",
+      password: "test-password-123",
+    });
+    assert.equal(user.email, "foo@example.com");
+    const row = await db.from("users").where("id", user.id).firstOrFail();
+    assert.equal(row.email, "foo@example.com");
+  });
+
+  test("accepts a non-ASCII normalized email that passes the CHECK", async ({ assert }) => {
+    const user = await User.create({
+      email: " Ünal@Example.COM ",
+      fullName: "Test",
+      password: "test-password-123",
+    });
+    const row = await db.from("users").where("id", user.id).firstOrFail();
+    assert.equal(row.email, "ünal@example.com");
+  });
+
+  test("rejects empty or blank full names and accepts NULL", async ({ assert }) => {
+    const user = await owner();
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) => trx.from("users").where("id", user.id).update({ full_name: "" })),
+      /users_full_name_check/,
+    );
+    await assert.rejects(
+      () =>
+        rejectedWrite((trx) => trx.from("users").where("id", user.id).update({ full_name: "   " })),
+      /users_full_name_check/,
+    );
+    await db.from("users").where("id", user.id).update({ full_name: null });
+    const row = await db.from("users").where("id", user.id).firstOrFail();
+    assert.isNull(row.full_name);
   });
 
   test("validates role, trial and deletion dates", async ({ assert }) => {
