@@ -11,6 +11,7 @@ export default defineConfig(({ command }) => ({
     ui({
       ui: studioTheme,
       icon: { clientBundle: { icons: Object.values(studioTheme.icons) } },
+      theme: { defaultVariants: { size: "lg" } },
       router: false,
       colorMode: false,
       autoImport: false,
