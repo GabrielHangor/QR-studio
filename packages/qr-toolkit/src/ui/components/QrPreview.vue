@@ -40,12 +40,6 @@ const criticalRecommendations = computed(() =>
     .filter((item) => item.severity === "error")
     .map((item) => formatQrDiagnostic(item, props.messages.engine)),
 );
-const recommendationUi = {
-  root: "gap-2.5 p-3",
-  icon: "size-5",
-  title: "text-sm font-semibold text-highlighted",
-  description: "text-xs leading-relaxed text-default",
-};
 const recommendations = computed(() => {
   const warnings = diagnostics.value.filter(
     (item) => item.severity === "warning" && !stylingCodes.has(item.code),
@@ -86,8 +80,7 @@ const previewSource = computed(() =>
     :aria-label="messages.preview"
     :ui="{
       root: 'lg:flex lg:h-[min(44rem,calc(100dvh-14rem))] lg:flex-col',
-      header: 'px-4 py-3 sm:px-4 lg:shrink-0',
-      body: 'p-4 sm:p-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto',
+      body: 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto',
     }"
   >
     <template #header>
@@ -100,7 +93,6 @@ const previewSource = computed(() =>
       icon="i-ri-error-warning-line"
       :title="messages.criticalRecommendations"
       :aria-label="messages.criticalRecommendations"
-      :ui="recommendationUi"
       role="alert"
       class="mb-3 lg:mb-0 lg:shrink-0"
     >
@@ -168,7 +160,6 @@ const previewSource = computed(() =>
         :icon="group.icon"
         :title="group.title"
         :aria-label="group.title"
-        :ui="recommendationUi"
       >
         <template #description>
           <ul

@@ -1,25 +1,23 @@
 @import "./tokens.css";
 
-@theme static {
-  --color-brand-50: var(--studio-blue-50);
-  --color-brand-100: var(--studio-blue-100);
-  --color-brand-200: var(--studio-blue-200);
-  --color-brand-300: var(--studio-blue-300);
-  --color-brand-400: var(--studio-blue-400);
-  --color-brand-500: var(--studio-blue-500);
-  --color-brand-600: var(--studio-blue-600);
-  --color-brand-700: var(--studio-blue-700);
-  --color-brand-800: var(--studio-blue-800);
-  --color-brand-900: var(--studio-blue-900);
-  --color-brand-950: var(--studio-blue-950);
-  --color-selected: var(--studio-bg-selected);
+@theme {
   --font-sans: var(--studio-font-sans);
+  --font-serif: "Inter Variable", serif;
 }
 
 @layer base {
+  /* until v5 ships --ui-font-heading */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+  }
+
   body {
-    letter-spacing: var(--studio-letter-spacing);
-    background-color: var(--studio-bg-page);
+    background-color: var(--ui-color-neutral-50);
   }
 
   button:not(:disabled),
@@ -29,22 +27,25 @@
 }
 
 :root {
-  --ui-primary: var(--studio-primary);
-  --ui-secondary: var(--studio-secondary);
   --ui-radius: var(--studio-radius);
-  --ui-bg: var(--studio-bg);
-  --ui-bg-muted: var(--studio-bg-muted);
-  --ui-bg-elevated: var(--studio-bg-elevated);
-  --ui-bg-accented: var(--studio-bg-accented);
-  --ui-bg-inverted: var(--studio-bg-inverted);
-  --ui-border: var(--studio-border);
-  --ui-border-muted: var(--studio-border);
-  --ui-border-accented: var(--studio-border-control);
-  --ui-border-inverted: var(--studio-text-highlighted);
-  --ui-text: var(--studio-text);
-  --ui-text-highlighted: var(--studio-text-highlighted);
-  --ui-text-toned: var(--studio-text-toned);
-  --ui-text-muted: var(--studio-text-muted);
-  --ui-text-dimmed: var(--studio-text-dimmed);
-  --ui-text-inverted: var(--studio-text-inverted);
+}
+
+/* Accessibility overrides on top of the Nuxt UI preset (WCAG 2.1 AA). */
+:root,
+.light {
+  --ui-border-accented: var(--ui-color-neutral-500);
+  --ui-bg: white;
+  --ui-bg-muted: var(--ui-color-neutral-100);
+  --ui-text-inverted: var(--ui-color-neutral-50);
+}
+
+.dark {
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-border-accented: var(--ui-color-neutral-500);
+  --ui-text-highlighted: var(--ui-color-neutral-50);
+  --ui-bg-inverted: var(--ui-color-neutral-50);
+  --ui-border-inverted: var(--ui-color-neutral-50);
+  --ui-bg: var(--ui-color-neutral-900);
+  --ui-bg-muted: var(--ui-color-neutral-800);
+  --ui-text-inverted: var(--ui-color-neutral-900);
 }

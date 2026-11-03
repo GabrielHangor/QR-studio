@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import UAccordion from "@nuxt/ui/components/Accordion.vue";
+import UCard from "@nuxt/ui/components/Card.vue";
 import UTabs from "@nuxt/ui/components/Tabs.vue";
 import { computed, ref, watch } from "vue";
 
@@ -131,120 +132,109 @@ const contentType = computed({
       :items="contentTypes"
       :content="false"
       :aria-label="messages.contentType"
-      class="w-fit"
-      :ui="{
-        list: 'flex-wrap justify-start gap-1 bg-default ring ring-default',
-        indicator: 'hidden',
-        trigger: 'flex-none px-3 data-[state=active]:bg-selected data-[state=active]:text-primary',
-      }"
+      class="w-fit max-w-full"
+      :ui="{ list: 'min-w-0 overflow-x-auto', trigger: 'shrink-0' }"
     />
     <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(22rem,1fr)]">
       <div class="min-w-0 space-y-3">
-        <UAccordion
-          v-model="open"
-          :items="sections"
-          type="single"
-          :unmount-on-hide="false"
-          :aria-label="messages.settings"
-          class="@container space-y-2"
-          :ui="{
-            item: 'min-w-0 overflow-hidden rounded-lg border border-default last:border-b bg-default',
-            header: 'bg-default',
-            trigger:
-              'px-4 py-3.5 text-sm font-semibold text-highlighted hover:bg-muted data-[state=open]:bg-muted transition-colors',
-            content: 'overflow-hidden',
-            body: 'p-4',
-            trailingIcon: 'text-muted',
-          }"
-        >
-          <template #content-body>
-            <QrContentForm
-              :state="model"
-              :controls="controls('content')"
-              :location-search="props.locationSearch"
-              :messages="messages"
-              @update:state="model = $event"
-            />
-          </template>
-          <template #presets-body>
-            <QrPresetPicker
-              :presets="props.presets"
-              :design="model.design"
-              :messages="messages"
-              @preset="model = applyQrPreset(model, $event)"
-            />
-          </template>
-          <template #colors-body>
-            <QrPaintControls
-              :config="config"
-              :controls="controls('colors')"
-              :design="model.design"
-              :messages="messages"
-              @update:design="update('design', $event)"
-            />
-          </template>
-          <template #shapes-body>
-            <QrShapeControls
-              :code-scale="preview.status === 'ready' ? preview.analysis.codeScale : undefined"
-              :maximum-code-scale="
-                preview.status === 'ready' ? preview.analysis.maximumCodeScale : undefined
-              "
-              :config="config"
-              :controls="controls('shapes')"
-              :design="model.design"
-              :messages="messages"
-              @update:design="update('design', $event)"
-            />
-          </template>
-          <template #logo-body>
-            <QrLogoControls
-              :config="config"
-              :controls="controls('logo')"
-              :presets="props.logoPresets"
-              :busy="logo.busy.value"
-              :issue="logo.issue.value"
-              :design="model.design"
-              :messages="messages"
-              @upload="logo.upload"
-              @preset="logo.select($event.dataUri)"
-              @remove="logo.remove"
-              @update:design="update('design', $event)"
-            />
-          </template>
-          <template #captions-body>
-            <div class="grid gap-5 sm:grid-cols-2">
-              <QrCaptionControls
+        <UCard>
+          <UAccordion
+            v-model="open"
+            :items="sections"
+            type="single"
+            :unmount-on-hide="false"
+            :aria-label="messages.settings"
+            class="@container space-y-2"
+          >
+            <template #content-body>
+              <QrContentForm
+                :state="model"
+                :controls="controls('content')"
+                :location-search="props.locationSearch"
+                :messages="messages"
+                @update:state="model = $event"
+              />
+            </template>
+            <template #presets-body>
+              <QrPresetPicker
+                :presets="props.presets"
+                :design="model.design"
+                :messages="messages"
+                @preset="model = applyQrPreset(model, $event)"
+              />
+            </template>
+            <template #colors-body>
+              <QrPaintControls
                 :config="config"
-                :controls="controls('captions')"
-                v-if="controls('captions').includes('top')"
-                position="top"
+                :controls="controls('colors')"
                 :design="model.design"
                 :messages="messages"
                 @update:design="update('design', $event)"
               />
-              <QrCaptionControls
+            </template>
+            <template #shapes-body>
+              <QrShapeControls
+                :code-scale="preview.status === 'ready' ? preview.analysis.codeScale : undefined"
+                :maximum-code-scale="
+                  preview.status === 'ready' ? preview.analysis.maximumCodeScale : undefined
+                "
                 :config="config"
-                :controls="controls('captions')"
-                v-if="controls('captions').includes('bottom')"
-                position="bottom"
+                :controls="controls('shapes')"
                 :design="model.design"
                 :messages="messages"
                 @update:design="update('design', $event)"
               />
-            </div>
-          </template>
-          <template #technical-body>
-            <QrEncodingControls
-              :config="config"
-              :controls="controls('technical')"
-              :encoding="model.encoding"
-              :design="model.design"
-              :messages="messages"
-              @update:encoding="update('encoding', $event)"
-              @update:design="update('design', $event)"
-            />
-          </template>
-        </UAccordion>
+            </template>
+            <template #logo-body>
+              <QrLogoControls
+                :config="config"
+                :controls="controls('logo')"
+                :presets="props.logoPresets"
+                :busy="logo.busy.value"
+                :issue="logo.issue.value"
+                :design="model.design"
+                :messages="messages"
+                @upload="logo.upload"
+                @preset="logo.select($event.dataUri)"
+                @remove="logo.remove"
+                @update:design="update('design', $event)"
+              />
+            </template>
+            <template #captions-body>
+              <div class="grid gap-5 sm:grid-cols-2">
+                <QrCaptionControls
+                  :config="config"
+                  :controls="controls('captions')"
+                  v-if="controls('captions').includes('top')"
+                  position="top"
+                  :design="model.design"
+                  :messages="messages"
+                  @update:design="update('design', $event)"
+                />
+                <QrCaptionControls
+                  :config="config"
+                  :controls="controls('captions')"
+                  v-if="controls('captions').includes('bottom')"
+                  position="bottom"
+                  :design="model.design"
+                  :messages="messages"
+                  @update:design="update('design', $event)"
+                />
+              </div>
+            </template>
+            <template #technical-body>
+              <QrEncodingControls
+                :config="config"
+                :controls="controls('technical')"
+                :encoding="model.encoding"
+                :design="model.design"
+                :messages="messages"
+                @update:encoding="update('encoding', $event)"
+                @update:design="update('design', $event)"
+              />
+            </template>
+          </UAccordion>
+        </UCard>
         <p class="text-xs text-muted">{{ messages.privacy }}</p>
       </div>
       <QrPreview

@@ -158,7 +158,6 @@ async function perform(operation: "png" | "scan") {
             v-if="config.formats.includes('svg')"
             label="SVG"
             color="neutral"
-            variant="outline"
             :aria-label="messages.downloadSvg"
             :disabled="disabled || !svg"
             @click="downloadSvg"

@@ -1,20 +1,22 @@
-const primaryButtonStates = [
+// Shared QR Studio component defaults. Applied once by the host application.
+// Selected item matches Nuxt UI's own "active" item styling (before:bg-elevated).
+const selectItem =
+  "font-medium text-highlighted data-[state=checked]:text-primary data-[state=checked]:before:bg-elevated data-highlighted:data-[state=checked]:before:bg-elevated";
+
+const cardCompoundVariants = [
   {
-    color: "primary" as const,
-    variant: "solid" as const,
-    class: "hover:bg-(--studio-primary-hover) active:bg-(--studio-primary-active)",
+    variant: "outline" as const,
+    class: {
+      root: "ring-0 dark:ring shadow-xl shadow-black/5",
+    },
   },
 ];
 
-// Shared QR Studio component defaults. Applied once by the host application.
-const selectItem =
-  "font-medium text-highlighted data-[state=checked]:text-primary data-[state=checked]:before:bg-selected data-highlighted:data-[state=checked]:before:bg-selected";
-
 export const studioTheme = {
   colors: {
-    primary: "brand",
-    secondary: "slate",
-    neutral: "slate",
+    primary: "rose",
+    success: "teal",
+    neutral: "stone",
   },
   icons: {
     arrowDown: "i-ri-arrow-down-line",
@@ -61,8 +63,10 @@ export const studioTheme = {
     upload: "i-ri-upload-2-line",
     warning: "i-ri-alert-line",
   },
+  card: {
+    compoundVariants: cardCompoundVariants,
+  },
   button: {
-    compoundVariants: primaryButtonStates,
     defaultVariants: {
       variant: "outline",
     },

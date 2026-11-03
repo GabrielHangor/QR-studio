@@ -34,15 +34,12 @@ function choose(value: string) {
           : items.length === 2
             ? 'grid grid-cols-[repeat(2,minmax(0,5rem))] gap-2'
             : 'grid grid-cols-3 gap-1.5 @min-[38rem]:grid-cols-6',
-      item: compact
-        ? 'min-w-0 cursor-pointer rounded-md p-1 transition-colors'
-        : 'min-w-0 cursor-pointer rounded-lg p-1.5 transition-colors',
       container: 'sr-only',
       indicator: 'hidden',
       wrapper: 'min-w-0 w-full',
       label: large
-        ? 'flex flex-col items-center gap-2 text-center text-xs font-medium'
-        : 'flex flex-col items-center gap-1 text-center text-xs font-medium',
+        ? 'flex flex-col items-center gap-2 text-center'
+        : 'flex flex-col items-center gap-1 text-center',
     }"
     @update:model-value="choose"
   >

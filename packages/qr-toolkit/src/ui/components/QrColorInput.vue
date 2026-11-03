@@ -33,7 +33,7 @@ function updateHex(value: string | number) {
 <template>
   <div class="flex flex-wrap items-center gap-2">
     <UPopover :content="{ align: 'start' }">
-      <UButton :aria-label="label" color="neutral" variant="outline" class="font-mono text-xs">
+      <UButton :aria-label="label" color="neutral" class="font-mono text-xs">
         <template #leading>
           <span
             :style="{ backgroundColor: color }"
