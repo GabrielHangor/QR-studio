@@ -45,12 +45,9 @@ export default class extends BaseSchema {
       table.index(["trial_ends_at"], "users_trial_expiry_index", {
         predicate: this.knex().whereNotNull("trial_ends_at"),
       });
+      // Inactivity is measured from the last login, or from registration if the user never logged in.
+      table.index([this.raw("(COALESCE(last_login_at, created_at))")], "users_inactivity_index");
     });
-
-    // Inactivity is measured from the last login, or from registration if the user never logged in.
-    this.schema.raw(
-      "CREATE INDEX users_inactivity_index ON users ((COALESCE(last_login_at, created_at)))",
-    );
   }
 
   async down() {
