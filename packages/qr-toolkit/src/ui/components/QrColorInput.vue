@@ -15,12 +15,18 @@ const color = computed(() =>
     : props.modelValue,
 );
 const hexSchema = v.pipe(v.string(), v.regex(/^#(?:[\da-f]{3}|[\da-f]{6})$/i));
+function normalizeHex(value: string) {
+  const hex = value.toLowerCase();
+  return /^#[\da-f]{3}$/.test(hex)
+    ? "#" + Array.from(hex.slice(1), (char) => char + char).join("")
+    : hex;
+}
 const hexDraft = ref(color.value);
 const hexValid = computed(() => v.is(hexSchema, hexDraft.value));
 watch(
   () => props.modelValue,
   (value) => {
-    if (value !== hexDraft.value) hexDraft.value = color.value;
+    if (normalizeHex(value) !== normalizeHex(hexDraft.value)) hexDraft.value = color.value;
   },
 );
 function updateHex(value: string | number) {
@@ -48,7 +54,11 @@ function updateHex(value: string | number) {
             :model-value="color"
             format="hex"
             :aria-label="label"
-            @update:model-value="$event && emit('update:modelValue', $event)"
+            @update:model-value="
+              $event &&
+              normalizeHex($event) !== normalizeHex(modelValue) &&
+              emit('update:modelValue', $event)
+            "
           />
           <UFormField :label="label + ' (HEX)'" :error="hexValid ? undefined : '#RGB / #RRGGBB'">
             <UInput
