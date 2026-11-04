@@ -6,6 +6,7 @@ import { errors as validationErrors } from "@vinejs/vine";
 import type { SimpleError } from "@vinejs/vine/types";
 
 import AccountUnavailableException from "#exceptions/account_unavailable_exception";
+import InvalidVerificationTokenException from "#exceptions/invalid_verification_token_exception";
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -28,7 +29,8 @@ export default class HttpExceptionHandler extends ExceptionHandler {
       error instanceof shieldErrors.E_BAD_CSRF_TOKEN ||
       error instanceof authErrors.E_INVALID_CREDENTIALS ||
       error instanceof authErrors.E_UNAUTHORIZED_ACCESS ||
-      error instanceof AccountUnavailableException
+      error instanceof AccountUnavailableException ||
+      error instanceof InvalidVerificationTokenException
     ) {
       return ctx.response.status(error.status).send({
         errors: [{ code: error.code, message: error.message }],

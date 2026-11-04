@@ -21,6 +21,7 @@ export default await Env.create(new URL("../", import.meta.url), {
   // App
   APP_KEY: Env.schema.secret(),
   APP_URL: Env.schema.string({ format: "url", tld: false }),
+  APP_FRONTEND_URL: Env.schema.string({ format: "url", tld: false }),
 
   // PostgreSQL
   DB_HOST: Env.schema.string({ format: "host" }),
@@ -34,4 +35,22 @@ export default await Env.create(new URL("../", import.meta.url), {
 
   // Session
   SESSION_DRIVER: Env.schema.enum(["memory", "database"] as const),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring @adonisjs/queue
+  |----------------------------------------------------------
+  */
+  QUEUE_DRIVER: Env.schema.enum(["database", "sync"] as const),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring the mail package
+  |----------------------------------------------------------
+  */
+  MAIL_MAILER: Env.schema.enum(["smtp"] as const),
+  MAIL_FROM_NAME: Env.schema.string(),
+  MAIL_FROM_ADDRESS: Env.schema.string(),
+  SMTP_HOST: Env.schema.string(),
+  SMTP_PORT: Env.schema.number(),
 });

@@ -6,9 +6,9 @@ import { DateTime } from "luxon";
 
 import { AccountActionTokenPurpose } from "#models/account_action_token";
 import { AuditLogTargetType } from "#models/audit_log";
-import BackgroundJob, { BackgroundJobStatus } from "#models/background_job";
 import { ComplaintKind, ComplaintStatus } from "#models/complaint";
 import { LinkCheckStatus, LinkCheckTrigger } from "#models/link_check";
+import { NotificationDeliveryKind } from "#models/notification_delivery";
 import { PaywallOption } from "#models/paywall_intent";
 import QrBlock, { QrBlockKind } from "#models/qr_block";
 import QrCode from "#models/qr_code";
@@ -209,30 +209,13 @@ test.group("Lucid model relationships", (group) => {
       osName: null,
       redirects: 3,
     });
-    const notification = await user.related("notificationDeliveries").create({
+    await user.related("notificationDeliveries").create({
       qrCodeId: qr.id,
-      kind: "test_notification",
+      kind: NotificationDeliveryKind.EmailVerification,
       recipient: user.email,
       encryptedPayload: "opaque-encrypted-test-payload",
       deduplicationKey: randomUUID(),
     });
-    const job = await notification.related("backgroundJobs").create({
-      userId: user.id,
-      qrCodeId: qr.id,
-      handler: "send_notification",
-      payload: { notificationId: notification.id },
-    });
-    const loadedJob = await BackgroundJob.query()
-      .where("id", job.id)
-      .preload("user")
-      .preload("qrCode")
-      .preload("notification", (query) => query.preload("backgroundJobs"))
-      .firstOrFail();
-    assert.equal(loadedJob.user?.id, user.id);
-    assert.equal(loadedJob.qrCode?.id, qr.id);
-    assert.equal(loadedJob.notification?.backgroundJobs[0].id, job.id);
-    assert.deepEqual(loadedJob.payload, { notificationId: notification.id });
-    assert.equal(loadedJob.status, BackgroundJobStatus.Pending);
     const loadedEvent = await RedirectEvent.query()
       .where("id", String(event.id))
       .preload("user")
@@ -262,7 +245,6 @@ test.group("Lucid model relationships", (group) => {
     await qr.delete();
     assert.isNull(await RedirectEvent.find(event.id));
     assert.isNull(await RedirectHourlyStat.find(hourly.id));
-    assert.isNull(await BackgroundJob.find(job.id));
     await reservation.refresh();
     await reservation.load("qrCode");
     assert.isNull(reservation.qrCode);

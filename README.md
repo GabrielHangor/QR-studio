@@ -29,10 +29,21 @@ pnpm dev
 ```sh
 cp apps/backend/.env.example apps/backend/.env
 pnpm --filter backend exec node ace generate:key
-docker compose --env-file apps/backend/.env up -d --wait postgres
+docker compose --env-file apps/backend/.env up -d --wait postgres mailpit
 pnpm --filter backend exec node ace migration:run
 pnpm --filter backend dev
 ```
+
+Письма в разработке уходят в Mailpit; веб-интерфейс: `http://127.0.0.1:8025`.
+Очередь работает через worker, его нужно запускать отдельно от `dev`:
+
+```sh
+pnpm --filter backend exec node ace queue:work
+```
+
+Worker работает постоянно, параллельно с `pnpm --filter backend dev`. Периодический sweeper
+регистрируется при старте web-процесса (`start/scheduler.ts`, только для `web`), а выполняет его worker.
+Для локальной разработки доступен `node ace queue:work --hmr`: он перезагружает задания при изменении файлов.
 
 При существующем `.env` сохраните `APP_KEY` и перенесите новые настройки из `.env.example`.
 Compose поднимает только локальный PostgreSQL; backend запускается на хосте.

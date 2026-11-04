@@ -8,7 +8,6 @@ import type { HasMany } from "@adonisjs/lucid/types/relations";
 import { UserSchema } from "#database/schema";
 import AccountActionToken from "#models/account_action_token";
 import AuditLog from "#models/audit_log";
-import BackgroundJob from "#models/background_job";
 import Complaint from "#models/complaint";
 import DesignPreset from "#models/design_preset";
 import NotificationDelivery from "#models/notification_delivery";
@@ -78,9 +77,6 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
 
   @hasMany(() => NotificationDelivery)
   declare notificationDeliveries: HasMany<typeof NotificationDelivery>;
-
-  @hasMany(() => BackgroundJob)
-  declare backgroundJobs: HasMany<typeof BackgroundJob>;
 
   @hasMany(() => QrBlock, { foreignKey: "createdByUserId" })
   declare createdQrBlocks: HasMany<typeof QrBlock>;

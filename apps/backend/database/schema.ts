@@ -51,45 +51,6 @@ export class AuditLogSchema extends BaseModel {
   declare targetType: string
 }
 
-export class BackgroundJobSchema extends BaseModel {
-  static $columns = ['attempts', 'availableAt', 'createdAt', 'deduplicationKey', 'finishedAt', 'handler', 'id', 'lastErrorCode', 'leaseExpiresAt', 'lockedBy', 'maxAttempts', 'notificationId', 'payload', 'qrCodeId', 'status', 'updatedAt', 'userId'] as const
-  $columns = BackgroundJobSchema.$columns
-  @column()
-  declare attempts: number
-  @column.dateTime()
-  declare availableAt: DateTime
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare deduplicationKey: string | null
-  @column.dateTime()
-  declare finishedAt: DateTime | null
-  @column()
-  declare handler: string
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare lastErrorCode: string | null
-  @column.dateTime()
-  declare leaseExpiresAt: DateTime | null
-  @column()
-  declare lockedBy: string | null
-  @column()
-  declare maxAttempts: number
-  @column()
-  declare notificationId: string | null
-  @column()
-  declare payload: any
-  @column()
-  declare qrCodeId: string | null
-  @column()
-  declare status: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime
-  @column()
-  declare userId: number | null
-}
-
 export class ComplaintSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'kind', 'qrCodeId', 'reason', 'reporterUserId', 'resolution', 'resolvedAt', 'resolvedByUserId', 'status', 'updatedAt'] as const
   $columns = ComplaintSchema.$columns
@@ -301,6 +262,70 @@ export class QrLogoSchema extends BaseModel {
   declare userId: number
   @column()
   declare width: number
+}
+
+export class QueueJobSchema extends BaseModel {
+  static $columns = ['acquiredAt', 'data', 'dedupAt', 'dedupId', 'dedupTtl', 'error', 'executeAt', 'finishedAt', 'id', 'queue', 'score', 'status', 'workerId'] as const
+  $columns = QueueJobSchema.$columns
+  @column()
+  declare acquiredAt: bigint | number | null
+  @column()
+  declare data: string
+  @column()
+  declare dedupAt: bigint | number | null
+  @column()
+  declare dedupId: string | null
+  @column()
+  declare dedupTtl: bigint | number | null
+  @column()
+  declare error: string | null
+  @column()
+  declare executeAt: bigint | number | null
+  @column()
+  declare finishedAt: bigint | number | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare queue: string
+  @column()
+  declare score: bigint | number | null
+  @column()
+  declare status: string
+  @column()
+  declare workerId: string | null
+}
+
+export class QueueScheduleSchema extends BaseModel {
+  static $columns = ['createdAt', 'cronExpression', 'everyMs', 'fromDate', 'id', 'lastRunAt', 'name', 'nextRunAt', 'payload', 'runCount', 'runLimit', 'status', 'timezone', 'toDate'] as const
+  $columns = QueueScheduleSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare cronExpression: string | null
+  @column()
+  declare everyMs: bigint | number | null
+  @column()
+  declare fromDate: bigint | number | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare lastRunAt: bigint | number | null
+  @column()
+  declare name: string
+  @column()
+  declare nextRunAt: bigint | number | null
+  @column()
+  declare payload: string
+  @column()
+  declare runCount: number
+  @column()
+  declare runLimit: number | null
+  @column()
+  declare status: string
+  @column()
+  declare timezone: string
+  @column()
+  declare toDate: bigint | number | null
 }
 
 export class RedirectEventSchema extends BaseModel {

@@ -620,48 +620,8 @@ test.group("MVP data constraints", (group) => {
     assert.isNotNull(stored.deleted_at);
   });
 
-  test("deduplicates active jobs, validates leases and permits a new job after completion", async ({
-    assert,
-  }) => {
-    const key = randomUUID();
-    const id = randomUUID();
-    await db.table("background_jobs").insert({ id, handler: "test", deduplication_key: key });
-    await assert.rejects(
-      () =>
-        rejectedWrite((trx) =>
-          trx.table("background_jobs").insert({ handler: "test", deduplication_key: key }),
-        ),
-      /jobs_active_deduplication/,
-    );
-    await assert.rejects(
-      () =>
-        rejectedWrite((trx) =>
-          trx.from("background_jobs").where("id", id).update({ status: "running" }),
-        ),
-      /jobs_lease_check/,
-    );
-    await db
-      .from("background_jobs")
-      .where("id", id)
-      .update({
-        status: "running",
-        attempts: 1,
-        locked_by: "worker-test",
-        lease_expires_at: new Date(Date.now() + 60_000),
-      });
-    await db.from("background_jobs").where("id", id).update({
-      status: "completed",
-      locked_by: null,
-      lease_expires_at: null,
-      finished_at: new Date(),
-    });
-    await db.table("background_jobs").insert({ handler: "test", deduplication_key: key });
-    assert.lengthOf(await db.from("background_jobs").where("deduplication_key", key), 2);
-  });
-
-  test("prevents duplicate notifications and cross-owner background work", async ({ assert }) => {
+  test("prevents duplicate notifications", async ({ assert }) => {
     const first = await owner();
-    const second = await owner();
     const notification = await delivery(first.id);
     await assert.rejects(
       () =>
@@ -675,15 +635,6 @@ test.group("MVP data constraints", (group) => {
           }),
         ),
       /notification_deliveries_deduplication_key_unique/,
-    );
-    await assert.rejects(
-      () =>
-        rejectedWrite((trx) =>
-          trx
-            .table("background_jobs")
-            .insert({ user_id: second.id, notification_id: notification, handler: "test" }),
-        ),
-      /jobs_notification_owner_fk/,
     );
   });
 
@@ -715,13 +666,7 @@ test.group("MVP data constraints", (group) => {
     await db.table("complaints").insert({ qr_code_id: code.id, reason: "Test complaint" });
     await event(user.id, code.id, target);
     await db.rawQuery(upsertHourlyStat, [user.id, code.id, bucket, null, null, null, null, 1]);
-    const notification = await delivery(user.id, { qr_code_id: code.id });
-    await db.table("background_jobs").insert({
-      user_id: user.id,
-      qr_code_id: code.id,
-      notification_id: notification,
-      handler: "test",
-    });
+    await delivery(user.id, { qr_code_id: code.id });
     await db.from("qr_codes").where("id", code.id).delete();
     assert.isEmpty(await db.from("qr_destinations").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("link_checks").where("qr_code_id", code.id));
@@ -730,7 +675,6 @@ test.group("MVP data constraints", (group) => {
     assert.isEmpty(await db.from("redirect_events").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("redirect_hourly_stats").where("qr_code_id", code.id));
     assert.isEmpty(await db.from("notification_deliveries").where("qr_code_id", code.id));
-    assert.isEmpty(await db.from("background_jobs").where("qr_code_id", code.id));
     assert.isNull(await db.from("qr_logos").where("qr_code_id", code.id).first());
     assert.exists(await db.from("design_presets").where("user_id", user.id).first());
     assert.exists(await db.from("short_codes").where("code", code.code).first());

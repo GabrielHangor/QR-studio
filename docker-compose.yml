@@ -16,5 +16,12 @@ services:
       timeout: 5s
       retries: 10
 
+  # Local SMTP sink and web UI. Ports are published on loopback only.
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - "127.0.0.1:${MAIL_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAIL_UI_PORT:-8025}:8025"
+
 volumes:
   postgres_data:

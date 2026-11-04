@@ -1,10 +1,13 @@
-import { belongsTo, hasMany } from "@adonisjs/lucid/orm";
-import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import { belongsTo } from "@adonisjs/lucid/orm";
+import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 import { NotificationDeliverySchema } from "#database/schema";
-import BackgroundJob from "#models/background_job";
 import QrCode from "#models/qr_code";
 import User from "#models/user";
+
+export enum NotificationDeliveryKind {
+  EmailVerification = "email_verification",
+}
 
 export enum NotificationDeliveryStatus {
   Pending = "pending",
@@ -14,6 +17,7 @@ export enum NotificationDeliveryStatus {
 }
 
 export default class NotificationDelivery extends NotificationDeliverySchema {
+  declare kind: NotificationDeliveryKind;
   declare status: NotificationDeliveryStatus;
 
   @belongsTo(() => User)
@@ -21,7 +25,4 @@ export default class NotificationDelivery extends NotificationDeliverySchema {
 
   @belongsTo(() => QrCode)
   declare qrCode: BelongsTo<typeof QrCode> | null;
-
-  @hasMany(() => BackgroundJob, { foreignKey: "notificationId" })
-  declare backgroundJobs: HasMany<typeof BackgroundJob>;
 }

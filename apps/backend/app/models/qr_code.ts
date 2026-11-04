@@ -2,7 +2,6 @@ import { belongsTo, hasMany, hasOne } from "@adonisjs/lucid/orm";
 import type { BelongsTo, HasMany, HasOne } from "@adonisjs/lucid/types/relations";
 
 import { QrCodeSchema } from "#database/schema";
-import BackgroundJob from "#models/background_job";
 import Complaint from "#models/complaint";
 import LinkCheck from "#models/link_check";
 import NotificationDelivery from "#models/notification_delivery";
@@ -44,7 +43,4 @@ export default class QrCode extends QrCodeSchema {
 
   @hasMany(() => NotificationDelivery)
   declare notificationDeliveries: HasMany<typeof NotificationDelivery>;
-
-  @hasMany(() => BackgroundJob)
-  declare backgroundJobs: HasMany<typeof BackgroundJob>;
 }

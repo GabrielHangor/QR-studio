@@ -33,6 +33,9 @@ trap 'exit 129' HUP
 export NODE_ENV=test TZ=UTC HOST=127.0.0.1 LOG_LEVEL=error
 export DB_HOST=127.0.0.1 DB_USER=qr_studio DB_DATABASE=qr_studio_test
 export SESSION_DRIVER=database CORS_ORIGIN=http://127.0.0.1:5173
+export APP_FRONTEND_URL=http://127.0.0.1:5173 QUEUE_DRIVER=database
+export MAIL_MAILER=smtp MAIL_FROM_NAME='QR Studio' MAIL_FROM_ADDRESS=no-reply@localhost
+export SMTP_HOST=127.0.0.1 SMTP_PORT=1025
 DB_PASSWORD=$(node -p 'crypto.randomBytes(24).toString("hex")')
 APP_KEY=$(node -p 'crypto.randomBytes(32).toString("base64")')
 export DB_PASSWORD APP_KEY
